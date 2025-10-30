@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import InputField from "@/components/forms/InputField";
 
 import FooterLinks from "@/components/forms/FooterLinks";
-import SignUp from "../sign-up/page";
 
 const SignIn = () => {
 
