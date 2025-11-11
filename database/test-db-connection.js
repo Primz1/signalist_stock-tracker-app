@@ -1,6 +1,6 @@
-require('ts-node/register');
+// test-db-connection.js
 require('dotenv').config(); // Load environment variables
-const { connectToDatabase } = require('./mongoose');
+const { connectToDatabase } = require('./database/mongoose');
 
 async function testConnection() {
     try {
