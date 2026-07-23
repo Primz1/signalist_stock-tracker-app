@@ -1,4 +1,4 @@
-import { any, betterAuth } from "better-auth";
+import { betterAuth } from "better-auth";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import { connectToDatabase } from "@/database/mongoose";
 import { getAppUrl, getTrustedOrigins } from "@/lib/env";
