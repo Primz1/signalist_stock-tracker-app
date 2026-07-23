@@ -39,3 +39,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# python
+__pycache__/
+*.py[cod]
+.ai-service-venv/
+.venv/
+
+# Sentry Config File
+.env.sentry-build-plugin

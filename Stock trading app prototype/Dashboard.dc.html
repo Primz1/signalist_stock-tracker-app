@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0A0A;position:relative;}
+*{box-sizing:border-box;}
+button{font-family:inherit;}
+button:focus-visible{outline:2px solid #FDD458;outline-offset:2px;}
+a{color:#A1A1A1;text-decoration:none;}
+a:hover{color:#FDD458;}
+::placeholder{color:#6E6E6E;}
+body::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:0.05;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes pulse{0%,100%{opacity:.4;}50%{opacity:.7;}}
+@keyframes marquee{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+@keyframes breathe{0%,100%{opacity:0.4;}50%{opacity:0.55;}}
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:#0A0A0A;font-family:'Geist',sans-serif;display:flex;justify-content:center;">
+<div style="width:{{ shellWidth }};min-height:100vh;background:#0A0A0A;position:relative;">
+
+  <!-- HEADER -->
+  <div style="height:56px;position:sticky;top:0;z-index:20;background:#141414;border-bottom:1px solid #242424;display:flex;align-items:center;padding:0 20px;gap:20px;">
+    <div style="display:flex;align-items:center;gap:8px;flex:none;">
+      <div style="width:26px;height:26px;border-radius:7px;background:#FDD458;display:flex;align-items:center;justify-content:center;font-weight:700;color:#0A0A0A;font-size:14px;">S</div>
+      <sc-if value="{{ showWordmark }}" hint-placeholder-val="{{ true }}">
+        <div style="font-weight:600;font-size:14px;color:#F5F5F5;letter-spacing:-0.01em;">Signalist</div>
+      </sc-if>
+    </div>
+
+    <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">
+    <button onClick="{{ openSearch }}" style="background:#0A0A0A;border:1px solid #2E2E2E;border-radius:8px;padding:7px 10px;display:flex;align-items:center;gap:8px;color:#6E6E6E;font-size:13px;cursor:pointer;width:280px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      <span style="flex:1;text-align:left;">Search stocks...</span>
+      <span style="font-size:11px;color:#6E6E6E;">⌘K</span>
+    </button>
+    </sc-if>
+    <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}">
+    <button onClick="{{ openSearch }}" aria-label="Search" style="background:none;border:none;color:#A1A1A1;cursor:pointer;padding:6px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+    </button>
+    </sc-if>
+
+    <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;align-items:center;gap:24px;flex:1;">
+      <div style="display:flex;align-items:center;gap:2px;height:56px;color:#F5F5F5;font-size:13px;font-weight:500;border-bottom:2px solid #FDD458;">Dashboard</div>
+      <a href="#" style="font-size:13px;">Watchlist</a>
+      <a href="#" style="font-size:13px;">Portfolio</a>
+      <a href="#" style="font-size:13px;">Research</a>
+      <a href="#" style="font-size:13px;">API</a>
+      <a href="#" style="font-size:13px;">Settings</a>
+    </div>
+    </sc-if>
+    <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}"><div style="flex:1;"></div></sc-if>
+
+    <div style="display:flex;align-items:center;gap:14px;flex:none;position:relative;">
+      <button onClick="{{ toggleNotif }}" aria-label="Notifications" style="background:none;border:none;color:#A1A1A1;cursor:pointer;padding:6px;position:relative;display:flex;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+        <span style="position:absolute;top:2px;right:2px;width:14px;height:14px;border-radius:50%;background:#FDD458;color:#0A0A0A;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;">3</span>
+      </button>
+
+      <sc-if value="{{ notifOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;top:40px;right:36px;width:320px;background:#141414;border:1px solid #2E2E2E;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.4);z-index:30;">
+        <div style="padding:12px 14px;border-bottom:1px solid #242424;display:flex;justify-content:space-between;align-items:center;">
+          <div style="font-size:13px;font-weight:600;color:#F5F5F5;">Alerts</div>
+          <button style="background:none;border:none;color:#A1A1A1;font-size:12px;cursor:pointer;">Mark all read</button>
+        </div>
+        <div style="padding:10px 14px;border-left:2px solid #FDD458;background:rgba(253,212,88,0.04);border-bottom:1px solid #242424;">
+          <div style="font-size:13px;color:#F5F5F5;">AAPL crossed $180.00</div>
+          <div style="font-size:12px;color:#6E6E6E;margin-top:2px;">2m ago</div>
+        </div>
+        <div style="padding:10px 14px;border-left:2px solid #FDD458;background:rgba(253,212,88,0.04);border-bottom:1px solid #242424;">
+          <div style="font-size:13px;color:#F5F5F5;">TSLA down 5% today</div>
+          <div style="font-size:12px;color:#6E6E6E;margin-top:2px;">1h ago</div>
+        </div>
+        <div style="padding:10px 14px;">
+          <div style="font-size:13px;color:#A1A1A1;">NVDA research report ready</div>
+          <div style="font-size:12px;color:#6E6E6E;margin-top:2px;">3h ago</div>
+        </div>
+      </div>
+      </sc-if>
+
+      <button onClick="{{ toggleUserMenu }}" aria-label="Account" style="width:28px;height:28px;border-radius:50%;background:rgba(253,212,88,0.12);border:none;color:#F5F5F5;font-size:12px;font-weight:600;font-family:'Geist Mono',monospace;cursor:pointer;display:flex;align-items:center;justify-content:center;">JT</button>
+
+      <sc-if value="{{ userMenuOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;top:40px;right:0;width:200px;background:#141414;border:1px solid #2E2E2E;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.4);z-index:30;overflow:hidden;">
+        <div style="padding:12px 14px;border-bottom:1px solid #242424;">
+          <div style="font-size:13px;color:#F5F5F5;font-weight:500;">Jane Trader</div>
+          <div style="font-size:12px;color:#6E6E6E;">jane@domain.com</div>
+        </div>
+        <div style="padding:9px 14px;font-size:13px;color:#A1A1A1;cursor:pointer;">Settings</div>
+        <div style="padding:9px 14px;font-size:13px;color:#6E6E6E;cursor:default;display:flex;justify-content:space-between;">Theme <span style="font-size:11px;">Dark</span></div>
+        <div style="padding:9px 14px;font-size:13px;color:#A1A1A1;cursor:pointer;border-top:1px solid #242424;">Sign out</div>
+      </div>
+      </sc-if>
+    </div>
+  </div>
+
+  <!-- Ticker tape -->
+  <div style="height:{{ tapeHeight }};background:#0A0A0A;border-bottom:1px solid #242424;overflow:hidden;">
+    <div style="display:flex;gap:28px;white-space:nowrap;animation:marquee 24s linear infinite;padding:0 16px;align-items:center;height:100%;">
+      <sc-for list="{{ tapeItems }}" as="t" hint-placeholder-count="16">
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-family:'Geist Mono',monospace;flex:none;">
+          <span style="color:#A1A1A1;">{{ t.symbol }}</span>
+          <span style="color:#F5F5F5;">{{ t.price }}</span>
+          <span style="color:{{ t.color }};">{{ t.change }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <!-- SEARCH COMMAND OVERLAY -->
+  <sc-if value="{{ searchOpen }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ closeSearch }}" style="position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(2px);z-index:50;display:flex;align-items:flex-start;justify-content:center;padding-top:12vh;">
+    <div onClick="{{ stop }}" style="width:100%;max-width:600px;background:#141414;border:1px solid #2E2E2E;border-radius:12px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+      <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid #242424;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E6E6E" stroke-width="1.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input autoFocus="{{ true }}" placeholder="Search stocks... AAPL, TSLA" style="flex:1;background:none;border:none;color:#F5F5F5;font-size:14px;outline:none;"/>
+        <span style="font-size:11px;color:#6E6E6E;border:1px solid #2E2E2E;border-radius:4px;padding:2px 5px;">ESC</span>
+      </div>
+      <div style="padding:6px 0;max-height:340px;overflow:auto;">
+        <div style="font-size:11px;letter-spacing:0.04em;text-transform:uppercase;color:#6E6E6E;padding:8px 16px 4px;">Recent</div>
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6E6E6E" stroke-width="1.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+          <div style="flex:1;font-size:13px;color:#F5F5F5;">Apple Inc.</div>
+          <div style="font-size:12px;color:#A1A1A1;font-family:'Geist Mono',monospace;">AAPL · NASDAQ</div>
+          <div style="font-size:10px;border:1px solid #FDD458;color:#FDD458;background:rgba(253,212,88,0.12);border-radius:20px;padding:2px 7px;">In watchlist</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6E6E6E" stroke-width="1.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+          <div style="flex:1;font-size:13px;color:#F5F5F5;">Tesla, Inc.</div>
+          <div style="font-size:12px;color:#A1A1A1;font-family:'Geist Mono',monospace;">TSLA · NASDAQ</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6E6E6E" stroke-width="1.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+          <div style="flex:1;font-size:13px;color:#F5F5F5;">NVIDIA Corp.</div>
+          <div style="font-size:12px;color:#A1A1A1;font-family:'Geist Mono',monospace;">NVDA · NASDAQ</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- BODY -->
+  <div style="padding:{{ bodyPadding }};display:flex;flex-direction:column;gap:32px;">
+
+    <!-- Hero card -->
+    <div style="position:relative;overflow:hidden;background:#141414;border:1px solid rgba(253,212,88,0.3);box-shadow:0 0 60px -25px rgba(249,115,22,0.35);border-radius:16px;padding:{{ heroCardPad }};display:flex;flex-direction:{{ heroCardDir }};gap:24px;">
+      <div style="position:absolute;top:-30%;left:-10%;width:520px;height:520px;background:radial-gradient(circle,rgba(249,115,22,0.2) 0%,rgba(124,45,18,0.06) 45%,transparent 70%);animation:breathe 8s ease-in-out infinite;pointer-events:none;"></div>
+      <div style="position:relative;flex:1;display:flex;flex-direction:column;gap:12px;justify-content:center;">
+        <div style="font-size:20px;font-weight:600;color:#F5F5F5;">Good evening, Jane</div>
+        <div style="font-size:32px;font-family:'Geist Mono',monospace;font-weight:500;color:#F5F5F5;">$48,210.32</div>
+        <div style="font-size:13px;font-family:'Geist Mono',monospace;color:#22C55E;background:rgba(34,197,94,0.12);border-radius:20px;padding:3px 9px;width:fit-content;">+$612.40 (+1.29%) today</div>
+        <div style="display:flex;align-items:flex-start;gap:6px;font-size:13px;color:#A1A1A1;max-width:420px;margin-top:4px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FDD458" stroke-width="1.5" style="flex:none;margin-top:2px;"><path d="M12 3l1.9 4.5L18 9.2l-4.1 1.7L12 15l-1.9-4.1L6 9.2l4.1-1.7z"></path></svg>
+          Your holdings are up on strong tech; NVDA leads. Watch AMD's earnings Thursday.
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+          <button onClick="{{ openSearch }}" style="background:none;border:1px solid #2E2E2E;color:#F5F5F5;border-radius:20px;padding:6px 12px;font-size:12px;cursor:pointer;">+ Add symbol</button>
+          <button style="background:none;border:1px solid #2E2E2E;color:#F5F5F5;border-radius:20px;padding:6px 12px;font-size:12px;cursor:pointer;">+ New alert</button>
+          <button style="background:none;border:1px solid #2E2E2E;color:#F5F5F5;border-radius:20px;padding:6px 12px;font-size:12px;cursor:pointer;">Run research</button>
+        </div>
+      </div>
+      <div style="position:relative;flex:1;background:#0A0A0A;border-radius:12px;padding:14px;min-height:200px;">
+        <div style="font-size:12px;font-family:'Geist Mono',monospace;color:#A1A1A1;margin-bottom:2px;">NVDA</div>
+        <div style="font-size:18px;font-family:'Geist Mono',monospace;color:#F5F5F5;margin-bottom:10px;">$128.44</div>
+        <svg width="100%" height="130" viewBox="0 0 400 130" preserveAspectRatio="none">
+          <defs><linearGradient id="heroFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FDD458" stop-opacity="0.22"/><stop offset="100%" stop-color="#FDD458" stop-opacity="0"/></linearGradient></defs>
+          <path d="M0,90 L40,80 L80,88 L120,60 L160,68 L200,40 L240,50 L280,25 L320,38 L360,15 L400,28 L400,130 L0,130 Z" fill="url(#heroFill)"></path>
+          <path d="M0,90 L40,80 L80,88 L120,60 L160,68 L200,40 L240,50 L280,25 L320,38 L360,15 L400,28" fill="none" stroke="#FDD458" stroke-width="2"></path>
+        </svg>
+      </div>
+    </div>
+
+    <div>
+      <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:16px;">
+        <div style="font-size:20px;line-height:28px;font-weight:600;color:#F5F5F5;">Markets</div>
+        <div style="font-size:12px;font-weight:500;letter-spacing:0.02em;color:#6E6E6E;text-transform:uppercase;">Live snapshot</div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:{{ gridCols }};gap:16px;">
+
+        <!-- Market Overview -->
+        <div style="background:#141414;border:1px solid #242424;border-radius:12px;overflow:hidden;">
+          <div style="padding:14px 16px;border-bottom:1px solid #242424;display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:12px;font-weight:500;letter-spacing:0.02em;color:#6E6E6E;text-transform:uppercase;">Market Overview</div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E6E6E" stroke-width="1.5"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
+          </div>
+          <div style="padding:16px;display:flex;flex-direction:column;gap:12px;">
+            <sc-for list="{{ indices }}" as="idx" hint-placeholder-count="4">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div style="font-size:13px;color:#F5F5F5;">{{ idx.name }}</div>
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <div style="font-size:13px;font-family:'Geist Mono',monospace;color:#F5F5F5;">{{ idx.value }}</div>
+                  <div style="font-size:12px;font-family:'Geist Mono',monospace;color:{{ idx.color }};width:56px;text-align:right;">{{ idx.change }}</div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- Stock Heatmap -->
+        <div style="background:#141414;border:1px solid #242424;border-radius:12px;overflow:hidden;">
+          <div style="padding:14px 16px;border-bottom:1px solid #242424;display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:12px;font-weight:500;letter-spacing:0.02em;color:#6E6E6E;text-transform:uppercase;">Stock Heatmap</div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E6E6E" stroke-width="1.5"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
+          </div>
+          <div style="padding:16px;display:grid;grid-template-columns:repeat(4,1fr);gap:5px;">
+            <sc-for list="{{ heatmap }}" as="cell" hint-placeholder-count="12">
+              <div style="background:{{ cell.color }};border-radius:4px;aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11px;font-family:'Geist Mono',monospace;color:#0A0A0A;font-weight:600;">{{ cell.label }}</div>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- Timeline -->
+        <div style="background:#141414;border:1px solid #242424;border-radius:12px;overflow:hidden;">
+          <div style="padding:14px 16px;border-bottom:1px solid #242424;display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:12px;font-weight:500;letter-spacing:0.02em;color:#6E6E6E;text-transform:uppercase;">Top Stories</div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E6E6E" stroke-width="1.5"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
+          </div>
+          <div style="padding:8px 16px;">
+            <sc-for list="{{ stories }}" as="story" hint-placeholder-count="4">
+              <div style="padding:8px 0;border-bottom:1px solid #1C1C1C;">
+                <div style="font-size:13px;color:#F5F5F5;margin-bottom:3px;">{{ story.title }}</div>
+                <div style="font-size:11px;color:#6E6E6E;">{{ story.source }} · {{ story.time }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- Market quotes -->
+        <div style="background:#141414;border:1px solid #242424;border-radius:12px;overflow:hidden;">
+          <div style="padding:14px 16px;border-bottom:1px solid #242424;display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:12px;font-weight:500;letter-spacing:0.02em;color:#6E6E6E;text-transform:uppercase;">Market Quotes</div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E6E6E" stroke-width="1.5"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
+          </div>
+          <div style="padding:16px;display:flex;flex-direction:column;gap:12px;">
+            <sc-for list="{{ quotes }}" as="q" hint-placeholder-count="4">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div style="font-size:13px;font-family:'Geist Mono',monospace;color:#F5F5F5;">{{ q.symbol }}</div>
+                <div style="flex:1;margin:0 12px;height:20px;display:flex;align-items:flex-end;gap:2px;">
+                  <sc-for list="{{ q.bars }}" as="b" hint-placeholder-count="8">
+                    <div style="width:3px;height:{{ b.h }};background:{{ q.color }};opacity:0.6;"></div>
+                  </sc-for>
+                </div>
+                <div style="font-size:12px;font-family:'Geist Mono',monospace;color:{{ q.color }};">{{ q.change }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div style="font-size:20px;line-height:28px;font-weight:600;color:#F5F5F5;">Your watchlist</div>
+        <a href="#" style="font-size:13px;">View all</a>
+      </div>
+      <div style="background:#141414;border:1px solid #242424;border-radius:12px;overflow:hidden;">
+        <div style="display:grid;grid-template-columns:1fr 100px 100px 100px;padding:10px 16px;border-bottom:1px solid #242424;">
+          <div style="font-size:12px;color:#6E6E6E;text-transform:uppercase;letter-spacing:0.02em;">Symbol</div>
+          <div style="font-size:12px;color:#6E6E6E;text-transform:uppercase;letter-spacing:0.02em;text-align:right;">Price</div>
+          <div style="font-size:12px;color:#6E6E6E;text-transform:uppercase;letter-spacing:0.02em;text-align:right;">Change</div>
+          <div style="font-size:12px;color:#6E6E6E;text-transform:uppercase;letter-spacing:0.02em;text-align:right;">AI Score</div>
+        </div>
+        <sc-for list="{{ watchlistRows }}" as="row" hint-placeholder-count="4">
+          <div style="display:grid;grid-template-columns:1fr 100px 100px 100px;padding:12px 16px;align-items:center;border-bottom:1px solid #1C1C1C;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:26px;height:26px;border-radius:50%;background:rgba(253,212,88,0.12);display:flex;align-items:center;justify-content:center;font-size:10px;font-family:'Geist Mono',monospace;color:#F5F5F5;font-weight:600;">{{ row.initials }}</div>
+              <div style="font-size:13px;font-family:'Geist Mono',monospace;color:#F5F5F5;">{{ row.symbol }}</div>
+            </div>
+            <div style="text-align:right;font-size:13px;font-family:'Geist Mono',monospace;color:#F5F5F5;">{{ row.price }}</div>
+            <div style="text-align:right;font-size:13px;font-family:'Geist Mono',monospace;color:{{ row.color }};">{{ row.change }}</div>
+            <div style="text-align:right;">
+              <span style="font-size:12px;font-family:'Geist Mono',monospace;padding:2px 8px;border-radius:20px;background:{{ row.scoreBg }};color:{{ row.scoreColor }};">{{ row.score }}</span>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="padding-bottom:40px;">
+      <div style="font-size:20px;line-height:28px;font-weight:600;color:#F5F5F5;margin-bottom:16px;">Latest research</div>
+      <div style="display:grid;grid-template-columns:{{ gridColsThree }};gap:16px;">
+        <sc-for list="{{ research }}" as="r" hint-placeholder-count="3">
+          <div style="background:#141414;border:1px solid #242424;border-left:2px solid #FDD458;border-radius:12px;padding:16px;">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FDD458" stroke-width="1.5"><path d="M12 3l1.9 4.5L18 9.2l-4.1 1.7L12 15l-1.9-4.1L6 9.2l4.1-1.7z"></path></svg>
+              <span style="font-size:11px;color:#6E6E6E;text-transform:uppercase;letter-spacing:0.02em;">{{ r.symbol }}</span>
+            </div>
+            <div style="font-size:13px;color:#F5F5F5;margin-bottom:10px;">{{ r.question }}</div>
+            <div style="height:4px;background:#1C1C1C;border-radius:2px;overflow:hidden;margin-bottom:8px;">
+              <div style="height:100%;width:{{ r.confidence }};background:#FDD458;"></div>
+            </div>
+            <div style="font-size:12px;color:#6E6E6E;">{{ r.confidenceLabel }} confidence</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:1000},&quot;viewport&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;desktop&quot;,&quot;options&quot;:[&quot;desktop&quot;,&quot;mobile&quot;],&quot;tsType&quot;:&quot;'desktop'|'mobile'&quot;,&quot;section&quot;:&quot;Layout&quot;}}">
+class Component extends DCLogic {
+  state = { searchOpen: false, notifOpen: false, userMenuOpen: false };
+
+  componentDidMount() {
+    this._onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); this.setState({ searchOpen: true }); }
+      if (e.key === 'Escape') this.setState({ searchOpen: false });
+    };
+    window.addEventListener('keydown', this._onKey);
+  }
+  componentWillUnmount() { window.removeEventListener('keydown', this._onKey); }
+
+  openSearch = () => this.setState({ searchOpen: true, notifOpen: false, userMenuOpen: false });
+  closeSearch = () => this.setState({ searchOpen: false });
+  toggleNotif = () => this.setState(s => ({ notifOpen: !s.notifOpen, userMenuOpen: false }));
+  toggleUserMenu = () => this.setState(s => ({ userMenuOpen: !s.userMenuOpen, notifOpen: false }));
+  stop = (e) => e.stopPropagation();
+
+  renderVals() {
+    const viewport = this.props.viewport || 'desktop';
+    const isMobile = viewport === 'mobile';
+    const up = '#22C55E', down = '#EF4444';
+    const tape = [
+      { symbol: 'AAPL', price: '180.50', change: '+1.24%', color: up },
+      { symbol: 'TSLA', price: '241.10', change: '−0.53%', color: down },
+      { symbol: 'NVDA', price: '128.44', change: '+2.81%', color: up },
+      { symbol: 'MSFT', price: '441.02', change: '+0.31%', color: up },
+      { symbol: 'BTC', price: '68,420', change: '+3.10%', color: up },
+      { symbol: 'AMZN', price: '187.22', change: '+0.88%', color: up },
+    ];
+    return {
+      isMobile, isDesktop: !isMobile,
+      showWordmark: true,
+      tapeHeight: isMobile ? '30px' : '36px',
+      tapeItems: tape.concat(tape),
+      heroCardPad: isMobile ? '20px' : '28px 32px',
+      heroCardDir: isMobile ? 'column' : 'row',
+      shellWidth: isMobile ? '390px' : '100%',
+      bodyPadding: isMobile ? '20px 16px' : '28px 32px',
+      gridCols: isMobile ? '1fr' : 'repeat(2,1fr)',
+      gridColsThree: isMobile ? '1fr' : 'repeat(3,1fr)',
+      searchOpen: this.state.searchOpen,
+      notifOpen: this.state.notifOpen,
+      userMenuOpen: this.state.userMenuOpen,
+      openSearch: this.openSearch, closeSearch: this.closeSearch, stop: this.stop,
+      toggleNotif: this.toggleNotif, toggleUserMenu: this.toggleUserMenu,
+      indices: [
+        { name: 'S&P 500', value: '5,614.20', change: '+0.42%', color: up },
+        { name: 'Nasdaq', value: '18,203.4', change: '+0.61%', color: up },
+        { name: 'Dow Jones', value: '41,092.1', change: '−0.18%', color: down },
+        { name: 'Russell 2000', value: '2,231.9', change: '+0.09%', color: up },
+      ],
+      heatmap: [
+        { label: 'AAPL', color: '#1e7d43' }, { label: 'MSFT', color: '#22C55E' }, { label: 'NVDA', color: '#1a5c33' }, { label: 'TSLA', color: '#7a1f1f' },
+        { label: 'AMZN', color: '#22C55E' }, { label: 'META', color: '#164e2b' }, { label: 'GOOG', color: '#1e7d43' }, { label: 'NFLX', color: '#EF4444' },
+        { label: 'AMD', color: '#7a1f1f' }, { label: 'INTC', color: '#5c1717' }, { label: 'CRM', color: '#22C55E' }, { label: 'ORCL', color: '#1e7d43' },
+      ],
+      stories: [
+        { title: 'Fed signals steady rates through Q3', source: 'Reuters', time: '18m ago' },
+        { title: 'Apple supplier reports strong iPhone demand', source: 'Bloomberg', time: '1h ago' },
+        { title: 'Tesla delivery numbers beat estimates', source: 'CNBC', time: '2h ago' },
+        { title: 'Chip stocks rally on AI capex outlook', source: 'WSJ', time: '4h ago' },
+      ],
+      quotes: [
+        { symbol: 'AAPL', change: '+1.24%', color: up, bars: [30,45,40,60,55,70,65,80].map(h => ({ h: h + '%' })) },
+        { symbol: 'TSLA', change: '−0.53%', color: down, bars: [70,60,65,50,55,40,45,35].map(h => ({ h: h + '%' })) },
+        { symbol: 'NVDA', change: '+2.81%', color: up, bars: [40,45,55,50,65,70,85,90].map(h => ({ h: h + '%' })) },
+        { symbol: 'MSFT', change: '+0.31%', color: up, bars: [55,50,60,55,58,62,60,64].map(h => ({ h: h + '%' })) },
+      ],
+      watchlistRows: [
+        { symbol: 'AAPL', initials: 'AA', price: '180.50', change: '+1.24%', color: up, score: '72/100', scoreBg: 'rgba(34,197,94,0.12)', scoreColor: up },
+        { symbol: 'TSLA', initials: 'TS', price: '241.10', change: '−0.53%', color: down, score: '54/100', scoreBg: 'rgba(253,212,88,0.12)', scoreColor: '#FDD458' },
+        { symbol: 'NVDA', initials: 'NV', price: '128.44', change: '+2.81%', color: up, score: '88/100', scoreBg: 'rgba(34,197,94,0.12)', scoreColor: up },
+        { symbol: 'MSFT', initials: 'MS', price: '441.02', change: '+0.31%', color: up, score: '61/100', scoreBg: 'rgba(253,212,88,0.12)', scoreColor: '#FDD458' },
+      ],
+      research: [
+        { symbol: 'AAPL', question: 'Should I add to my position before earnings?', confidence: '81%', confidenceLabel: '81%' },
+        { symbol: 'NVDA', question: 'Is the AI capex trade still intact?', confidence: '74%', confidenceLabel: '74%' },
+        { symbol: 'TSLA', question: 'Are delivery numbers a bullish signal?', confidence: '58%', confidenceLabel: '58%' },
+      ],
+    };
+  }
+}
+
+</script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+# Quant engine defaults — override via env or edit here.
+# No magic numbers in factor code; everything reads QuantConfig.
+
+lookbacks:
+  short_days: 20
+  medium_days: 60
+  long_days: 252
+  correlation_window_days: 90
+
+benchmarks:
+  primary: SPY
+  sector_map:
+    Technology: XLK
+    Financials: XLF
+    Healthcare: XLV
+    Energy: XLE
+    Consumer Discretionary: XLY
+    Consumer Staples: XLP
+    Industrials: XLI
+    Materials: XLB
+    Utilities: XLU
+    Real Estate: XLRE
+    Communication Services: XLC
+
+score_weights:
+  trend: 0.25
+  momentum: 0.20
+  volatility_inv: 0.15
+  volume: 0.10
+  relative: 0.15
+  quality: 0.10
+  event_penalty: 0.05
+
+rules:
+  trim_weight_threshold: 0.25
+  cash_reserve_min: 0.10
+  stop_loss_pct: -0.15
+  rsi_overbought: 80
+  rsi_oversold: 25
+  sector_max_weight: 0.40
+  correlation_cluster_threshold: 0.85
+
+data:
+  min_history_days_for_beta: 60
+  min_history_days_for_correlation: 30

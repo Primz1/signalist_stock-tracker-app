@@ -1,7 +1,9 @@
 'use server';
 import { auth } from "@/lib/better-auth/auth";
 import { inngest } from "../inngest/client";
-import {headers} from "next/headers";
+import { headers } from "next/headers";
+import { connectToDatabase } from "@/database/mongoose";
+import { saveUserProfileOnSignUp } from "@/lib/actions/userProfile.actions";
 
 export const signUpWithEmail = async ({ email, password, fullName, country, investmentGoals, riskTolerance, preferredIndustry }: SignUpFormData) => {
     try {
@@ -9,8 +11,20 @@ export const signUpWithEmail = async ({ email, password, fullName, country, inve
             body: { email, password, name: fullName }
         })
 
-        if (response) {
-            // Fire-and-forget: don't block sign-up if Inngest fails
+        if (response?.user?.id) {
+            try {
+                await connectToDatabase();
+                await saveUserProfileOnSignUp({
+                    userId: response.user.id,
+                    country,
+                    investmentGoals,
+                    riskTolerance,
+                    preferredIndustry,
+                });
+            } catch (profileErr) {
+                console.warn('Profile save failed (non-blocking):', profileErr);
+            }
+
             inngest.send({
                 name: 'app/user.created',
                 data: {

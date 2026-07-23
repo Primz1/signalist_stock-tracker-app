@@ -1,0 +1,1 @@
+export { SearchCommand } from './SearchCommand';

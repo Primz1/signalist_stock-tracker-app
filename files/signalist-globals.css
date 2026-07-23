@@ -1,0 +1,165 @@
+/* ---------------------------------------------------------------------------
+ * Signalist — globals additions
+ * Append to your existing globals.css / index.css.
+ * Assumes Tailwind v4 (@import "tailwindcss") + shadcn CSS-variable theme.
+ * ------------------------------------------------------------------------- */
+
+/* ---------- 1. Amber theme ---------- */
+/* Signalist's primary is amber (#FDD458). We override --primary so every
+ * shadcn component (buttons, focus rings, etc.) picks up the brand color
+ * automatically. Values are in HSL because that's what shadcn expects.
+ */
+
+:root,
+.dark {
+  /* Amber primary (#FDD458) */
+  --primary: 45 97% 67%;
+  /* Near-black text on amber CTAs */
+  --primary-foreground: 0 0% 4%;
+
+  /* Warm supporting hues used in gradients — expose as CSS vars so they
+   * can be referenced from Tailwind via `hsl(var(--warm))` etc. */
+  --warm-500: 24 95% 53%;   /* burnt orange #F97316 */
+  --warm-600: 20 91% 48%;   /* deeper burnt orange #EA580C */
+  --warm-400: 27 96% 61%;   /* soft orange #FB923C */
+  --gold-500: 45 93% 47%;   /* warm gold #EAB308 */
+}
+
+/* ---------- 2. Font ---------- */
+/* If Geist is already loaded via next/font, you can drop this. */
+.font-geist {
+  font-family: "Geist", "Geist Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* ---------- 3. Entrance animations ---------- */
+/* Elements start hidden (opacity 0, blurred, offset) and animate to their
+ * resting state via `animation-fill-mode: forwards` + delay classes.
+ */
+
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    filter: blur(4px);
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideRightIn {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateX(0);
+  }
+}
+
+@keyframes testimonialIn {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+    transform: translateY(16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-element {
+  opacity: 0;
+  filter: blur(4px);
+  transform: translateY(12px);
+  animation: fadeSlideIn 700ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.animate-slide-right {
+  opacity: 0;
+  filter: blur(6px);
+  transform: translateX(24px);
+  animation: slideRightIn 900ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.animate-testimonial {
+  opacity: 0;
+  filter: blur(6px);
+  transform: translateY(16px) scale(0.98);
+  animation: testimonialIn 800ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+/* Delay utilities used in the sign-in component */
+.animate-delay-100  { animation-delay:  100ms; }
+.animate-delay-200  { animation-delay:  200ms; }
+.animate-delay-300  { animation-delay:  300ms; }
+.animate-delay-400  { animation-delay:  400ms; }
+.animate-delay-500  { animation-delay:  500ms; }
+.animate-delay-600  { animation-delay:  600ms; }
+.animate-delay-700  { animation-delay:  700ms; }
+.animate-delay-800  { animation-delay:  800ms; }
+.animate-delay-900  { animation-delay:  900ms; }
+.animate-delay-1000 { animation-delay: 1000ms; }
+.animate-delay-1200 { animation-delay: 1200ms; }
+.animate-delay-1400 { animation-delay: 1400ms; }
+
+/* Respect users who ask for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-element,
+  .animate-slide-right,
+  .animate-testimonial {
+    animation: none;
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+}
+
+/* ---------- 4. Custom checkbox ---------- */
+/* Amber-filled, rounded, dark-mode friendly. */
+
+.custom-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 4px;
+  border: 1px solid hsl(var(--border));
+  background-color: hsl(var(--foreground) / 0.05);
+  cursor: pointer;
+  position: relative;
+  transition: background-color 150ms, border-color 150ms;
+}
+
+.custom-checkbox:hover {
+  border-color: hsl(var(--primary) / 0.6);
+}
+
+.custom-checkbox:checked {
+  background-color: hsl(var(--primary));
+  border-color: hsl(var(--primary));
+}
+
+.custom-checkbox:checked::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 4px;
+  height: 8px;
+  border: solid hsl(var(--primary-foreground));
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.custom-checkbox:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}

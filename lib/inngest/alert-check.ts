@@ -2,6 +2,9 @@ import { inngest } from "@/lib/inngest/client";
 import { connectToDatabase } from "@/database/mongoose";
 import { listActiveAlerts, Alert } from "@/database/models/alert.model";
 import { addAlertNotification } from "@/database/models/alertNotification.model";
+import { sendPriceAlertEmail } from "@/lib/nodemailer";
+import { getUserEmailById } from "@/lib/actions/userLookup";
+import { logError } from "@/lib/logger";
 
 const FINNHUB_BASE_URL = "https://finnhub.io/api/v1";
 const getToken = () => process.env.FINNHUB_API_KEY ?? process.env.NEXT_PUBLIC_FINNHUB_API_KEY ?? "";
@@ -122,7 +125,23 @@ const evaluateAlerts = async (alerts: Awaited<ReturnType<typeof listActiveAlerts
         triggeredAt: now,
       });
     } catch (err) {
-      console.error("alert notification insert failed", alert._id, err);
+      logError("alert notification insert failed", { alertId: String(alert._id) });
+    }
+
+    try {
+      const email = await getUserEmailById(alert.userId);
+      if (email) {
+        await sendPriceAlertEmail({
+          email,
+          symbol: symUpper,
+          company: alert.company,
+          condition: alert.condition,
+          threshold: alert.threshold,
+          price: quote.price,
+        });
+      }
+    } catch (err) {
+      logError("alert email failed", { alertId: String(alert._id) });
     }
 
     try {

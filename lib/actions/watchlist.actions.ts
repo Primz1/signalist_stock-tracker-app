@@ -4,10 +4,31 @@
 import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { connectToDatabase } from '@/database/mongoose';
-import { Watchlist, WatchlistItem, addWatchlistItem, listWatchlistItems, listWatchlistSymbols as listSymbolsOnly, removeWatchlistItem } from '@/database/models/watchlist.model';
+import { Watchlist, addWatchlistItem, listWatchlistItems, listWatchlistSymbols as listSymbolsOnly, removeWatchlistItem } from '@/database/models/watchlist.model';
 import { auth } from '@/lib/better-auth/auth';
 
 type ActionResult<T> = { success: true; data: T } | { success: false; message: string };
+
+export type SerializedWatchlistItem = {
+  _id?: string;
+  userId: string;
+  symbol: string;
+  company: string;
+  addedAt?: string;
+};
+
+const serializeWatchlistItem = (item: Record<string, unknown> | null | undefined): SerializedWatchlistItem => {
+  if (!item) {
+    return { userId: '', symbol: '', company: '' };
+  }
+  return {
+    _id: item._id != null ? String(item._id) : undefined,
+    userId: String(item.userId ?? ''),
+    symbol: String(item.symbol ?? '').toUpperCase(),
+    company: String(item.company ?? ''),
+    addedAt: item.addedAt ? new Date(item.addedAt as string | Date).toISOString() : undefined,
+  };
+};
 
 const getSessionUser = async () => {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -38,14 +59,17 @@ export async function getWatchlistSymbolsByEmail(email: string): Promise<string[
   }
 }
 
-export async function listWatchlist(): Promise<ActionResult<WatchlistItem[]>> {
+export async function listWatchlist(): Promise<ActionResult<SerializedWatchlistItem[]>> {
   try {
     const user = await getSessionUser();
     if (!user?.id) return { success: false, message: 'Not authenticated' };
 
     await connectToDatabase();
     const items = await listWatchlistItems(user.id);
-    return { success: true, data: items as unknown as WatchlistItem[] };
+    return {
+      success: true,
+      data: (items as Record<string, unknown>[]).map(serializeWatchlistItem),
+    };
   } catch (err) {
     console.error('listWatchlist error:', err);
     return { success: false, message: 'Failed to load watchlist' };
@@ -66,7 +90,10 @@ export async function listWatchlistSymbols(): Promise<ActionResult<string[]>> {
   }
 }
 
-export async function addToWatchlist(symbol: string, company: string): Promise<ActionResult<WatchlistItem>> {
+export async function addToWatchlist(
+  symbol: string,
+  company: string
+): Promise<ActionResult<SerializedWatchlistItem>> {
   if (!symbol?.trim() || !company?.trim()) {
     return { success: false, message: 'Symbol and company are required' };
   }
@@ -80,7 +107,7 @@ export async function addToWatchlist(symbol: string, company: string): Promise<A
     if (!item) return { success: false, message: 'Failed to add to watchlist' };
     revalidatePath('/watchlist');
     revalidatePath('/');
-    return { success: true, data: item as unknown as WatchlistItem };
+    return { success: true, data: serializeWatchlistItem(item as Record<string, unknown>) };
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Failed to add to watchlist';
     console.error('addToWatchlist error:', err);
@@ -88,7 +115,9 @@ export async function addToWatchlist(symbol: string, company: string): Promise<A
   }
 }
 
-export async function removeFromWatchlist(symbol: string): Promise<ActionResult<WatchlistItem>> {
+export async function removeFromWatchlist(
+  symbol: string
+): Promise<ActionResult<SerializedWatchlistItem>> {
   if (!symbol?.trim()) {
     return { success: false, message: 'Symbol is required' };
   }
@@ -101,7 +130,7 @@ export async function removeFromWatchlist(symbol: string): Promise<ActionResult<
     const removed = await removeWatchlistItem(user.id, symbol);
     revalidatePath('/watchlist');
     revalidatePath('/');
-    return { success: true, data: removed as unknown as WatchlistItem };
+    return { success: true, data: serializeWatchlistItem(removed as Record<string, unknown>) };
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Failed to remove from watchlist';
     console.error('removeFromWatchlist error:', err);

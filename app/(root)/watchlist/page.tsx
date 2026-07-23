@@ -1,19 +1,22 @@
-import { getNews, searchStocks, fetchJSON } from "@/lib/actions/finnhub.actions";
-import { listWatchlist, listWatchlistSymbols } from "@/lib/actions/watchlist.actions";
-import { listAlerts } from "@/lib/actions/alert.actions";
-import { getNotifications } from "@/lib/actions/alertNotification.actions";
-import WatchlistClient, { WatchlistEntry } from "./WatchlistClient";
+import WatchlistClient from '@/components/watchlist/WatchlistClient';
+import { getNews, searchStocks, fetchJSON } from '@/lib/actions/finnhub.actions';
+import { listWatchlist, listWatchlistSymbols } from '@/lib/actions/watchlist.actions';
+import { listAlerts } from '@/lib/actions/alert.actions';
+import { getNotifications } from '@/lib/actions/alertNotification.actions';
+import { connectToDatabase } from '@/database/mongoose';
+import { StockScoreModel } from '@/database/models/stockScore.model';
+import type { WatchlistEntry } from '@/components/watchlist/WatchlistClient';
 
 const FINNHUB_BASE_URL = 'https://finnhub.io/api/v1';
 
 const getToken = () => process.env.FINNHUB_API_KEY ?? process.env.NEXT_PUBLIC_FINNHUB_API_KEY ?? '';
 
 type QuoteResponse = {
-  c?: number; // current price
-  dp?: number; // percent change
-  v?: number; // volume
-  h?: number; // day high
-  l?: number; // day low
+  c?: number;
+  dp?: number;
+  v?: number;
+  h?: number;
+  l?: number;
 };
 
 type ProfileResponse = {
@@ -31,8 +34,8 @@ type MetricResponse = {
 type BinanceTicker = {
   lastPrice?: string;
   priceChangePercent?: string;
-  volume?: string; // base asset volume
-  quoteVolume?: string; // quote asset volume
+  volume?: string;
+  quoteVolume?: string;
   highPrice?: string;
   lowPrice?: string;
 };
@@ -53,10 +56,20 @@ const fetchBinanceTicker = async (symbol: string) => {
       const data = (await res.json()) as BinanceTicker;
       const price = data.lastPrice ? Number(data.lastPrice) : undefined;
       const changePercent = data.priceChangePercent ? Number(data.priceChangePercent) : undefined;
-      const volume = data.quoteVolume ? Number(data.quoteVolume) : data.volume ? Number(data.volume) : undefined;
+      const volume = data.quoteVolume
+        ? Number(data.quoteVolume)
+        : data.volume
+          ? Number(data.volume)
+          : undefined;
       const dayHigh = data.highPrice ? Number(data.highPrice) : undefined;
       const dayLow = data.lowPrice ? Number(data.lowPrice) : undefined;
-      if (price !== undefined || changePercent !== undefined || volume !== undefined || dayHigh !== undefined || dayLow !== undefined) {
+      if (
+        price !== undefined ||
+        changePercent !== undefined ||
+        volume !== undefined ||
+        dayHigh !== undefined ||
+        dayLow !== undefined
+      ) {
         return { price, changePercent, volume, dayHigh, dayLow } as Partial<WatchlistEntry>;
       }
     } catch {
@@ -95,19 +108,28 @@ const fetchMetricsForSymbol = async (symbol: string) => {
     for (const candidate of symbolCandidates) {
       if (!quote) {
         try {
-          quote = await fetchJSON<QuoteResponse>(`${FINNHUB_BASE_URL}/quote?symbol=${encodeURIComponent(candidate)}&token=${token}`, 120);
+          quote = await fetchJSON<QuoteResponse>(
+            `${FINNHUB_BASE_URL}/quote?symbol=${encodeURIComponent(candidate)}&token=${token}`,
+            120
+          );
         } catch {}
       }
 
       if (!isCrypto && !profile) {
         try {
-          profile = await fetchJSON<ProfileResponse>(`${FINNHUB_BASE_URL}/stock/profile2?symbol=${encodeURIComponent(candidate)}&token=${token}`, 3600);
+          profile = await fetchJSON<ProfileResponse>(
+            `${FINNHUB_BASE_URL}/stock/profile2?symbol=${encodeURIComponent(candidate)}&token=${token}`,
+            3600
+          );
         } catch {}
       }
 
       if (!isCrypto && !metric) {
         try {
-          metric = await fetchJSON<MetricResponse>(`${FINNHUB_BASE_URL}/stock/metric?symbol=${encodeURIComponent(candidate)}&metric=all&token=${token}`, 3600);
+          metric = await fetchJSON<MetricResponse>(
+            `${FINNHUB_BASE_URL}/stock/metric?symbol=${encodeURIComponent(candidate)}&metric=all&token=${token}`,
+            3600
+          );
         } catch {}
       }
     }
@@ -141,10 +163,16 @@ const WatchlistPage = async () => {
   const notificationsRaw = notificationsRes.success ? notificationsRes.data : [];
 
   const metricsBySymbol: Record<string, Partial<WatchlistEntry>> = {};
+  const scoresBySymbol: Record<string, number> = {};
   if (symbols.length > 0) {
     const metrics = await Promise.all(symbols.map((sym) => fetchMetricsForSymbol(sym)));
     symbols.forEach((sym, idx) => {
       metricsBySymbol[sym] = metrics[idx] || {};
+    });
+    await connectToDatabase();
+    const scores = await StockScoreModel.find({ symbol: { $in: symbols } }).lean();
+    scores.forEach((s) => {
+      scoresBySymbol[String(s.symbol).toUpperCase()] = s.score;
     });
   }
 
@@ -153,10 +181,10 @@ const WatchlistPage = async () => {
     const metrics = metricsBySymbol[symbolUpper] ?? {};
     const isCrypto = metrics.isCrypto ?? isCryptoSymbol(symbolUpper);
     return {
-      _id: item._id && typeof item._id === 'object' && 'toString' in item._id ? (item._id as any).toString() : (item._id as any) ?? undefined,
+      _id: item._id,
       symbol: symbolUpper,
       company: item.company,
-      addedAt: item.addedAt ? new Date(item.addedAt).toISOString() : undefined,
+      addedAt: item.addedAt,
       price: metrics.price,
       changePercent: metrics.changePercent,
       marketCap: metrics.marketCap,
@@ -165,37 +193,53 @@ const WatchlistPage = async () => {
       dayHigh: metrics.dayHigh,
       dayLow: metrics.dayLow,
       isCrypto,
+      aiScore: scoresBySymbol[symbolUpper],
     };
-  }).map((w) => ({ ...w }));
+  });
 
-  const alerts = alertsRaw.map((item: any) => ({
-    _id: typeof item._id === 'object' && 'toString' in item._id ? (item._id as any).toString() : (item._id as any) ?? undefined,
-    symbol: (item.symbol || '').toUpperCase(),
-    company: item.company,
-    alertName: item.alertName,
-    alertType: item.alertType ?? 'price',
-    condition: item.condition,
-    threshold: item.threshold,
-    frequency: item.frequency,
-    isActive: item.isActive,
-    createdAt: item.createdAt ? new Date(item.createdAt).toISOString() : undefined,
-    lastTriggeredAt: item.lastTriggeredAt ? new Date(item.lastTriggeredAt).toISOString() : undefined,
-    lastNotifiedAt: item.lastNotifiedAt ? new Date(item.lastNotifiedAt).toISOString() : undefined,
-    lastPrice: item.lastPrice,
-    lastChangePercent: item.lastChangePercent,
-  })).map((a) => ({ ...a }));
+  const alerts = alertsRaw
+    .map((item: any) => ({
+      _id:
+        typeof item._id === 'object' && 'toString' in item._id
+          ? (item._id as any).toString()
+          : ((item._id as any) ?? undefined),
+      symbol: (item.symbol || '').toUpperCase(),
+      company: item.company,
+      alertName: item.alertName,
+      alertType: item.alertType ?? 'price',
+      condition: item.condition,
+      threshold: item.threshold,
+      frequency: item.frequency,
+      isActive: item.isActive,
+      createdAt: item.createdAt ? new Date(item.createdAt).toISOString() : undefined,
+      lastTriggeredAt: item.lastTriggeredAt
+        ? new Date(item.lastTriggeredAt).toISOString()
+        : undefined,
+      lastNotifiedAt: item.lastNotifiedAt ? new Date(item.lastNotifiedAt).toISOString() : undefined,
+      lastPrice: item.lastPrice,
+      lastChangePercent: item.lastChangePercent,
+    }))
+    .map((a) => ({ ...a }));
 
-  const notifications = notificationsRaw.map((n: any) => ({
-    _id: typeof n._id === 'object' && 'toString' in n._id ? (n._id as any).toString() : (n._id as any) ?? undefined,
-    alertId: typeof n.alertId === 'object' && 'toString' in n.alertId ? (n.alertId as any).toString() : String(n.alertId ?? ''),
-    symbol: (n.symbol || '').toUpperCase(),
-    company: n.company,
-    message: n.message,
-    price: n.price,
-    changePercent: n.changePercent,
-    triggeredAt: n.triggeredAt ? new Date(n.triggeredAt).toISOString() : new Date().toISOString(),
-    read: Boolean(n.read),
-  })).map((n) => ({ ...n }));
+  const notifications = notificationsRaw
+    .map((n: any) => ({
+      _id:
+        typeof n._id === 'object' && 'toString' in n._id
+          ? (n._id as any).toString()
+          : ((n._id as any) ?? undefined),
+      alertId:
+        typeof n.alertId === 'object' && 'toString' in n.alertId
+          ? (n.alertId as any).toString()
+          : String(n.alertId ?? ''),
+      symbol: (n.symbol || '').toUpperCase(),
+      company: n.company,
+      message: n.message,
+      price: n.price,
+      changePercent: n.changePercent,
+      triggeredAt: n.triggeredAt ? new Date(n.triggeredAt).toISOString() : new Date().toISOString(),
+      read: Boolean(n.read),
+    }))
+    .map((n) => ({ ...n }));
 
   const initialStocks = await searchStocks(undefined, symbols);
   const news = await getNews(symbols.slice(0, 6));

@@ -135,7 +135,25 @@ const toWatchlistSet = (symbols?: string[]) => {
   return set;
 };
 
-export const searchStocks = async (query?: string, watchlistSymbols?: string[]): Promise<StockWithWatchlistStatus[]> => {
+export type SearchSymbolType = 'all' | 'stock' | 'etf' | 'crypto';
+
+export type SymbolSearchRow = StockWithWatchlistStatus & {
+  assetType: 'stock' | 'etf' | 'crypto';
+  isTradable: boolean;
+};
+
+const classifyAssetType = (type: string, symbol: string): 'stock' | 'etf' | 'crypto' => {
+  const t = (type || '').toLowerCase();
+  if (t.includes('crypto') || /USDT$|USDC$/.test(symbol)) return 'crypto';
+  if (t.includes('etf') || t.includes('etn')) return 'etf';
+  return 'stock';
+};
+
+export const searchStocks = async (
+  query?: string,
+  watchlistSymbols?: string[],
+  opts?: { type?: SearchSymbolType; limit?: number }
+): Promise<StockWithWatchlistStatus[]> => {
   try {
     const token = process.env.FINNHUB_API_KEY ?? NEXT_PUBLIC_FINNHUB_API_KEY;
     if (!token) {
@@ -144,6 +162,8 @@ export const searchStocks = async (query?: string, watchlistSymbols?: string[]):
     }
 
     const watchlistSet = toWatchlistSet(watchlistSymbols);
+    const typeFilter = opts?.type ?? 'all';
+    const limit = opts?.limit ?? 15;
 
     const trimmed = typeof query === 'string' ? query.trim() : '';
     let results: FinnhubSearchResultWithExchange[] = [];
@@ -233,23 +253,32 @@ export const searchStocks = async (query?: string, watchlistSymbols?: string[]):
         if (!symbol) return undefined;
         const exchangeFromDisplay = (r.displaySymbol as string | undefined) || undefined;
         const exchange = exchangeFromDisplay || r.__exchange || 'US';
+        const rawType = r.type || 'Stock';
+        const assetType = classifyAssetType(rawType, symbol);
         return {
           symbol,
           name: r.description || symbol,
           exchange,
-          type: r.type || 'Stock',
+          type: rawType,
+          assetType,
+          isTradable: assetType !== 'crypto' || /USDT$|USD$/.test(symbol),
           isInWatchlist: watchlistSet.has(symbol),
-        } as StockWithWatchlistStatus;
+        } as SymbolSearchRow;
       })
-      .filter((item): item is StockWithWatchlistStatus => Boolean(item));
+      .filter((item): item is SymbolSearchRow => Boolean(item))
+      .filter((item) => {
+        if (typeFilter === 'all') return true;
+        return item.assetType === typeFilter;
+      });
 
-    const deduped: StockWithWatchlistStatus[] = [];
+    const deduped: SymbolSearchRow[] = [];
     const seen = new Set<string>();
     for (const item of mapped) {
-      if (seen.has(item.symbol)) continue;
-      seen.add(item.symbol);
+      const key = `${item.symbol}|${item.exchange}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
       deduped.push(item);
-      if (deduped.length >= 15) break;
+      if (deduped.length >= limit) break;
     }
 
     return deduped;

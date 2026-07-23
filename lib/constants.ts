@@ -1,7 +1,10 @@
 export const NAV_ITEMS = [
     { href: '/', label: 'Dashboard' },
-    { href: '/search', label: 'Search' },
     { href: '/watchlist', label: 'Watchlist' },
+    { href: '/portfolio', label: 'Portfolio' },
+    { href: '/research', label: 'Research' },
+    { href: '/developers', label: 'API' },
+    { href: '/settings', label: 'Settings' },
 ];
 
 // Sign-up form select options
@@ -179,6 +182,20 @@ export const SYMBOL_INFO_WIDGET_CONFIG = (symbol: string) => ({
     height: 170,
 });
 
+export const MINI_CHART_WIDGET_CONFIG = (symbol: string) => ({
+    symbol: symbol.toUpperCase(),
+    width: '100%',
+    height: 220,
+    locale: 'en',
+    dateRange: '1M',
+    colorTheme: 'dark',
+    isTransparent: true,
+    autosize: false,
+    largeChartUrl: '',
+    chartOnly: false,
+    noTimeScale: false,
+});
+
 export const CANDLE_CHART_WIDGET_CONFIG = (symbol: string) => ({
     allow_symbol_change: false,
     calendar: false,
@@ -340,6 +357,7 @@ export const NO_MARKET_NEWS =
 export const WATCHLIST_TABLE_HEADER = [
     'Company',
     'Symbol',
+    'AI Score',
     'Price',
     'Change',
     'Market Cap',

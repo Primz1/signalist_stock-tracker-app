@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0A0A;position:relative;}
+*{box-sizing:border-box;}
+button{font-family:inherit;}
+button:focus-visible{outline:2px solid #FDD458;outline-offset:2px;}
+a{color:#A1A1A1;text-decoration:none;}
+a:hover{color:#FDD458;}
+body::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:0.05;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes toastIn{from{transform:translateY(12px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:#0A0A0A;font-family:'Geist',sans-serif;display:flex;justify-content:center;">
+<div style="width:{{ shellWidth }};min-height:100vh;background:#0A0A0A;">
+
+  <div style="height:56px;position:sticky;top:0;z-index:20;background:#141414;border-bottom:1px solid #242424;display:flex;align-items:center;padding:0 20px;gap:20px;">
+    <div style="display:flex;align-items:center;gap:8px;flex:none;">
+      <div style="width:26px;height:26px;border-radius:7px;background:#FDD458;display:flex;align-items:center;justify-content:center;font-weight:700;color:#0A0A0A;font-size:14px;">S</div>
+      <div style="font-weight:600;font-size:14px;color:#F5F5F5;">Signalist</div>
+    </div>
+    <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">
+    <button style="background:#0A0A0A;border:1px solid #2E2E2E;border-radius:8px;padding:7px 10px;display:flex;align-items:center;gap:8px;color:#6E6E6E;font-size:13px;cursor:pointer;width:280px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      <span style="flex:1;text-align:left;">Search stocks...</span><span style="font-size:11px;">⌘K</span>
+    </button>
+    <div style="display:flex;align-items:center;gap:24px;flex:1;">
+      <a href="#" style="font-size:13px;">Dashboard</a>
+      <div style="height:56px;display:flex;align-items:center;color:#F5F5F5;font-size:13px;font-weight:500;border-bottom:2px solid #FDD458;">Watchlist</div>
+      <a href="#" style="font-size:13px;">Portfolio</a>
+      <a href="#" style="font-size:13px;">Research</a>
+      <a href="#" style="font-size:13px;">API</a>
+      <a href="#" style="font-size:13px;">Settings</a>
+    </div>
+    </sc-if>
+    <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}"><div style="flex:1;"></div></sc-if>
+    <div style="display:flex;align-items:center;gap:14px;flex:none;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A1A1A1" stroke-width="1.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+      <div style="width:26px;height:26px;border-radius:50%;background:rgba(253,212,88,0.12);color:#F5F5F5;font-size:11px;font-weight:600;font-family:'Geist Mono',monospace;display:flex;align-items:center;justify-content:center;">JT</div>
+    </div>
+  </div>
+
+  <div style="padding:{{ bodyPadding }};display:flex;flex-direction:column;gap:24px;">
+
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div style="font-size:24px;line-height:32px;font-weight:600;color:#F5F5F5;">Watchlist</div>
+      <button onClick="{{ openAlertDialog }}" style="background:#FDD458;color:#0A0A0A;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        Add to watchlist
+      </button>
+    </div>
+
+    <div style="display:grid;grid-template-columns:{{ mainCols }};gap:20px;align-items:start;">
+
+      <div style="display:flex;flex-direction:column;gap:20px;">
+
+        <!-- Table -->
+        <sc-if value="{{ hasData }}" hint-placeholder-val="{{ true }}">
+        <div style="background:#141414;border:1px solid #242424;border-radius:12px;overflow:hidden;">
+          <sc-for list="{{ rows }}" as="row" hint-placeholder-count="4">
+            <div style="display:grid;grid-template-columns:28px 1.6fr 0.8fr 1fr 1fr 0.9fr 1fr;align-items:center;gap:10px;padding:0 16px;height:56px;border-bottom:1px solid #1C1C1C;">
+              <button onClick="{{ askRemove }}" data-symbol="{{ row.symbol }}" aria-label="Remove from watchlist" style="background:none;border:none;cursor:pointer;padding:0;display:flex;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="#FDD458" stroke="none"><path d="M12 2l2.9 6.9 7.4.6-5.6 4.9 1.7 7.3L12 17.8l-6.4 3.9 1.7-7.3-5.6-4.9 7.4-.6z"></path></svg>
+              </button>
+              <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+                <div style="width:32px;height:32px;border-radius:50%;background:rgba(253,212,88,0.12);display:flex;align-items:center;justify-content:center;font-size:11px;font-family:'Geist Mono',monospace;color:#F5F5F5;font-weight:600;flex:none;">{{ row.initials }}</div>
+                <div style="min-width:0;">
+                  <div style="font-size:13px;color:#F5F5F5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ row.name }}</div>
+                  <div style="font-size:11px;color:#6E6E6E;text-transform:uppercase;">{{ row.exchange }}</div>
+                </div>
+              </div>
+              <div style="font-size:13px;font-family:'Geist Mono',monospace;color:#F5F5F5;">{{ row.symbol }}</div>
+              <div>
+                <span style="font-size:12px;font-family:'Geist Mono',monospace;padding:2px 8px;border-radius:20px;background:{{ row.scoreBg }};color:{{ row.scoreColor }};">{{ row.score }}</span>
+              </div>
+              <div style="font-size:14px;font-family:'Geist Mono',monospace;color:#F5F5F5;text-align:right;">{{ row.price }}</div>
+              <div style="font-size:13px;font-family:'Geist Mono',monospace;color:{{ row.changeColor }};display:flex;align-items:center;justify-content:flex-end;gap:4px;">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <sc-if value="{{ row.up }}" hint-placeholder-val="{{ true }}"><polyline points="18 15 12 9 6 15"></polyline></sc-if>
+                  <sc-if value="{{ row.downDir }}" hint-placeholder-val="{{ false }}"><polyline points="6 9 12 15 18 9"></polyline></sc-if>
+                </svg>
+                {{ row.change }}
+              </div>
+              <div style="text-align:right;">
+                <sc-if value="{{ row.hasAlert }}" hint-placeholder-val="{{ false }}">
+                  <span style="font-size:12px;font-family:'Geist Mono',monospace;color:#FDD458;display:inline-flex;align-items:center;gap:4px;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                    {{ row.alertThreshold }}
+                  </span>
+                </sc-if>
+                <sc-if value="{{ row.noAlert }}" hint-placeholder-val="{{ true }}">
+                  <button onClick="{{ openAlertDialog }}" style="background:none;border:1px dashed #2E2E2E;color:#6E6E6E;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;">+ Add alert</button>
+                </sc-if>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ noData }}" hint-placeholder-val="{{ false }}">
+        <div style="border:1px dashed #2E2E2E;background:#141414;border-radius:12px;padding:48px 32px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6E6E6E" stroke-width="1.5"><path d="M3 3v18h18"></path><path d="M18 9l-5 5-4-4-4 4"></path></svg>
+          <div style="font-size:16px;font-weight:600;color:#F5F5F5;margin-top:6px;">No symbols yet</div>
+          <div style="font-size:13px;color:#A1A1A1;max-width:280px;">Add a ticker to start tracking prices and signals.</div>
+          <button style="margin-top:8px;background:#FDD458;color:#0A0A0A;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;">Search stocks</button>
+        </div>
+        </sc-if>
+
+        <!-- News grid -->
+        <div>
+          <div style="font-size:16px;font-weight:600;color:#F5F5F5;margin-bottom:12px;">News</div>
+          <div style="display:grid;grid-template-columns:{{ newsCols }};gap:16px;">
+            <sc-for list="{{ news }}" as="n" hint-placeholder-count="3">
+              <div style="background:#141414;border:1px solid #242424;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:8px;">
+                <div style="display:flex;justify-content:space-between;font-size:11px;color:#6E6E6E;text-transform:uppercase;letter-spacing:0.02em;"><span>{{ n.source }}</span><span>{{ n.time }}</span></div>
+                <div style="font-size:15px;font-weight:600;color:#F5F5F5;line-height:20px;">{{ n.title }}</div>
+                <div style="font-size:12px;color:#A1A1A1;line-height:17px;">{{ n.summary }}</div>
+                <a href="#" style="font-size:12px;color:#FDD458;display:inline-flex;align-items:center;gap:4px;margin-top:4px;">Read more
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>
+                </a>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alerts rail -->
+      <div style="background:#141414;border:1px solid #242424;border-radius:12px;overflow:hidden;">
+        <div style="padding:14px 16px;border-bottom:1px solid #242424;display:flex;justify-content:space-between;align-items:center;">
+          <div style="font-size:14px;font-weight:600;color:#F5F5F5;">Alerts</div>
+          <button onClick="{{ openAlertDialog }}" style="background:#FDD458;color:#0A0A0A;border:none;border-radius:6px;padding:5px 9px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            New
+          </button>
+        </div>
+        <sc-for list="{{ alerts }}" as="a" hint-placeholder-count="2">
+          <div style="padding:12px 16px;border-bottom:1px solid #1C1C1C;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+              <div style="width:22px;height:22px;border-radius:50%;background:rgba(253,212,88,0.12);display:flex;align-items:center;justify-content:center;font-size:9px;font-family:'Geist Mono',monospace;color:#F5F5F5;font-weight:600;">{{ a.initials }}</div>
+              <div style="font-size:12px;color:#F5F5F5;flex:1;">{{ a.name }} <span style="color:#6E6E6E;">{{ a.symbol }}</span></div>
+              <span style="font-size:10px;color:#FDD458;background:rgba(253,212,88,0.12);border-radius:20px;padding:2px 6px;">{{ a.frequency }}</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div style="font-size:12px;color:#A1A1A1;display:flex;align-items:center;gap:4px;">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path></svg>
+                <span style="font-family:'Geist Mono',monospace;">{{ a.condition }}</span>
+              </div>
+              <div style="font-size:12px;font-family:'Geist Mono',monospace;color:{{ a.liveColor }};">{{ a.live }}</div>
+            </div>
+            <div style="display:flex;gap:6px;margin-top:8px;">
+              <button style="background:none;border:1px solid #2E2E2E;color:#A1A1A1;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;display:flex;align-items:center;gap:4px;">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+                Pause
+              </button>
+              <button onClick="{{ askDeleteAlert }}" style="background:none;border:1px solid #2E2E2E;color:#A1A1A1;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;display:flex;align-items:center;gap:4px;">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>
+                Delete
+              </button>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Price Alert Dialog -->
+  <sc-if value="{{ alertDialogOpen }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ closeAlertDialog }}" style="position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:50;display:flex;align-items:center;justify-content:center;">
+    <div onClick="{{ stop }}" style="width:100%;max-width:420px;background:#141414;border:1px solid #2E2E2E;border-radius:12px;padding:20px;">
+      <div style="font-size:16px;font-weight:600;color:#F5F5F5;margin-bottom:16px;">New price alert</div>
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <label style="display:flex;flex-direction:column;gap:6px;">
+          <span style="font-size:12px;color:#A1A1A1;">Name</span>
+          <input placeholder="AAPL breakout" style="background:#0A0A0A;border:1px solid #2E2E2E;border-radius:8px;padding:9px 11px;color:#F5F5F5;font-size:13px;font-family:inherit;"/>
+        </label>
+        <label style="display:flex;flex-direction:column;gap:6px;">
+          <span style="font-size:12px;color:#A1A1A1;">Symbol</span>
+          <input defaultValue="AAPL" style="background:#0A0A0A;border:1px solid #2E2E2E;border-radius:8px;padding:9px 11px;color:#F5F5F5;font-size:13px;font-family:'Geist Mono',monospace;"/>
+        </label>
+        <div style="display:flex;gap:10px;">
+          <label style="display:flex;flex-direction:column;gap:6px;flex:1;">
+            <span style="font-size:12px;color:#A1A1A1;">Condition</span>
+            <div style="display:flex;background:#0A0A0A;border:1px solid #2E2E2E;border-radius:8px;padding:3px;">
+              <button onClick="{{ setConditionGt }}" style="flex:1;background:{{ gtBg }};color:{{ gtColor }};border:none;border-radius:6px;padding:6px;font-size:14px;cursor:pointer;">&gt;</button>
+              <button onClick="{{ setConditionLt }}" style="flex:1;background:{{ ltBg }};color:{{ ltColor }};border:none;border-radius:6px;padding:6px;font-size:14px;cursor:pointer;">&lt;</button>
+            </div>
+          </label>
+          <label style="display:flex;flex-direction:column;gap:6px;flex:1;">
+            <span style="font-size:12px;color:#A1A1A1;">Threshold</span>
+            <input defaultValue="180.00" style="background:#0A0A0A;border:1px solid #2E2E2E;border-radius:8px;padding:9px 11px;color:#F5F5F5;font-size:13px;font-family:'Geist Mono',monospace;"/>
+          </label>
+        </div>
+        <label style="display:flex;flex-direction:column;gap:6px;">
+          <span style="font-size:12px;color:#A1A1A1;">Frequency</span>
+          <select style="background:#0A0A0A;border:1px solid #2E2E2E;border-radius:8px;padding:9px 11px;color:#F5F5F5;font-size:13px;font-family:inherit;">
+            <option>At most once per day</option><option>Every time</option><option>Once</option>
+          </select>
+        </label>
+        <div style="font-size:12px;color:#A1A1A1;background:#0A0A0A;border:1px solid #242424;border-radius:8px;padding:10px 12px;">
+          Alert when AAPL price is {{ conditionWord }} $180.00, at most once per day.
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:4px;">
+          <button onClick="{{ closeAlertDialog }}" style="background:none;border:1px solid #2E2E2E;color:#A1A1A1;border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer;">Cancel</button>
+          <button onClick="{{ createAlert }}" style="background:#FDD458;color:#0A0A0A;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;">Create alert</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- Confirm Dialog -->
+  <sc-if value="{{ confirmOpen }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ closeConfirm }}" style="position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:50;display:flex;align-items:center;justify-content:center;">
+    <div onClick="{{ stop }}" style="width:100%;max-width:360px;background:#141414;border:1px solid #2E2E2E;border-radius:12px;padding:20px;">
+      <div style="font-size:16px;font-weight:600;color:#F5F5F5;margin-bottom:8px;">{{ confirmTitle }}</div>
+      <div style="font-size:13px;color:#A1A1A1;margin-bottom:18px;">{{ confirmBody }}</div>
+      <div style="display:flex;justify-content:flex-end;gap:10px;">
+        <button onClick="{{ closeConfirm }}" style="background:none;border:1px solid #2E2E2E;color:#A1A1A1;border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer;">Cancel</button>
+        <button onClick="{{ confirmAction }}" style="background:#EF4444;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;">{{ confirmActionLabel }}</button>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- Toast -->
+  <sc-if value="{{ toastOpen }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed;bottom:24px;right:24px;z-index:60;background:#141414;border:1px solid #2E2E2E;border-left:2px solid {{ toastColor }};border-radius:8px;padding:12px 16px;display:flex;align-items:center;gap:10px;box-shadow:0 8px 24px rgba(0,0,0,0.4);animation:toastIn 0.22s cubic-bezier(0.2,0.8,0.2,1);">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="{{ toastColor }}" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    <span style="font-size:13px;color:#F5F5F5;">{{ toastMessage }}</span>
+  </div>
+  </sc-if>
+
+</div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:1100},&quot;viewport&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;desktop&quot;,&quot;options&quot;:[&quot;desktop&quot;,&quot;mobile&quot;],&quot;tsType&quot;:&quot;'desktop'|'mobile'&quot;,&quot;section&quot;:&quot;Layout&quot;},&quot;hasData&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Content&quot;}}">
+class Component extends DCLogic {
+  state = { alertDialogOpen: false, confirmOpen: false, confirmKind: null, confirmTarget: null, condition: 'gt', toastOpen: false, toastMessage: '' };
+
+  openAlertDialog = () => this.setState({ alertDialogOpen: true });
+  closeAlertDialog = () => this.setState({ alertDialogOpen: false });
+  stop = (e) => e.stopPropagation();
+  setConditionGt = () => this.setState({ condition: 'gt' });
+  setConditionLt = () => this.setState({ condition: 'lt' });
+  createAlert = () => { this.setState({ alertDialogOpen: false }); this.fireToast('Alert created for AAPL', '#FDD458'); };
+
+  askRemove = (e) => this.setState({ confirmOpen: true, confirmKind: 'remove', confirmTarget: e.currentTarget.getAttribute('data-symbol') });
+  askDeleteAlert = () => this.setState({ confirmOpen: true, confirmKind: 'delete-alert', confirmTarget: null });
+  closeConfirm = () => this.setState({ confirmOpen: false });
+  confirmAction = () => {
+    const kind = this.state.confirmKind, target = this.state.confirmTarget;
+    this.setState({ confirmOpen: false });
+    if (kind === 'remove') this.fireToast(target + ' removed from watchlist', '#EF4444');
+    else this.fireToast('Alert deleted', '#EF4444');
+  };
+  fireToast = (message, color) => {
+    this.setState({ toastOpen: true, toastMessage: message, toastColor: color });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.setState({ toastOpen: false }), 4000);
+  };
+
+  renderVals() {
+    const viewport = this.props.viewport || 'desktop';
+    const isMobile = viewport === 'mobile';
+    const hasData = this.props.hasData !== false;
+    const up = '#22C55E', down = '#EF4444';
+    const kind = this.state.confirmKind;
+    return {
+      isMobile, isDesktop: !isMobile,
+      shellWidth: isMobile ? '390px' : '100%',
+      bodyPadding: isMobile ? '20px 16px' : '28px 32px',
+      mainCols: isMobile ? '1fr' : '2fr 1fr',
+      newsCols: isMobile ? '1fr' : 'repeat(3,1fr)',
+      hasData, noData: !hasData,
+      openAlertDialog: this.openAlertDialog, closeAlertDialog: this.closeAlertDialog, stop: this.stop,
+      alertDialogOpen: this.state.alertDialogOpen,
+      setConditionGt: this.setConditionGt, setConditionLt: this.setConditionLt,
+      gtBg: this.state.condition === 'gt' ? '#1C1C1C' : 'transparent', gtColor: this.state.condition === 'gt' ? '#F5F5F5' : '#6E6E6E',
+      ltBg: this.state.condition === 'lt' ? '#1C1C1C' : 'transparent', ltColor: this.state.condition === 'lt' ? '#F5F5F5' : '#6E6E6E',
+      conditionWord: this.state.condition === 'gt' ? 'greater than' : 'less than',
+      createAlert: this.createAlert,
+      askRemove: this.askRemove, askDeleteAlert: this.askDeleteAlert,
+      confirmOpen: this.state.confirmOpen, closeConfirm: this.closeConfirm, confirmAction: this.confirmAction,
+      confirmTitle: kind === 'remove' ? 'Remove from watchlist?' : 'Delete alert?',
+      confirmBody: kind === 'remove' ? ('This removes ' + (this.state.confirmTarget || '') + ' and its alerts from your watchlist.') : 'You will stop receiving notifications for this alert.',
+      confirmActionLabel: kind === 'remove' ? 'Remove' : 'Delete',
+      toastOpen: this.state.toastOpen, toastMessage: this.state.toastMessage, toastColor: this.state.toastColor || '#FDD458',
+      rows: [
+        { symbol: 'AAPL', name: 'Apple Inc.', exchange: 'NASDAQ', initials: 'AA', price: '180.50', change: '+1.24%', changeColor: up, up: true, downDir: false, score: '72/100', scoreBg: 'rgba(34,197,94,0.12)', scoreColor: up, hasAlert: true, noAlert: false, alertThreshold: '> $185.00' },
+        { symbol: 'TSLA', name: 'Tesla, Inc.', exchange: 'NASDAQ', initials: 'TS', price: '241.10', change: '−0.53%', changeColor: down, up: false, downDir: true, score: '54/100', scoreBg: 'rgba(253,212,88,0.12)', scoreColor: '#FDD458', hasAlert: false, noAlert: true },
+        { symbol: 'NVDA', name: 'NVIDIA Corp.', exchange: 'NASDAQ', initials: 'NV', price: '128.44', change: '+2.81%', changeColor: up, up: true, downDir: false, score: '88/100', scoreBg: 'rgba(34,197,94,0.12)', scoreColor: up, hasAlert: false, noAlert: true },
+        { symbol: 'MSFT', name: 'Microsoft Corp.', exchange: 'NASDAQ', initials: 'MS', price: '441.02', change: '+0.31%', changeColor: up, up: true, downDir: false, score: '61/100', scoreBg: 'rgba(253,212,88,0.12)', scoreColor: '#FDD458', hasAlert: true, noAlert: false, alertThreshold: '< $420.00' },
+      ],
+      alerts: [
+        { initials: 'AA', name: 'Apple', symbol: 'AAPL', frequency: 'Daily', condition: '> $185.00', live: '$180.50', liveColor: '#FDD458' },
+        { initials: 'MS', name: 'Microsoft', symbol: 'MSFT', frequency: 'Once', condition: '< $420.00', live: '$441.02', liveColor: up },
+      ],
+      news: [
+        { source: 'Reuters', time: '18m ago', title: 'Apple supplier ramps output ahead of fall launch', summary: 'Component orders point to stronger-than-expected demand for the next iPhone cycle.' },
+        { source: 'Bloomberg', time: '1h ago', title: 'Tesla deliveries top estimates for the quarter', summary: 'Higher volumes in China offset softer demand in Europe, analysts say.' },
+        { source: 'CNBC', time: '3h ago', title: 'Chipmakers rally as AI capex guidance rises', summary: 'Hyperscalers signal continued spending on data center buildout through year-end.' },
+      ],
+    };
+  }
+}
+
+</script>
+</body>
+</html>
