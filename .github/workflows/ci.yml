@@ -9,6 +9,16 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
 
@@ -25,10 +35,11 @@ jobs:
 
       - run: npm run build
         env:
-          MONGODB_URI: mongodb://localhost:27017/test
+          MONGODB_URI: mongodb://127.0.0.1:27017/signalist_ci
           BETTER_AUTH_SECRET: ci-secret-min-32-chars-long-here
           BETTER_AUTH_URL: http://localhost:3000
           FINNHUB_API_KEY: ci-placeholder
+          NEXT_PUBLIC_FINNHUB_API_KEY: ci-placeholder
 
   test:
     runs-on: ubuntu-latest
@@ -43,13 +54,15 @@ jobs:
 
   ai-service:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ai-service
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install -r ai-service/requirements.txt
-      - run: pytest ai-service/tests -q
-        working-directory: ai-service
+      - run: pip install -r requirements.txt
+      - run: pytest tests quant/tests -q
         env:
           PYTHONPATH: .
