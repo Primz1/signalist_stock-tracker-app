@@ -1,0 +1,200 @@
+You are given a task to integrate an existing React component in the codebase
+
+The codebase should support:
+- shadcn project structure  
+- Tailwind CSS
+- Typescript
+
+If it doesn't, provide instructions on how to setup project via shadcn CLI, install Tailwind or Typescript.
+
+Determine the default path for components and styles. 
+If default path for components is not /components/ui, provide instructions on why it's important to create this folder
+Copy-paste this component to /components/ui folder:
+```tsx
+card-11.tsx
+import React from 'react';
+import { motion } from 'framer-motion';
+
+// --- TYPE DEFINITIONS ---
+// Defines the shape of a single news item object
+export interface NewsItem {
+  id: string | number;
+  imageUrl: string;
+  title: string;
+  date: string;
+  source: string;
+  href: string;
+}
+
+// Defines the props for the main component
+export interface LatestNewsCardProps {
+  /** The main title for the card, e.g., "Latest News" */
+  title: string;
+  /** The text for the "View All" link */
+  viewAllText?: string;
+  /** The URL for the "View All" link */
+  viewAllHref?: string;
+  /** An array of news items to display */
+  newsItems: NewsItem[];
+}
+
+// --- FRAMER MOTION VARIANTS ---
+// Animation variants for the list container to stagger children
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+// Animation variants for each list item
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      type: 'spring',
+      stiffness: 100,
+      damping: 10,
+    },
+  },
+};
+
+/**
+ * A responsive and theme-adaptive card component to display a list of news articles.
+ * Includes animations for item loading.
+ */
+export const LatestNewsCard: React.FC<LatestNewsCardProps> = ({
+  title,
+  viewAllText = 'View all',
+  viewAllHref = '#',
+  newsItems,
+}) => {
+  return (
+    <div className="w-full max-w-md rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
+      {/* Card Header */}
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-lg font-semibold">{title}</h2>
+        <a
+          href={viewAllHref}
+          className="text-sm font-medium text-primary transition-colors hover:text-primary/80"
+          aria-label="View all news"
+        >
+          {viewAllText}
+        </a>
+      </div>
+
+      {/* News List */}
+      <motion.ul
+        className="space-y-4"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        aria-label={`${title} list`}
+      >
+        {newsItems.map((item) => (
+          <motion.li key={item.id} variants={itemVariants}>
+            <a
+              href={item.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex items-center gap-4 rounded-lg p-2 transition-colors hover:bg-accent"
+            >
+              <img
+                src={item.imageUrl}
+                alt={`Image for ${item.title}`}
+                className="h-16 w-16 flex-shrink-0 rounded-md object-cover"
+              />
+              <div className="flex-grow">
+                <h3 className="font-medium leading-tight text-card-foreground">
+                  {item.title}
+                </h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {item.date} &bull; {item.source}
+                </p>
+              </div>
+            </a>
+          </motion.li>
+        ))}
+      </motion.ul>
+    </div>
+  );
+};
+
+demo.tsx
+import React from 'react';
+import { LatestNewsCard, NewsItem } from '@/components/ui/card-11';
+
+// --- MOCK DATA ---
+// Sample data to showcase the component's functionality.
+const sampleNewsItems: NewsItem[] = [
+  {
+    id: 1,
+    imageUrl: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=300',
+    title: 'Bank Indonesia Maintains Interest Rates at 3.5%',
+    date: 'June 10, 2024',
+    source: 'CNN Indonesia',
+    href: '#',
+  },
+  {
+    id: 2,
+    imageUrl: 'https://plus.unsplash.com/premium_photo-1683121825174-ff1620a5e387?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8b2lsfGVufDB8fDB8fHww?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=300',
+    title: 'Global Oil Prices Drop: Impacts on Mining Stocks',
+    date: 'June 9, 2024',
+    source: 'Kontan',
+    href: '#',
+  },
+  {
+    id: 3,
+    imageUrl: 'https://images.unsplash.com/photo-1556740738-b6a63e27c4df?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=300',
+    title: 'IDX Rises 2% After First Quarter Earnings Reports',
+    date: 'June 8, 2024',
+    source: 'CNBC Indonesia',
+    href: '#',
+  },
+];
+
+/**
+ * A demo page to display the LatestNewsCard component.
+ */
+const LatestNewsCardDemo = () => {
+  return (
+    <div className="flex min-h-screen w-full items-center justify-center bg-background p-4">
+      <LatestNewsCard
+        title="Latest News"
+        viewAllText="View all"
+        viewAllHref="#"
+        newsItems={sampleNewsItems}
+      />
+    </div>
+  );
+};
+
+export default LatestNewsCardDemo;
+```
+
+Install NPM dependencies:
+```bash
+framer-motion
+```
+
+Implementation Guidelines
+ 1. Analyze the component structure and identify all required dependencies
+ 2. Review the component's argumens and state
+ 3. Identify any required context providers or hooks and install them
+ 4. Questions to Ask
+ - What data/props will be passed to this component?
+ - Are there any specific state management requirements?
+ - Are there any required assets (images, icons, etc.)?
+ - What is the expected responsive behavior?
+ - What is the best place to use this component in the app?
+
+Steps to integrate
+ 0. Copy paste all the code above in the correct directories
+ 1. Install external dependencies
+ 2. Fill image assets with Unsplash stock images you know exist
+ 3. Use lucide-react icons for svgs or logos if component requires them

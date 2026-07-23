@@ -1,0 +1,453 @@
+You are given a task to integrate an existing React component in the codebase
+
+The codebase should support:
+- shadcn project structure  
+- Tailwind CSS
+- Typescript
+
+If it doesn't, provide instructions on how to setup project via shadcn CLI, install Tailwind or Typescript.
+
+Determine the default path for components and styles. 
+If default path for components is not /components/ui, provide instructions on why it's important to create this folder
+Copy-paste this component to /components/ui folder:
+```tsx
+interactive-empty-state.tsx
+import React, { memo, useId, forwardRef } from 'react';
+import { motion, LazyMotion, domAnimation } from 'framer-motion';
+
+const ICON_VARIANTS = {
+  left: {
+    initial: { scale: 0.8, opacity: 0, x: 0, y: 0, rotate: 0 },
+    animate: { scale: 1, opacity: 1, x: 0, y: 0, rotate: -6, transition: { duration: 0.4, delay: 0.1 } },
+    hover: { x: -22, y: -5, rotate: -15, scale: 1.1, transition: { duration: 0.2 } }
+  },
+  center: {
+    initial: { scale: 0.8, opacity: 0 },
+    animate: { scale: 1, opacity: 1, transition: { duration: 0.4, delay: 0.2 } },
+    hover: { y: -10, scale: 1.15, transition: { duration: 0.2 } }
+  },
+  right: {
+    initial: { scale: 0.8, opacity: 0, x: 0, y: 0, rotate: 0 },
+    animate: { scale: 1, opacity: 1, x: 0, y: 0, rotate: 6, transition: { duration: 0.4, delay: 0.3 } },
+    hover: { x: 22, y: -5, rotate: 15, scale: 1.1, transition: { duration: 0.2 } }
+  }
+};
+
+const CONTENT_VARIANTS = {
+  initial: { y: 20, opacity: 0 },
+  animate: { y: 0, opacity: 1, transition: { duration: 0.4, delay: 0.2 } },
+};
+
+const BUTTON_VARIANTS = {
+  initial: { y: 20, opacity: 0 },
+  animate: { y: 0, opacity: 1, transition: { duration: 0.4, delay: 0.3 } },
+};
+
+export const cn = (...classes) => classes.filter(Boolean).join(' ');
+
+const IconContainer = memo(({ children, variant, className = '', theme }) => (
+  <motion.div
+    variants={ICON_VARIANTS[variant]}
+    className={cn(
+      "w-12 h-12 rounded-xl flex items-center justify-center relative shadow-lg transition-all duration-300",
+      theme === 'dark' && "bg-neutral-800 border border-neutral-700 group-hover:shadow-xl group-hover:border-neutral-600",
+      theme === 'neutral' && "bg-stone-100 border border-stone-200 group-hover:shadow-xl group-hover:border-stone-300",
+      (!theme || theme === 'light') && "bg-white border border-gray-200 group-hover:shadow-xl group-hover:border-gray-300",
+      className
+    )}
+  >
+    <div className={cn(
+      "text-sm transition-colors duration-300",
+      theme === 'dark' && "text-neutral-400 group-hover:text-neutral-200",
+      theme === 'neutral' && "text-stone-500 group-hover:text-stone-700",
+      (!theme || theme === 'light') && "text-gray-500 group-hover:text-gray-700"
+    )}>
+      {children}
+    </div>
+  </motion.div>
+));
+IconContainer.displayName = "IconContainer";
+
+const MultiIconDisplay = memo(({ icons, theme }) => {
+  if (!icons || icons.length < 3) return null;
+
+  return (
+    <div className="flex justify-center isolate relative">
+      <IconContainer variant="left" className="left-2 top-1 z-10" theme={theme}>
+        {icons[0]}
+      </IconContainer>
+      <IconContainer variant="center" className="z-20" theme={theme}>
+        {icons[1]}
+      </IconContainer>
+      <IconContainer variant="right" className="right-2 top-1 z-10" theme={theme}>
+        {icons[2]}
+      </IconContainer>
+    </div>
+  );
+});
+MultiIconDisplay.displayName = "MultiIconDisplay";
+
+const Background = ({ theme }) => (
+  <div
+    aria-hidden="true"
+    className="absolute inset-0 opacity-0 group-hover:opacity-[0.02] transition-opacity duration-500"
+    style={{
+      backgroundImage: `radial-gradient(circle at 2px 2px, #fff 1px, transparent 1px)`,
+      backgroundSize: '24px 24px'
+    }}
+  />
+);
+
+export const EmptyState = forwardRef(({
+  title,
+  description,
+  icons,
+  action,
+  variant = 'default',
+  size = 'default',
+  theme = 'light',
+  isIconAnimated = true,
+  className = '',
+  ...props
+}, ref) => {
+  const titleId = useId();
+  const descriptionId = useId();
+
+  const baseClasses = "group transition-all duration-300 rounded-xl relative overflow-hidden text-center flex flex-col items-center justify-center";
+
+  const sizeClasses = {
+    sm: "p-6",
+    default: "p-8",
+    lg: "p-12"
+  };
+
+  const getVariantClasses = (variant, theme) => {
+    const variants = {
+      default: {
+        light: "bg-white border-dashed border-2 border-gray-300 hover:border-gray-400 hover:bg-gray-50/50",
+        dark: "bg-neutral-900 border-dashed border-2 border-neutral-700 hover:border-neutral-600 hover:bg-neutral-800/50",
+        neutral: "bg-stone-50 border-dashed border-2 border-stone-300 hover:border-stone-400 hover:bg-stone-100/50"
+      },
+      subtle: {
+        light: "bg-white border border-transparent hover:bg-gray-50/30",
+        dark: "bg-neutral-900 border border-transparent hover:bg-neutral-800/30",
+        neutral: "bg-stone-50 border border-transparent hover:bg-stone-100/30"
+      },
+      error: {
+        light: "bg-white border border-red-200 bg-red-50/50 hover:bg-red-50/80",
+        dark: "bg-neutral-900 border border-red-800 bg-red-950/50 hover:bg-red-950/80",
+        neutral: "bg-stone-50 border border-red-300 bg-red-50/50 hover:bg-red-50/80"
+      }
+    };
+    return variants[variant][theme];
+  };
+
+  const getTextClasses = (type, size, theme) => {
+    const sizes = {
+      title: {
+        sm: "text-base",
+        default: "text-lg",
+        lg: "text-xl"
+      },
+      description: {
+        sm: "text-xs",
+        default: "text-sm",
+        lg: "text-base"
+      }
+    };
+
+    const colors = {
+      title: {
+        light: "text-gray-900",
+        dark: "text-neutral-100",
+        neutral: "text-stone-900"
+      },
+      description: {
+        light: "text-gray-600",
+        dark: "text-neutral-400",
+        neutral: "text-stone-600"
+      }
+    };
+
+    return cn(sizes[type][size], colors[type][theme], "font-semibold transition-colors duration-200");
+  };
+
+  const getButtonClasses = (size, theme) => {
+    const sizeClasses = {
+      sm: "text-xs px-3 py-1.5",
+      default: "text-sm px-4 py-2",
+      lg: "text-base px-6 py-3"
+    };
+
+    const themeClasses = {
+      light: "border-gray-300 bg-white hover:bg-gray-50 text-gray-700",
+      dark: "border-neutral-600 bg-neutral-800 hover:bg-neutral-700 text-neutral-200",
+      neutral: "border-stone-300 bg-stone-100 hover:bg-stone-200 text-stone-700"
+    };
+
+    return cn(
+      "inline-flex items-center gap-2 border rounded-md font-medium shadow-sm hover:shadow-md transition-all duration-200 relative overflow-hidden group/button disabled:opacity-50 disabled:cursor-not-allowed",
+      sizeClasses[size],
+      themeClasses[theme]
+    );
+  };
+
+  return (
+    <LazyMotion features={domAnimation}>
+      <motion.section
+        ref={ref}
+        role="region"
+        aria-labelledby={titleId}
+        aria-describedby={descriptionId}
+        className={cn(
+          baseClasses,
+          sizeClasses[size],
+          getVariantClasses(variant, theme),
+          className
+        )}
+        initial="initial"
+        animate="animate"
+        whileHover={isIconAnimated ? "hover" : "animate"}
+        {...props}
+      >
+        <Background theme={theme} />
+        <div className="relative z-10 flex flex-col items-center">
+          {icons && (
+            <div className="mb-6">
+              <MultiIconDisplay icons={icons} theme={theme} />
+            </div>
+          )}
+
+          <motion.div variants={CONTENT_VARIANTS} className="space-y-2 mb-6">
+            <h2 id={titleId} className={getTextClasses('title', size, theme)}>
+              {title}
+            </h2>
+            {description && (
+              <p
+                id={descriptionId}
+                className={cn(
+                  getTextClasses('description', size, theme).replace('font-semibold', ''),
+                  "max-w-md leading-relaxed"
+                )}
+              >
+                {description}
+              </p>
+            )}
+          </motion.div>
+
+          {action && (
+            <motion.div variants={BUTTON_VARIANTS}>
+              <motion.button
+                type="button"
+                onClick={action.onClick}
+                disabled={action.disabled}
+                className={getButtonClasses(size, theme)}
+                whileTap={{ scale: 0.98 }}
+              >
+                {action.icon && (
+                  <motion.div
+                    className="transition-transform group-hover/button:rotate-90"
+                    whileHover={{ rotate: 90 }}
+                  >
+                    {action.icon}
+                  </motion.div>
+                )}
+                <span className="relative z-10">{action.label}</span>
+              </motion.button>
+            </motion.div>
+          )}
+        </div>
+      </motion.section>
+    </LazyMotion>
+  );
+});
+EmptyState.displayName = "EmptyState";
+
+
+demo.tsx
+import React, { memo, useCallback, useId, forwardRef } from 'react';
+import {cn, EmptyState } from "@/components/ui/interactive-empty-state";
+import { motion } from 'framer-motion';
+import { 
+  Plus, 
+  GraduationCap, 
+  Code, 
+  FolderOpen, 
+  Palette,
+  Moon,
+  ShieldAlert,
+  XCircle,
+  Bookmark,Library,MousePointerClick,
+  Sun,
+  Briefcase, 
+  AlertCircle,
+  Code2,
+  Wrench,
+  Zap,
+  Rocket,
+  TrendingUp,
+  Award,
+  BookOpen,
+  Medal
+} from 'lucide-react';
+
+export default function EmptyStateShowcase() {
+  const [theme, setTheme] = React.useState('light');
+  
+  const handleAction = useCallback((section) => {
+    console.log(`Action triggered for: ${section}`);
+  }, []);
+
+  const motionDiv = (delay, children) => (
+    <motion.div 
+      initial={{ y: 40, opacity: 0 }} 
+      animate={{ y: 0, opacity: 1 }} 
+      transition={{ duration: 0.6, delay }}
+    >
+      {children}
+    </motion.div>
+  );
+
+  const getBackgroundClass = () => {
+    switch(theme) {
+      case 'dark': return 'bg-neutralslate-950';
+      case 'neutral': return 'bg-stone-100';
+      default: return 'bg-gray-100';
+    }
+  };
+
+  const getTitleClass = () => {
+    switch(theme) {
+      case 'dark': return 'text-neutral-100';
+      case 'neutral': return 'text-stone-900';
+      default: return 'text-gray-900';
+    }
+  };
+
+  const getSubtitleClass = () => {
+    switch(theme) {
+      case 'dark': return 'text-neutral-400';
+      case 'neutral': return 'text-stone-600';
+      default: return 'text-gray-600';
+    }
+  };
+
+  const getFooterClass = () => {
+    switch(theme) {
+      case 'dark': return 'text-neutral-500';
+      case 'neutral': return 'text-stone-500';
+      default: return 'text-gray-500';
+    }
+  };
+
+  return (
+    <div className={cn("min-h-screen font-sans p-4 sm:p-8", getBackgroundClass())}>
+      <div className="max-w-7xl mx-auto">
+        <header className="text-center mb-12">    
+          <motion.p 
+            initial={{ y: -20, opacity: 0 }} 
+            animate={{ y: 0, opacity: 1 }} 
+            transition={{ duration: 0.6, delay: 0.1 }} 
+            className={cn("text-base sm:text-lg max-w-3xl mx-auto", getSubtitleClass())}
+          >
+            Optimized, accessible, and fully customizable empty state component with theme support.
+          </motion.p>
+        </header>
+
+        <main className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {motionDiv(0.2, 
+            <EmptyState
+              theme={theme}
+              title="No Projects Added"
+              description="Showcase your work by adding personal projects, open-source contributions, or other achievements."
+              icons={[<FolderOpen key="p1" className="h-6 w-6" />, <Code2 key="p2" className="h-6 w-6" />, <Rocket key="p3" className="h-6 w-6" />]}
+              action={{ label: "Add Project", icon: <Plus className="h-4 w-4" />, onClick: () => handleAction("Projects") }}
+            />
+          )}
+          
+          {motionDiv(0.3,
+            <EmptyState
+              theme={theme}
+              size="sm"
+              title="Small Size Variant"
+              description="This example uses the 'sm' size prop for more compact spaces."
+              icons={[<Code key="s1" className="h-6 w-6" />, <Wrench key="s2" className="h-6 w-6" />, <Zap key="s3" className="h-6 w-6" />]}
+              action={{ label: "Add Skill", icon: <Plus className="h-4 w-4" />, onClick: () => handleAction("Skills") }}
+            />
+          )}
+
+          {motionDiv(0.4,
+            <EmptyState
+              theme={theme}
+              variant="subtle"
+              title="Subtle Variant"
+              description="This uses the subtle variant with minimal borders and backgrounds for a cleaner look."
+              icons={[<Briefcase key="e1" className="h-6 w-6" />, <TrendingUp key="e2" className="h-6 w-6" />, <Award key="e3" className="h-6 w-6" />]}
+              action={{ label: "Add Position", icon: <Plus className="h-4 w-4" />, onClick: () => handleAction("Experience") }}
+            />
+          )}
+
+          {motionDiv(0.5,
+            <EmptyState
+              theme={theme}
+              size="lg"
+              title="Large Size"
+              description="Add your degrees and academic achievements to showcase your qualifications."
+              icons={[<GraduationCap key="ed1" className="h-6 w-6" />, <BookOpen key="ed2" className="h-6 w-6" />, <Medal key="ed3" className="h-6 w-6" />]}
+              action={{ label: "Add Education", icon: <Plus className="h-4 w-4" />, onClick: () => handleAction("Education") }}
+            />
+          )}
+
+          {motionDiv(0.6,
+            <EmptyState
+              theme={theme}
+              variant="error"
+              title="Error State"
+              description="Something went wrong while loading your data. Please try again."
+              icons={[<AlertCircle key="err1" className="h-6 w-6" />, <ShieldAlert key="err2" className="h-6 w-6" />, <XCircle key="err3" className="h-6 w-6" />]}
+              action={{ label: "Retry", onClick: () => handleAction("Retry") }}
+            />
+          )}
+
+          {motionDiv(0.7,
+            <EmptyState
+              theme={theme}
+              isIconAnimated={false}
+              title="Static Icons"
+              description="This example has animations disabled and shows a reading list state."
+              icons={[<BookOpen key="rl1" className="h-6 w-6" />, <Bookmark key="rl2" className="h-6 w-6" />, <Library key="rl3" className="h-6 w-6" />]}
+              action={{ 
+                label: "Explore Books", 
+                icon: <MousePointerClick className="h-4 w-4" />, 
+                onClick: () => handleAction("Explore")
+              }}
+            />
+          )}
+        </main>
+      </div>
+    </div>
+  );
+}
+```
+
+Install NPM dependencies:
+```bash
+framer-motion
+```
+
+Implementation Guidelines
+ 1. Analyze the component structure and identify all required dependencies
+ 2. Review the component's argumens and state
+ 3. Identify any required context providers or hooks and install them
+ 4. Questions to Ask
+ - What data/props will be passed to this component?
+ - Are there any specific state management requirements?
+ - Are there any required assets (images, icons, etc.)?
+ - What is the expected responsive behavior?
+ - What is the best place to use this component in the app?
+
+Steps to integrate
+ 0. Copy paste all the code above in the correct directories
+ 1. Install external dependencies
+ 2. Fill image assets with Unsplash stock images you know exist
+ 3. Use lucide-react icons for svgs or logos if component requires them

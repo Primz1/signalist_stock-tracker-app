@@ -1,0 +1,310 @@
+You are given a task to integrate an existing React component in the codebase
+
+The codebase should support:
+- shadcn project structure  
+- Tailwind CSS
+- Typescript
+
+If it doesn't, provide instructions on how to setup project via shadcn CLI, install Tailwind or Typescript.
+
+Determine the default path for components and styles. 
+If default path for components is not /components/ui, provide instructions on why it's important to create this folder
+Copy-paste this component to /components/ui folder:
+```tsx
+empty5.tsx
+import { Button } from "@/components/ui/button";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+
+export default function EmptyComponent() {
+  return (
+    <Empty>
+      <EmptyHeader>
+        <EmptyMedia>
+          <img
+            className="w-40 grayscale dark:invert"
+            src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iNzIwIiBoZWlnaHQ9IjYwNi40NjUiIHZpZXdCb3g9IjAgMCA3MjAgNjA2LjQ2NSIgcm9sZT0iaW1nIiBhcnRpc3Q9IkthdGVyaW5hIExpbXBpdHNvdW5pIiBzb3VyY2U9Imh0dHBzOi8vdW5kcmF3LmNvLyI+PGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoLTYzOS43NSAtMjgyLjA2MykiPjxyZWN0IHdpZHRoPSI0NjkiIGhlaWdodD0iMTA5IiByeD0iOCIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoNzY4Ljc1IDc3OS41MjcpIiBmaWxsPSIjZmZmIiBvcGFjaXR5PSIwLjI5OSIvPjxwYXRoIGQ9Ik0xMS4zODQsMi44NDZhOC41NDgsOC41NDgsMCwwLDAtOC41MzgsOC41MzhWOTYuNzY4YTguNTQ4LDguNTQ4LDAsMCwwLDguNTM4LDguNTM4SDQ1OC4yMjRhOC41NDgsOC41NDgsMCwwLDAsOC41MzgtOC41MzhWMTEuMzg0YTguNTQ4LDguNTQ4LDAsMCwwLTguNTM4LTguNTM4SDExLjM4NG0wLTIuODQ2SDQ1OC4yMjRhMTEuMzg0LDExLjM4NCwwLDAsMSwxMS4zODQsMTEuMzg0Vjk2Ljc2OGExMS4zODQsMTEuMzg0LDAsMCwxLTExLjM4NCwxMS4zODRIMTEuMzg0QTExLjM4NCwxMS4zODQsMCwwLDEsMCw5Ni43NjhWMTEuMzg0QTExLjM4NCwxMS4zODQsMCwwLDEsMTEuMzg0LDBaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSg3NjguMTgxIDc4MC4wNDMpIiBmaWxsPSIjMDkwODE0Ii8+PHJlY3Qgd2lkdGg9IjQ2OSIgaGVpZ2h0PSIxMDgiIHJ4PSI4IiB0cmFuc2Zvcm09InRyYW5zbGF0ZSg3NjguNzUgNTY5LjUyNykiIGZpbGw9IiNmZmYiIG9wYWNpdHk9IjAuMjk5Ii8+PHBhdGggZD0iTTExLjM4NCwyLjg0NmE4LjU0OCw4LjU0OCwwLDAsMC04LjUzOCw4LjUzOFY5Ni43NjhhOC41NDgsOC41NDgsMCwwLDAsOC41MzgsOC41MzhINDU4LjIyNGE4LjU0OCw4LjU0OCwwLDAsMCw4LjUzOC04LjUzOFYxMS4zODRhOC41NDgsOC41NDgsMCwwLDAtOC41MzgtOC41MzhIMTEuMzg0bTAtMi44NDZINDU4LjIyNGExMS4zODQsMTEuMzg0LDAsMCwxLDExLjM4NCwxMS4zODRWOTYuNzY4YTExLjM4NCwxMS4zODQsMCwwLDEtMTEuMzg0LDExLjM4NEgxMS4zODRBMTEuMzg0LDExLjM4NCwwLDAsMSwwLDk2Ljc2OFYxMS4zODRBMTEuMzg0LDExLjM4NCwwLDAsMSwxMS4zODQsMFoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDc2OC4xODEgNTY5LjQzMSkiIGZpbGw9IiMwOTA4MTQiLz48cGF0aCBkPSJNNTQ4LjY3NSwyMzUuMjMzaC0yLjg0NlYxMjguNDQzSDM0Mi44MlYxMjUuNkg1NDguNjc1WiIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMzY4LjE4MiAzMzUuMTk3KSIgZmlsbD0iIzNmM2Q1NiIvPjxjaXJjbGUgY3g9IjM5LjUzMiIgY3k9IjM5LjUzMiIgcj0iMzkuNTMyIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSg2MzkuNzUgNDE0LjQwNykiIGZpbGw9IiM2YzYzZmYiLz48cGF0aCBkPSJNNTIxLjksMzU2LjUzNWE0LjQsNC40LDAsMCwxLTMuNTE4LTEuNzU5TDUwNy42LDM0MC40YTQuNCw0LjQsMCwwLDEsNy4wMzYtNS4yNzdsNy4wNTYsOS40MDcsMTguMTIyLTI3LjE4M2E0LjQsNC40LDAsMCwxLDcuMzE4LDQuODc5bC0yMS41NywzMi4zNTVhNC40LDQuNCwwLDAsMS0zLjUzNywxLjk1N1oiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDE1MS45ODcgMTE3Ljk4KSIgZmlsbD0iI2ZmZiIvPjxwYXRoIGQ9Ik02MDYuOTMsMjM1LjIzM2gtMi44NDZWMTI1LjZIODA5LjkzOXYyLjg0Nkg2MDYuOTNaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSg0NzguNzEyIDMzNS4xOTcpIiBmaWxsPSIjM2YzZDU2Ii8+PGNpcmNsZSBjeD0iMzkuNTMyIiBjeT0iMzkuNTMyIiByPSIzOS41MzIiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDEyODAuNjg1IDQxNC40MDcpIiBmaWxsPSIjNmM2M2ZmIi8+PHBhdGggZD0iTTk3Mi4zLDM1Ni41MzVhNC40LDQuNCwwLDAsMS0zLjUxOC0xLjc1OUw5NTcuOTkzLDM0MC40YTQuNCw0LjQsMCwxLDEsNy4wMzYtNS4yNzdsNy4wNTYsOS40MDcsMTguMTIyLTI3LjE4M2E0LjQsNC40LDAsMSwxLDcuMzE4LDQuODc5bC0yMS41NywzMi4zNTVhNC40LDQuNCwwLDAsMS0zLjUzNywxLjk1N1oiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDM0Mi41MjkgMTE3Ljk4KSIgZmlsbD0iI2ZmZiIvPjxyZWN0IHdpZHRoPSIyLjg0NiIgaGVpZ2h0PSIyMjcuMzI4IiB0cmFuc2Zvcm09InRyYW5zbGF0ZSg5OTguNDAzIDM0My4xMDQpIiBmaWxsPSIjM2YzZDU2Ii8+PGNpcmNsZSBjeD0iMzkuNTMyIiBjeT0iMzkuNTMyIiByPSIzOS41MzIiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDk2NC4yMDcgMjgyLjA2MykiIGZpbGw9IiM2YzYzZmYiLz48cGF0aCBkPSJNNzQ5LjksMjYzLjUzNWE0LjQsNC40LDAsMCwxLTMuNTE4LTEuNzU5TDczNS42LDI0Ny40YTQuNCw0LjQsMCwwLDEsNy4wMzYtNS4yNzdsNy4wNTYsOS40MDcsMTguMTIyLTI3LjE4M2E0LjQsNC40LDAsMCwxLDcuMzE4LDQuODc5bC0yMS41NywzMi4zNTVhNC40LDQuNCwwLDAsMS0zLjUzNywxLjk1N1oiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDI0OC40NDQgNzguNjM2KSIgZmlsbD0iI2ZmZiIvPjxwYXRoIGQ9Ik02MjMuMDg3LDQ3NC43NDFhOS45NzMsOS45NzMsMCwwLDEtOS45NjEtOS45NjFWNDM5LjE2NWE5Ljk2MSw5Ljk2MSwwLDAsMSwxOS45MjMsMFY0NjQuNzhBOS45NzMsOS45NzMsMCwwLDEsNjIzLjA4Nyw0NzQuNzQxWiIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMTk3LjAwMyAxNzEuNDY4KSIgZmlsbD0iIzZjNjNmZiIvPjxwYXRoIGQ9Ik02NDMuMDg3LDQ3NC43NDFhOS45NzMsOS45NzMsMCwwLDEtOS45NjEtOS45NjFWNDM5LjE2NWE5Ljk2MSw5Ljk2MSwwLDAsMSwxOS45MjMsMFY0NjQuNzhhOS45NzMsOS45NzMsMCwwLDEtOS45NjIsOS45NjFaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgyMDUuNDY0IDE3MS40NjgpIiBmaWxsPSIjNmM2M2ZmIi8+PHBhdGggZD0iTTY2My4wODcsNDc0Ljc0MWE5Ljk3Myw5Ljk3MywwLDAsMS05Ljk2MS05Ljk2MVY0MzkuMTY1YTkuOTYxLDkuOTYxLDAsMCwxLDE5LjkyMywwVjQ2NC43OEE5Ljk3Myw5Ljk3MywwLDAsMSw2NjMuMDg3LDQ3NC43NDFaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgyMTMuOTI1IDE3MS40NjgpIiBmaWxsPSIjNmM2M2ZmIi8+PHBhdGggZD0iTTY4My4wODcsNDc0Ljc0MWE5Ljk3Myw5Ljk3MywwLDAsMS05Ljk2Mi05Ljk2MVY0MzkuMTY1YTkuOTYxLDkuOTYxLDAsMCwxLDE5LjkyMywwVjQ2NC43OGE5Ljk3Myw5Ljk3MywwLDAsMS05Ljk2MSw5Ljk2MVoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDIyMi4zODYgMTcxLjQ2OCkiIGZpbGw9IiM2YzYzZmYiLz48cGF0aCBkPSJNMjQxLjEzMSwyLjc2OUguNjM1YTIuMTM1LDIuMTM1LDAsMCwxLDAtNC4yNjloMjQwLjVhMi4xMzUsMi4xMzUsMCwwLDEsMCw0LjI2OVoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDk1My4yNTUgNjA3LjU3NCkiIGZpbGw9IiMwOTA4MTQiLz48cGF0aCBkPSJNMjQxLjEzMSwyLjc2OUguNjM1YTIuMTM1LDIuMTM1LDAsMCwxLDAtNC4yNjloMjQwLjVhMi4xMzUsMi4xMzUsMCwwLDEsMCw0LjI2OVoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDk1My4yNTUgNjI1LjY1MikiIGZpbGw9IiMwOTA4MTQiLz48cGF0aCBkPSJNMjQxLjEzMSwyLjc2OUguNjM1YTIuMTM1LDIuMTM1LDAsMCwxLDAtNC4yNjloMjQwLjVhMi4xMzUsMi4xMzUsMCwwLDEsMCw0LjI2OVoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDk1My4yNTUgNjQzLjcyOSkiIGZpbGw9IiMwOTA4MTQiLz48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSg3NjguMTgxIDY3Ni4xNikiPjxyZWN0IHdpZHRoPSI0NjkiIGhlaWdodD0iMTA3IiByeD0iOCIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMC41NjkgMC4zNjcpIiBmaWxsPSIjZmZmIiBvcGFjaXR5PSIwLjI5OSIvPjxwYXRoIGQ9Ik0xMS4zODQsMi44NDZhOC41NDgsOC41NDgsMCwwLDAtOC41MzgsOC41MzhWOTYuNzY4YTguNTQ4LDguNTQ4LDAsMCwwLDguNTM4LDguNTM4SDQ1OC4yMjRhOC41NDgsOC41NDgsMCwwLDAsOC41MzgtOC41MzhWMTEuMzg0YTguNTQ4LDguNTQ4LDAsMCwwLTguNTM4LTguNTM4SDExLjM4NG0wLTIuODQ2SDQ1OC4yMjRhMTEuMzg0LDExLjM4NCwwLDAsMSwxMS4zODQsMTEuMzg0Vjk2Ljc2OGExMS4zODQsMTEuMzg0LDAsMCwxLTExLjM4NCwxMS4zODRIMTEuMzg0QTExLjM4NCwxMS4zODQsMCwwLDEsMCw5Ni43NjhWMTEuMzg0QTExLjM4NCwxMS4zODQsMCwwLDEsMTEuMzg0LDBaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgwIDApIiBmaWxsPSIjMDkwODE0Ii8+PHBhdGggZD0iTTYyMy4wODcsNDc0Ljc0MWE5Ljk3Myw5Ljk3MywwLDAsMS05Ljk2MS05Ljk2MVY0MzkuMTY1YTkuOTYxLDkuOTYxLDAsMCwxLDE5LjkyMywwVjQ2NC43OEE5Ljk3Myw5Ljk3MywwLDAsMSw2MjMuMDg3LDQ3NC43NDFaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtNTcwLjc2NCAtMzk4LjA0KSIgZmlsbD0iIzZjNjNmZiIvPjxwYXRoIGQ9Ik02NDMuMDg3LDQ3NC43NDFhOS45NzMsOS45NzMsMCwwLDEtOS45NjEtOS45NjFWNDM5LjE2NWE5Ljk2MSw5Ljk2MSwwLDAsMSwxOS45MjMsMFY0NjQuNzhhOS45NzMsOS45NzMsMCwwLDEtOS45NjIsOS45NjFaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtNTYyLjMwMyAtMzk4LjA0KSIgZmlsbD0iIzZjNjNmZiIvPjxwYXRoIGQ9Ik02NjMuMDg3LDQ3NC43NDFhOS45NzMsOS45NzMsMCwwLDEtOS45NjEtOS45NjFWNDM5LjE2NWE5Ljk2MSw5Ljk2MSwwLDAsMSwxOS45MjMsMFY0NjQuNzhBOS45NzMsOS45NzMsMCwwLDEsNjYzLjA4Nyw0NzQuNzQxWiIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoLTU1My44NDIgLTM5OC4wNCkiIGZpbGw9IiNmMmYyZjIiLz48cGF0aCBkPSJNNjgzLjA4Nyw0NzQuNzQxYTkuOTczLDkuOTczLDAsMCwxLTkuOTYyLTkuOTYxVjQzOS4xNjVhOS45NjEsOS45NjEsMCwwLDEsMTkuOTIzLDBWNDY0Ljc4YTkuOTczLDkuOTczLDAsMCwxLTkuOTYxLDkuOTYxWiIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoLTU0NS4zODEgLTM5OC4wNCkiIGZpbGw9IiM2YzYzZmYiLz48cGF0aCBkPSJNMjQxLjEzMSwyLjc2OUguNjM1YTIuMTM1LDIuMTM1LDAsMCwxLDAtNC4yNjloMjQwLjVhMi4xMzUsMi4xMzUsMCwwLDEsMCw0LjI2OVoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDE4NS40ODggMzguMDY2KSIgZmlsbD0iIzA5MDgxNCIvPjxwYXRoIGQ9Ik0yNDEuMTMxLDIuNzY5SC42MzVhMi4xMzUsMi4xMzUsMCwwLDEsMC00LjI2OWgyNDAuNWEyLjEzNSwyLjEzNSwwLDAsMSwwLDQuMjY5WiIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMTg1LjQ4OCA1Ni4xNDMpIiBmaWxsPSIjMDkwODE0Ii8+PHBhdGggZD0iTTI0MS4xMzEsMi43NjlILjYzNWEyLjEzNSwyLjEzNSwwLDAsMSwwLTQuMjY5aDI0MC41YTIuMTM1LDIuMTM1LDAsMCwxLDAsNC4yNjlaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgxODUuNDg4IDc0LjIyKSIgZmlsbD0iIzA5MDgxNCIvPjwvZz48cGF0aCBkPSJNNjIzLjA4Nyw0NzQuNzQxYTkuOTczLDkuOTczLDAsMCwxLTkuOTYxLTkuOTYxVjQzOS4xNjVhOS45NjEsOS45NjEsMCwwLDEsMTkuOTIzLDBWNDY0Ljc4QTkuOTczLDkuOTczLDAsMCwxLDYyMy4wODcsNDc0Ljc0MVoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDE5Ny4wMDMgMzgyLjAwMykiIGZpbGw9IiM2YzYzZmYiLz48cGF0aCBkPSJNNjQzLjA4Nyw0NzQuNzQxYTkuOTczLDkuOTczLDAsMCwxLTkuOTYxLTkuOTYxVjQzOS4xNjVhOS45NjEsOS45NjEsMCwwLDEsMTkuOTIzLDBWNDY0Ljc4YTkuOTczLDkuOTczLDAsMCwxLTkuOTYyLDkuOTYxWiIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMjA1LjQ2NCAzODIuMDAzKSIgZmlsbD0iIzZjNjNmZiIvPjxwYXRoIGQ9Ik02NjMuMDg3LDQ3NC43NDFhOS45NzMsOS45NzMsMCwwLDEtOS45NjEtOS45NjFWNDM5LjE2NWE5Ljk2MSw5Ljk2MSwwLDAsMSwxOS45MjMsMFY0NjQuNzhBOS45NzMsOS45NzMsMCwwLDEsNjYzLjA4Nyw0NzQuNzQxWiIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMjEzLjkyNSAzODIuMDAzKSIgZmlsbD0iIzZjNjNmZiIvPjxwYXRoIGQ9Ik02ODMuMDg3LDQ3NC43NDFhOS45NzMsOS45NzMsMCwwLDEtOS45NjItOS45NjFWNDM5LjE2NWE5Ljk2MSw5Ljk2MSwwLDAsMSwxOS45MjMsMFY0NjQuNzhhOS45NzMsOS45NzMsMCwwLDEtOS45NjEsOS45NjFaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgyMjIuMzg2IDM4Mi4wMDMpIiBmaWxsPSIjZjJmMmYyIi8+PHBhdGggZD0iTTI0MS4xMzEsMi43NjlILjYzNWEyLjEzNSwyLjEzNSwwLDAsMSwwLTQuMjY5aDI0MC41YTIuMTM1LDIuMTM1LDAsMCwxLDAsNC4yNjlaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSg5NTMuMjU1IDgxOC4xMDkpIiBmaWxsPSIjMDkwODE0Ii8+PHBhdGggZD0iTTI0MS4xMzEsMi43NjlILjYzNWEyLjEzNSwyLjEzNSwwLDAsMSwwLTQuMjY5aDI0MC41YTIuMTM1LDIuMTM1LDAsMCwxLDAsNC4yNjlaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSg5NTMuMjU1IDgzNi4xODYpIiBmaWxsPSIjMDkwODE0Ii8+PHBhdGggZD0iTTI0MS4xMzEsMi43NjlILjYzNWEyLjEzNSwyLjEzNSwwLDAsMSwwLTQuMjY5aDI0MC41YTIuMTM1LDIuMTM1LDAsMCwxLDAsNC4yNjlaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSg5NTMuMjU1IDg1NC4yNjMpIiBmaWxsPSIjMDkwODE0Ii8+PC9nPjwvc3ZnPg=="
+            alt=""
+          />
+        </EmptyMedia>
+        <EmptyTitle>Under Maintenance</EmptyTitle>
+        <EmptyDescription>
+          We&apos;re currently performing scheduled maintenance. We should be
+          back shortly. Thank you for your patience.
+        </EmptyDescription>
+      </EmptyHeader>
+      <EmptyContent className="flex-row justify-center gap-2">
+        <Button size="sm" variant="outline">
+          Check Status
+        </Button>
+        <Button size="sm">Refresh Page</Button>
+      </EmptyContent>
+    </Empty>
+  );
+}
+
+
+demo.tsx
+import EmptyComponent from "@/components/ui/empty5";
+
+export default function Default() {
+  return (
+    <div className="flex min-h-svh w-full items-center justify-center p-6">
+      <EmptyComponent />
+    </div>
+  );
+}
+
+```
+
+Copy-paste these files for dependencies:
+```tsx
+shadcn/button
+import * as React from "react"
+import { Slot } from "@radix-ui/react-slot"
+import { cva, type VariantProps } from "class-variance-authority"
+
+import { cn } from "@/lib/utils"
+
+const buttonVariants = cva(
+  "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+  {
+    variants: {
+      variant: {
+        default: "bg-primary text-primary-foreground hover:bg-primary/90",
+        destructive:
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+        outline:
+          "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+        secondary:
+          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+        ghost: "hover:bg-accent hover:text-accent-foreground",
+        link: "text-primary underline-offset-4 hover:underline",
+      },
+      size: {
+        default: "h-10 px-4 py-2",
+        sm: "h-9 rounded-md px-3",
+        lg: "h-11 rounded-md px-8",
+        icon: "h-10 w-10",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+      size: "default",
+    },
+  },
+)
+
+export interface ButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof buttonVariants> {
+  asChild?: boolean
+}
+
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant, size, asChild = false, ...props }, ref) => {
+    const Comp = asChild ? Slot : "button"
+    return (
+      <Comp
+        className={cn(buttonVariants({ variant, size, className }))}
+        ref={ref}
+        {...props}
+      />
+    )
+  },
+)
+Button.displayName = "Button"
+
+export { Button, buttonVariants }
+
+```
+```tsx
+shadcn/empty
+import { cva, type VariantProps } from "class-variance-authority"
+
+import { cn } from "@/lib/utils"
+
+function Empty({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="empty"
+      className={cn(
+        "flex min-w-0 flex-1 flex-col items-center justify-center gap-6 rounded-lg border-dashed p-6 text-center text-balance md:p-12",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function EmptyHeader({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="empty-header"
+      className={cn(
+        "flex max-w-sm flex-col items-center gap-2 text-center",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+const emptyMediaVariants = cva(
+  "flex shrink-0 items-center justify-center mb-2 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+  {
+    variants: {
+      variant: {
+        default: "bg-transparent",
+        icon: "bg-muted text-foreground flex size-10 shrink-0 items-center justify-center rounded-lg [&_svg:not([class*='size-'])]:size-6",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+    },
+  }
+)
+
+function EmptyMedia({
+  className,
+  variant = "default",
+  ...props
+}: React.ComponentProps<"div"> & VariantProps<typeof emptyMediaVariants>) {
+  return (
+    <div
+      data-slot="empty-icon"
+      data-variant={variant}
+      className={cn(emptyMediaVariants({ variant, className }))}
+      {...props}
+    />
+  )
+}
+
+function EmptyTitle({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="empty-title"
+      className={cn("text-lg font-medium tracking-tight", className)}
+      {...props}
+    />
+  )
+}
+
+function EmptyDescription({ className, ...props }: React.ComponentProps<"p">) {
+  return (
+    <div
+      data-slot="empty-description"
+      className={cn(
+        "text-muted-foreground [&>a:hover]:text-primary text-sm/relaxed [&>a]:underline [&>a]:underline-offset-4",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function EmptyContent({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="empty-content"
+      className={cn(
+        "flex w-full max-w-sm min-w-0 flex-col items-center gap-4 text-sm text-balance",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+export {
+  Empty,
+  EmptyHeader,
+  EmptyTitle,
+  EmptyDescription,
+  EmptyContent,
+  EmptyMedia,
+}
+
+```
+```tsx
+shadcn/avatar
+"use client"
+
+import * as React from "react"
+import * as AvatarPrimitive from "@radix-ui/react-avatar"
+
+import { cn } from "@/lib/utils"
+
+const Avatar = React.forwardRef<
+  React.ElementRef<typeof AvatarPrimitive.Root>,
+  React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Root>
+>(({ className, ...props }, ref) => (
+  <AvatarPrimitive.Root
+    ref={ref}
+    className={cn(
+      "relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full",
+      className,
+    )}
+    {...props}
+  />
+))
+Avatar.displayName = AvatarPrimitive.Root.displayName
+
+const AvatarImage = React.forwardRef<
+  React.ElementRef<typeof AvatarPrimitive.Image>,
+  React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image>
+>(({ className, ...props }, ref) => (
+  <AvatarPrimitive.Image
+    ref={ref}
+    className={cn("aspect-square h-full w-full", className)}
+    {...props}
+  />
+))
+AvatarImage.displayName = AvatarPrimitive.Image.displayName
+
+const AvatarFallback = React.forwardRef<
+  React.ElementRef<typeof AvatarPrimitive.Fallback>,
+  React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Fallback>
+>(({ className, ...props }, ref) => (
+  <AvatarPrimitive.Fallback
+    ref={ref}
+    className={cn(
+      "flex h-full w-full items-center justify-center rounded-full bg-muted",
+      className,
+    )}
+    {...props}
+  />
+))
+AvatarFallback.displayName = AvatarPrimitive.Fallback.displayName
+
+export { Avatar, AvatarImage, AvatarFallback }
+
+```
+
+Install NPM dependencies:
+```bash
+@radix-ui/react-slot, class-variance-authority, @radix-ui/react-avatar
+```
+
+Implementation Guidelines
+ 1. Analyze the component structure and identify all required dependencies
+ 2. Review the component's argumens and state
+ 3. Identify any required context providers or hooks and install them
+ 4. Questions to Ask
+ - What data/props will be passed to this component?
+ - Are there any specific state management requirements?
+ - Are there any required assets (images, icons, etc.)?
+ - What is the expected responsive behavior?
+ - What is the best place to use this component in the app?
+
+Steps to integrate
+ 0. Copy paste all the code above in the correct directories
+ 1. Install external dependencies
+ 2. Fill image assets with Unsplash stock images you know exist
+ 3. Use lucide-react icons for svgs or logos if component requires them

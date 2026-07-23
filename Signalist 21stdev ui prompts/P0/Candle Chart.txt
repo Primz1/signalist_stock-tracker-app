@@ -1,0 +1,431 @@
+You are given a task to integrate an existing React component in the codebase
+
+The codebase should support:
+- shadcn project structure  
+- Tailwind CSS
+- Typescript
+
+If it doesn't, provide instructions on how to setup project via shadcn CLI, install Tailwind or Typescript.
+
+Determine the default path for components and styles. 
+If default path for components is not /components/ui, provide instructions on why it's important to create this folder
+Copy-paste this component to /components/ui folder:
+```tsx
+candle-chart.tsx
+import { useMemo, useRef, useState } from 'react'
+import { motion, useReducedMotion } from 'framer-motion'
+
+const EASE = [0.16, 1, 0.3, 1] as const
+
+/** Shared trade primitives for the /lab Trading group — seeded candle data plus
+ *  the two direction hues, darkened into the same dark-surface lightness band as
+ *  the CHART tokens in ../shared so up/down reads as identity, never as a value. */
+
+/** up / buy — the site's fixed GREEN. down / sell — a red pulled into the same band. */
+const UP = 'var(--chart-up, #34c28a)'
+const DOWN = 'var(--chart-down, #d0625f)'
+
+interface Candle {
+  o: number
+  h: number
+  l: number
+  c: number
+  v: number
+  /** epoch ms — labels count forward from the series start */
+  t: number
+}
+
+/** deterministic PRNG (mulberry32) so every render agrees — no Math.random */
+function mulberry32(seed: number) {
+  let s = seed
+  return () => {
+    s |= 0
+    s = (s + 0x6d2b79f5) | 0
+    let t = Math.imul(s ^ (s >>> 15), 1 | s)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+/** rally → crash → chop keyframes (progress 0..1 → price), interpolated per candle */
+const ARC: Array<[number, number]> = [
+  [0, 0.24], [0.1, 0.34], [0.22, 0.6], [0.3, 0.88], [0.36, 1],
+  [0.44, 0.68], [0.5, 0.45], [0.56, 0.6], [0.62, 0.33], [0.68, 0.26],
+  [0.74, 0.42], [0.8, 0.31], [0.86, 0.19], [0.92, 0.29], [1, 0.35],
+]
+
+const lerpArc = (f: number) => {
+  const hi = ARC.findIndex(([x]) => x >= f)
+  if (hi <= 0) return ARC[Math.max(0, hi)][1]
+  const [x0, y0] = ARC[hi - 1]
+  const [x1, y1] = ARC[hi]
+  return y0 + ((f - x0) / (x1 - x0)) * (y1 - y0)
+}
+
+interface CandleSeries {
+  candles: Candle[]
+  min: number
+  max: number
+  maxVolume: number
+}
+
+/** Build `count` candles across a fixed price band, shaped by the arc above. */
+function makeCandles(seed: number, count = 96, ceil = 3000): CandleSeries {
+  const rand = mulberry32(seed)
+  const floor = ceil * 0.12
+  const span = ceil - floor
+  const start = Date.UTC(2025, 4, 12) // 12 May 2025
+  const step = 6 * 36e5
+
+  const candles: Candle[] = []
+  let prev = floor + lerpArc(0) * span
+  for (let i = 0; i < count; i++) {
+    const o = prev
+    const base = floor + lerpArc(i / (count - 1)) * span
+    const c = Math.max(floor * 0.6, base * (1 + (rand() - 0.5) * 0.1))
+    const h = Math.max(o, c) * (1 + rand() * 0.03)
+    const l = Math.min(o, c) * (1 - rand() * 0.03)
+    candles.push({ o, h, l, c, v: Math.abs(c - o) * 0.05 + rand() * 12, t: start + i * step })
+    prev = c
+  }
+
+  return {
+    candles,
+    min: Math.min(...candles.map((k) => k.l)),
+    max: Math.max(...candles.map((k) => k.h)),
+    maxVolume: Math.max(...candles.map((k) => k.v)),
+  }
+}
+
+const fmtUsd = (v: number) =>
+  `${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+
+const fmtAxis = (v: number) => (v === 0 ? '$0' : `${Math.round(v).toLocaleString('en-US')}`)
+
+const fmtDay = (t: number) =>
+  new Date(t).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', timeZone: 'UTC' })
+
+const fmtStamp = (t: number) =>
+  new Date(t)
+    .toLocaleString('en-US', {
+      month: 'short',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+      timeZone: 'UTC',
+    })
+    .replace(',', '') + ' UTC'
+
+const SANS = 'inherit'
+
+/** #64 Candle Chart — a trading terminal's price panel rebuilt in the ink language:
+ *  OHLC candles + a volume strip, a crosshair that reads the exact bar, and a
+ *  gliding-thumb timeframe switch. Direction is the only thing that carries hue —
+ *  every number sits in mono ink. Seeded data, so the tape never disagrees. */
+
+const VB_W = 560
+const VB_H = 300
+const AXIS_W = 46
+const VOL_H = 46
+const GAP = 8
+const PLOT_H = VB_H - VOL_H - GAP
+
+const TIMEFRAMES = ['1D', '5D', '1M', '6M', '1Y'] as const
+
+export type CandleChartProps = {
+  seed?: number
+  symbol?: string
+  className?: string
+}
+
+export default function CandleChart({ seed = 51, symbol = 'NVDA', className }: CandleChartProps) {
+  const reduced = useReducedMotion()
+  const [timeframe, setTimeframe] = useState<(typeof TIMEFRAMES)[number]>('1D')
+  const [hover, setHover] = useState<number | null>(null)
+  const svgRef = useRef<SVGSVGElement>(null)
+
+  const { candles, maxVolume } = useMemo(() => makeCandles(seed, 96), [seed])
+  const n = candles.length
+  const ceil = 3000
+
+  const active: Candle = candles[hover ?? n - 1]
+  const change = active.c - active.o
+  const changePct = (change / active.o) * 100
+  const up = change >= 0
+
+  const plotW = VB_W - AXIS_W
+  const slot = plotW / n
+  const bodyW = slot * 0.58
+  const xMid = (i: number) => i * slot + slot / 2
+  const yPrice = (v: number) => (1 - v / ceil) * PLOT_H
+
+  const ticks = [3000, 2000, 1000, 0]
+  const dateLabels = useMemo(
+    () => Array.from({ length: 6 }, (_, i) => candles[Math.min(n - 1, Math.floor((i * n) / 6))]),
+    [candles, n],
+  )
+
+  const onMove = (e: React.PointerEvent) => {
+    const el = svgRef.current
+    if (!el) return
+    const r = el.getBoundingClientRect()
+    const px = ((e.clientX - r.left) / r.width) * VB_W
+    setHover(Math.max(0, Math.min(n - 1, Math.floor(px / slot))))
+  }
+
+  const legend: Array<[string, string, string?]> = [
+    ['Open', fmtUsd(active.o)],
+    ['High', fmtUsd(active.h)],
+    ['Low', fmtUsd(active.l)],
+    ['Close', fmtUsd(active.c)],
+    ['Chg', `${up ? '+' : '−'}${Math.abs(changePct).toFixed(2)}%`, up ? UP : DOWN],
+  ]
+
+  const tipLeft = hover !== null && hover > n / 2
+
+  return (
+    <div className={`w-full max-w-[600px] ${className ?? ''}`}>
+      {/* header — symbol + price / range switch */}
+      <div className="flex items-end justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] uppercase tracking-[0.1em] text-foreground/40">{symbol}</span>
+            <span className="text-[10px] uppercase tracking-[0.1em] text-foreground/25">· NASDAQ</span>
+          </div>
+          <div className="mt-1.5 flex items-baseline gap-2">
+            <span className="tabular-nums text-foreground/90" style={{ fontFamily: SANS, fontSize: 24, lineHeight: 1 }}>
+              {fmtUsd(candles[n - 1].c)}
+            </span>
+            <span className="tabular-nums text-[12px]" style={{ fontFamily: SANS, color: UP }}>
+              +32.11%
+            </span>
+          </div>
+        </div>
+        <div className="flex items-center gap-0.5 rounded-full border border-foreground/[0.04] p-0.5">
+          {TIMEFRAMES.map((tf) => {
+            const on = tf === timeframe
+            return (
+              <button
+                key={tf}
+                type="button"
+                aria-pressed={on}
+                onClick={() => setTimeframe(tf)}
+                className={`relative rounded-full px-2.5 py-1 text-[10px] tracking-[0.06em] transition-colors duration-200 ${
+                  on ? 'text-foreground' : 'text-foreground/40 hover:text-foreground/70'
+                }`}
+                style={{ fontFamily: SANS }}
+              >
+                {on && (
+                  <motion.span
+                    layoutId={`cc-tf-${seed}`}
+                    className="absolute inset-0 rounded-full bg-foreground/[0.08]"
+                    style={{ boxShadow: 'inset 0 1px 0 0 color-mix(in srgb, var(--foreground) 6%, transparent)' }}
+                    transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 500, damping: 38 }}
+                  />
+                )}
+                <span className="relative">{tf}</span>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* OHLC legend — values stay in ink; only Chg wears direction */}
+      <div className="mt-4 flex flex-wrap gap-x-5 gap-y-1.5">
+        {legend.map(([label, value, color]) => (
+          <span key={label} className="flex items-center gap-1.5">
+            <span className="text-[10px] uppercase tracking-[0.1em] text-foreground/35">{label}</span>
+            <span className="tabular-nums text-[11px]" style={{ fontFamily: SANS, color: color ?? 'color-mix(in srgb, var(--foreground) 80%, transparent)' }}>
+              {value}
+            </span>
+          </span>
+        ))}
+      </div>
+
+      {/* chart */}
+      <div className="relative mt-3">
+        <svg
+          ref={svgRef}
+          viewBox={`0 0 ${VB_W} ${VB_H}`}
+          className="w-full touch-none"
+          onPointerMove={onMove}
+          onPointerLeave={() => setHover(null)}
+          role="img"
+          aria-label={`${symbol} candlestick chart`}
+        >
+          {/* price gridlines + right-hand scale */}
+          {ticks.map((t) => (
+            <g key={t}>
+              <line x1={0} x2={plotW} y1={yPrice(t)} y2={yPrice(t)} stroke="color-mix(in srgb, var(--foreground) 5%, transparent)" strokeWidth="1" />
+              <text
+                x={VB_W - 4}
+                y={yPrice(t) + 3}
+                textAnchor="end"
+                fill="color-mix(in srgb, var(--foreground) 28.000000000000004%, transparent)"
+                style={{ fontFamily: SANS, fontSize: 8.5 }}
+              >
+                {fmtAxis(t)}
+              </text>
+            </g>
+          ))}
+
+          {/* last-close guide */}
+          <line
+            x1={0}
+            x2={plotW}
+            y1={yPrice(candles[n - 1].c)}
+            y2={yPrice(candles[n - 1].c)}
+            stroke={UP}
+            strokeOpacity="0.4"
+            strokeDasharray="2 4"
+            strokeWidth="1"
+          />
+
+          {/* candles — wick + body, direction is the only hue */}
+          <motion.g
+            initial={reduced ? undefined : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={reduced ? { duration: 0 } : { duration: 0.6, ease: EASE }}
+          >
+            {candles.map((k, i) => {
+              const color = k.c >= k.o ? UP : DOWN
+              const top = yPrice(Math.max(k.o, k.c))
+              const bottom = yPrice(Math.min(k.o, k.c))
+              const dim = hover !== null && hover !== i
+              return (
+                <g key={i} style={{ opacity: dim ? 0.45 : 1 }}>
+                  <line
+                    x1={xMid(i)}
+                    x2={xMid(i)}
+                    y1={yPrice(k.h)}
+                    y2={yPrice(k.l)}
+                    stroke={color}
+                    strokeWidth="1"
+                    vectorEffect="non-scaling-stroke"
+                  />
+                  <rect x={xMid(i) - bodyW / 2} y={top} width={bodyW} height={Math.max(1, bottom - top)} fill={color} />
+                </g>
+              )
+            })}
+          </motion.g>
+
+          {/* volume strip */}
+          <g transform={`translate(0 ${PLOT_H + GAP})`}>
+            {candles.map((k, i) => {
+              const h = (k.v / maxVolume) * VOL_H
+              const dim = hover !== null && hover !== i
+              return (
+                <rect
+                  key={i}
+                  x={xMid(i) - bodyW / 2}
+                  y={VOL_H - h}
+                  width={bodyW}
+                  height={h}
+                  fill={k.c >= k.o ? UP : DOWN}
+                  fillOpacity={dim ? 0.3 : 0.6}
+                />
+              )
+            })}
+          </g>
+
+          {/* crosshair */}
+          {hover !== null && (
+            <line
+              x1={xMid(hover)}
+              x2={xMid(hover)}
+              y1={0}
+              y2={VB_H}
+              stroke="color-mix(in srgb, var(--foreground) 18%, transparent)"
+              strokeWidth="1"
+              vectorEffect="non-scaling-stroke"
+            />
+          )}
+        </svg>
+
+        {/* crosshair tooltip */}
+        {hover !== null && (
+          <div
+            className="pointer-events-none absolute top-1 z-10 min-w-[130px] rounded-lg border border-foreground/[0.03] px-3 py-2.5"
+            style={{
+              background: 'var(--card)',
+              boxShadow: 'inset 0 1px 0 0 color-mix(in srgb, var(--foreground) 6%, transparent), 0 12px 32px rgba(0,0,0,0.5)',
+              left: `${(xMid(hover) / VB_W) * 100}%`,
+              transform: tipLeft ? 'translateX(calc(-100% - 12px))' : 'translateX(12px)',
+            }}
+            role="status"
+          >
+            <div className="text-[10px] text-foreground/45" style={{ fontFamily: SANS }}>
+              {fmtStamp(active.t)}
+            </div>
+            <div className="mt-1.5 flex flex-col gap-1">
+              {(['o', 'h', 'l', 'c'] as const).map((key, idx) => (
+                <div key={key} className="flex items-center justify-between gap-4">
+                  <span className="text-[10px] uppercase tracking-[0.1em] text-foreground/40">{['Open', 'High', 'Low', 'Close'][idx]}</span>
+                  <span className="tabular-nums text-[11px] text-foreground/85" style={{ fontFamily: SANS }}>
+                    {fmtUsd(active[key])}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* date axis */}
+      <div className="mt-2 flex justify-between border-t border-foreground/[0.04] pr-[46px] pt-2">
+        {dateLabels.map((k, i) => (
+          <span key={i} className="tabular-nums text-[9px] text-foreground/30" style={{ fontFamily: SANS }}>
+            {fmtDay(k.t)}
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+export function Demo() {
+  return (
+    <div className="flex min-h-[420px] w-full items-center justify-center p-6">
+      <CandleChart />
+    </div>
+  )
+}
+
+export { CandleChart as Component }
+
+
+demo.tsx
+import { Demo } from "@/components/ui/candle-chart"
+
+export default function DemoOne() {
+  return (
+    <div className="w-full bg-background" style={{ background: "var(--card)" }}>
+      <Demo />
+    </div>
+  )
+}
+
+```
+
+Install NPM dependencies:
+```bash
+framer-motion
+```
+
+Implementation Guidelines
+ 1. Analyze the component structure and identify all required dependencies
+ 2. Review the component's argumens and state
+ 3. Identify any required context providers or hooks and install them
+ 4. Questions to Ask
+ - What data/props will be passed to this component?
+ - Are there any specific state management requirements?
+ - Are there any required assets (images, icons, etc.)?
+ - What is the expected responsive behavior?
+ - What is the best place to use this component in the app?
+
+Steps to integrate
+ 0. Copy paste all the code above in the correct directories
+ 1. Install external dependencies
+ 2. Fill image assets with Unsplash stock images you know exist
+ 3. Use lucide-react icons for svgs or logos if component requires them
