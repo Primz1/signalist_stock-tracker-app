@@ -1,11 +1,10 @@
 
 'use server';
 
-import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { connectToDatabase } from '@/database/mongoose';
 import { Watchlist, addWatchlistItem, listWatchlistItems, listWatchlistSymbols as listSymbolsOnly, removeWatchlistItem } from '@/database/models/watchlist.model';
-import { auth } from '@/lib/better-auth/auth';
+import { getCachedUser } from '@/lib/auth/session';
 
 type ActionResult<T> = { success: true; data: T } | { success: false; message: string };
 
@@ -30,10 +29,7 @@ const serializeWatchlistItem = (item: Record<string, unknown> | null | undefined
   };
 };
 
-const getSessionUser = async () => {
-  const session = await auth.api.getSession({ headers: await headers() });
-  return session?.user || null;
-};
+const getSessionUser = async () => getCachedUser();
 
 export async function getWatchlistSymbolsByEmail(email: string): Promise<string[]> {
   if (!email) return [];

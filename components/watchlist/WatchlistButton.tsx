@@ -1,7 +1,7 @@
 "use client";
 import React, { useMemo, useState, useTransition } from "react";
 import { addToWatchlist, removeFromWatchlist } from "@/lib/actions/watchlist.actions";
-import { toast } from "sonner";
+import { notify } from "@/lib/notify";
 import { trackEvent } from "@/components/providers/PostHogProvider";
 import { Loader2 } from "lucide-react";
 
@@ -11,6 +11,7 @@ const WatchlistButton = ({
   isInWatchlist,
   showTrashIcon = false,
   type = "button",
+  variant = "filled",
   onWatchlistChange,
 }: WatchlistButtonProps) => {
   const [added, setAdded] = useState<boolean>(!!isInWatchlist);
@@ -18,7 +19,7 @@ const WatchlistButton = ({
 
   const label = useMemo(() => {
     if (type === "icon") return "";
-    return added ? "Remove from Watchlist" : "Add to Watchlist";
+    return added ? "Remove from watchlist" : "Add to watchlist";
   }, [added, type]);
 
   const handleClick = () => {
@@ -27,23 +28,23 @@ const WatchlistButton = ({
       if (added) {
         const res = await removeFromWatchlist(sym);
         if (!res.success) {
-          toast.error(res.message || "Failed to remove");
+          notify.watchlistFailed("remove", res.message);
           return;
         }
         setAdded(false);
         onWatchlistChange?.(sym, false);
         trackEvent("watchlist_removed", { symbol: sym });
-        toast.success(`${sym} removed from watchlist`);
+        notify.watchlistRemoved(sym);
       } else {
         const res = await addToWatchlist(sym, company);
         if (!res.success) {
-          toast.error(res.message || "Failed to add");
+          notify.watchlistFailed("add", res.message);
           return;
         }
         setAdded(true);
         onWatchlistChange?.(sym, true);
         trackEvent("watchlist_added", { symbol: sym });
-        toast.success(`${sym} added to watchlist`);
+        notify.watchlistAdded(sym);
       }
     });
   };
@@ -80,25 +81,37 @@ const WatchlistButton = ({
     );
   }
 
+  const outlineClass = added
+    ? "inline-flex h-9 w-auto items-center gap-1.5 rounded-lg border border-[#EF4444] bg-transparent px-3.5 text-[13px] font-medium text-[#EF4444] hover:bg-[rgba(239,68,68,0.08)]"
+    : "inline-flex h-9 w-auto items-center gap-1.5 rounded-lg border border-[#FDD458] bg-transparent px-3.5 text-[13px] font-medium text-[#FDD458] hover:bg-[rgba(253,212,88,0.08)]";
+
   return (
     <button
-      className={`watchlist-btn ${added ? "watchlist-remove" : ""}`}
+      className={
+        variant === "outline"
+          ? outlineClass
+          : `watchlist-btn ${added ? "watchlist-remove" : ""}`
+      }
       onClick={handleClick}
       disabled={isPending}
       aria-busy={isPending}
     >
       {isPending ? (
-        <Loader2 className="mr-2 size-4 animate-spin" />
-      ) : showTrashIcon && added ? (
+        <Loader2 className="size-3.5 animate-spin" />
+      ) : (showTrashIcon || variant === "outline") && added ? (
         <svg
           xmlns="http://www.w3.org/2000/svg"
           fill="none"
           viewBox="0 0 24 24"
           strokeWidth={1.5}
           stroke="currentColor"
-          className="w-5 h-5 mr-2"
+          className="size-3.5"
         >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M6 7h12M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2m-7 4v6m4-6v6m4-6v6" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M3 6h18M8 6V4.5A1.5 1.5 0 019.5 3h5A1.5 1.5 0 0116 4.5V6m-1 0v12a2 2 0 01-2 2H9a2 2 0 01-2-2V6m3 5v6m4-6v6"
+          />
         </svg>
       ) : null}
       <span>{isPending ? "Working..." : label}</span>

@@ -9,14 +9,13 @@ import {
   CommandItem,
   CommandList
 } from "@/components/ui/command"
-import { Button } from "@/components/ui/button"
 import { Loader2, Search, Star } from "lucide-react"
 import { searchStocks } from "@/lib/actions/finnhub.actions"
 import { addToWatchlist } from "@/lib/actions/watchlist.actions"
 import { useDebounce } from "@/hooks/useDebounce"
 import clsx from "clsx"
 import Link from "next/link"
-import { toast } from "sonner"
+import { notify } from "@/lib/notify"
 
 type SearchCommandProps = {
   renderAs?: "button" | "text" | "icon" | "modal";
@@ -28,7 +27,7 @@ type SearchCommandProps = {
   quickAddEnabled?: boolean;
   onQuickAdd?: (stock: StockWithWatchlistStatus) => Promise<boolean> | Promise<void> | void;
   className?: string;
-  /** Compact pill style without search icon / ⌘K */
+  /** Compact pill style without search icon */
   pill?: boolean;
 };
 
@@ -163,7 +162,7 @@ export function SearchCommand({ renderAs = 'button', label = 'Add stock', initia
       } else {
         const res = await addToWatchlist(stock.symbol, stock.name);
         if (!res.success) {
-          toast.error(res.message || 'Failed to add');
+          notify.watchlistFailed('add', res.message);
           ok = false;
         }
       }
@@ -175,10 +174,10 @@ export function SearchCommand({ renderAs = 'button', label = 'Add stock', initia
           setSearchResults((cur) => cur.map((item) => item.symbol === stock.symbol ? { ...item, isInWatchlist: true } : item));
           return copy;
         });
-        toast.success(`${stock.symbol} added to watchlist`);
+        notify.watchlistAdded(stock.symbol);
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to add');
+      notify.watchlistFailed('add', error instanceof Error ? error.message : undefined);
     } finally {
       setAddingSymbol(null);
     }
@@ -199,41 +198,41 @@ export function SearchCommand({ renderAs = 'button', label = 'Add stock', initia
         </span>
       )}
       {renderAs === 'button' && (
-        <Button
+        <button
+          type="button"
           onClick={() => setOpen(true)}
           disabled={!!addingSymbol}
           aria-busy={!!addingSymbol}
-          className={clsx('search-btn justify-start', className)}
+          className={clsx(
+            'search-btn inline-flex w-full max-w-[280px] cursor-pointer items-center gap-2 rounded-lg border border-[#2E2E2E] bg-[#0A0A0A] px-2.5 py-[7px] text-[13px] font-normal text-[#6E6E6E] hover:bg-[#0A0A0A]',
+            className
+          )}
         >
           {addingSymbol ? (
             <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" strokeWidth={1.5} />
           ) : (
             !pill && <Search className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} />
           )}
-          <span className={clsx(pill ? 'text-left' : 'flex-1 text-left')}>{label}</span>
-          {!pill && (
-            <kbd className="hidden rounded border border-[#2E2E2E] px-1.5 py-0.5 text-[11px] text-[#6E6E6E] sm:inline">⌘K</kbd>
-          )}
-        </Button>
+          <span className="truncate">{label}</span>
+        </button>
       )}
       {renderAs === 'modal' && (
-        <Button
+        <button
           type="button"
-          variant="outline"
           onClick={() => setOpen(true)}
           className={clsx(
-            'relative size-9 cursor-pointer border-[#2E2E2E] bg-[#0A0A0A] p-0 text-[#A1A1A1]',
+            'relative inline-flex size-9 cursor-pointer items-center justify-center rounded-lg border border-[#2E2E2E] bg-[#0A0A0A] p-0 text-[#A1A1A1]',
             'hover:bg-[#1C1C1C] hover:text-[#F5F5F5]',
-            'md:border xl:h-9 xl:w-60 xl:justify-between xl:px-3 xl:py-2',
+            'md:border xl:h-9 xl:w-60 xl:justify-start xl:gap-2 xl:px-3 xl:py-2',
             className
           )}
         >
-          <span className="hidden text-[13px] font-normal text-[#6E6E6E] xl:inline-flex">
+          <Search className="size-4 shrink-0" strokeWidth={1.5} />
+          <span className="hidden truncate text-[13px] font-normal text-[#6E6E6E] xl:inline">
             {label || 'Search...'}
           </span>
           <span className="sr-only">Search</span>
-          <Search className="size-4 shrink-0" strokeWidth={1.5} />
-        </Button>
+        </button>
       )}
       {renderAs === 'icon' && (
         <button

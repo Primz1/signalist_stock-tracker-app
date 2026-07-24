@@ -103,6 +103,20 @@ class SymbolScore(BaseModel):
     components: dict[str, float]
 
 
+class SymbolExtras(BaseModel):
+    """Extra `ta` library indicators (latest scalars)."""
+
+    adx: Optional[float] = None
+    adx_pos: Optional[float] = None
+    adx_neg: Optional[float] = None
+    stoch_k: Optional[float] = None
+    stoch_d: Optional[float] = None
+    cci: Optional[float] = None
+    willr: Optional[float] = None
+    mfi: Optional[float] = None
+    atr: Optional[float] = None
+
+
 class SymbolQuantSnapshot(BaseModel):
     symbol: str
     computed_at: str
@@ -117,6 +131,7 @@ class SymbolQuantSnapshot(BaseModel):
     event: SymbolEvent
     score: SymbolScore
     data_quality: Quality
+    extras: SymbolExtras = Field(default_factory=SymbolExtras)
 
 
 class Holding(BaseModel):
@@ -211,6 +226,10 @@ class ResearchNarrative(BaseModel):
     confidence: float = Field(ge=0, le=100)
     signals: list[str] = []
     caveats: str = ""
+    bull_case: list[str] = Field(default_factory=list)
+    bear_case: list[str] = Field(default_factory=list)
+    catalysts: list[dict[str, str]] = Field(default_factory=list)
+    # catalysts items: { "when": "Mar 28", "label": "Earnings call" }
 
 
 class ReviewNarrative(BaseModel):

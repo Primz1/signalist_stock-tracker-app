@@ -6,8 +6,10 @@ import { Input } from '@/components/ui/input';
 import { ShinyButton } from '@/components/ui/shiny-button';
 import { generateDeveloperApiKey, getDeveloperApiKeys } from '@/lib/actions/apiKey.actions';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { KeyRound, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PageEnter } from '@/components/ui/motion';
+import { EmptyState } from '@/components/ui/empty-state';
 
 export default function DevelopersClient() {
   const [keys, setKeys] = useState<Record<string, unknown>[]>([]);
@@ -38,7 +40,7 @@ export default function DevelopersClient() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <PageEnter className="mx-auto max-w-2xl space-y-6">
       <div>
         <h1 className="section-title">Developer API</h1>
         <p className="text-sm text-[#6E6E6E]">Access stock data, scores, and AI reports programmatically.</p>
@@ -99,7 +101,13 @@ export default function DevelopersClient() {
             <Skeleton className="h-8 w-full" />
           </div>
         ) : keys.length === 0 ? (
-          <p className="text-sm text-[#6E6E6E]">No keys yet.</p>
+          <EmptyState
+            title="No API keys yet"
+            description="Create a key to call the Signalist developer API."
+            icon={KeyRound}
+            variant="dashed"
+            className="py-10"
+          />
         ) : (
           <ul className="space-y-2 text-sm">
             {keys.map((k) => (
@@ -111,6 +119,6 @@ export default function DevelopersClient() {
           </ul>
         )}
       </div>
-    </div>
+    </PageEnter>
   );
 }

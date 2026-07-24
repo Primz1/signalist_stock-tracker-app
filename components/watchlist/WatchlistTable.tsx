@@ -4,9 +4,10 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { removeFromWatchlist } from "@/lib/actions/watchlist.actions";
-import { toast } from "sonner";
+import { notify } from "@/lib/notify";
 import clsx from "clsx";
 import { Loader2, Star } from "lucide-react";
+import { EmptyState as SignalistEmptyState } from "@/components/ui/empty-state";
 
 type WatchlistEntry = {
 	_id?: string;
@@ -36,9 +37,10 @@ const formatDate = (value?: string | Date) => {
 };
 
 const EmptyState = () => (
-	<div className="rounded-lg border border-dashed border-gray-700 p-6 text-center text-sm text-gray-400">
-		No symbols yet. Use Add Stock to populate your watchlist.
-	</div>
+	<SignalistEmptyState
+		title="No symbols yet"
+		description="Use Add Stock to populate your watchlist."
+	/>
 );
 
 const formatNumber = (value?: number, opts: Intl.NumberFormatOptions = {}) => {
@@ -67,13 +69,13 @@ const WatchlistTable = ({ items, onAddAlert }: WatchlistTableProps) => {
 		startTransition(async () => {
 			const res = await removeFromWatchlist(symbol);
 			if (!res.success) {
-				toast.error(res.message || "Failed to remove symbol");
+				notify.watchlistFailed("remove", res.message);
 				setPendingSymbol(null);
 				return;
 			}
 			setRows((prev) => prev.filter((row) => row.symbol !== symbol));
 			setPendingSymbol(null);
-			toast.success(`${symbol} removed from watchlist`);
+			notify.watchlistRemoved(symbol);
 		});
 	};
 
@@ -81,9 +83,9 @@ const WatchlistTable = ({ items, onAddAlert }: WatchlistTableProps) => {
 		if (!rows.length) return <EmptyState />;
 
 		return (
-			<div className="overflow-hidden rounded-xl border border-gray-800 bg-[#0c0c0f] shadow-md">
+			<div className="overflow-hidden rounded-xl border border-[#242424] bg-[#141414] shadow-md">
 				<Table>
-					<TableHeader className="bg-gray-900/60">
+					<TableHeader className="bg-[#1C1C1C]/60">
 						<TableRow>
 							<TableHead></TableHead>
 							<TableHead>Assets</TableHead>
@@ -104,7 +106,7 @@ const WatchlistTable = ({ items, onAddAlert }: WatchlistTableProps) => {
 										onClick={() => handleRemove(row.symbol)}
 										disabled={isPending && pendingSymbol === row.symbol}
 										aria-busy={isPending && pendingSymbol === row.symbol}
-										className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-amber-400/40 bg-amber-400/10 text-amber-300 transition hover:bg-amber-400/20 disabled:opacity-60"
+										className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#FDD458]/40 bg-[#FDD458]/10 text-[#FDD458] transition hover:bg-[#FDD458]/20 disabled:opacity-60"
 										title="Remove from watchlist"
 									>
 										{isPending && pendingSymbol === row.symbol ? (
@@ -114,27 +116,27 @@ const WatchlistTable = ({ items, onAddAlert }: WatchlistTableProps) => {
 										)}
 									</button>
 								</TableCell>
-								<TableCell className="font-medium text-gray-100">{row.company}</TableCell>
-								<TableCell className="text-gray-300">{row.symbol}</TableCell>
-								<TableCell className="text-amber-300">{row.aiScore != null ? `${row.aiScore}/100` : '—'}</TableCell>
-								<TableCell className="text-gray-100">{formatCurrency(row.price)}</TableCell>
+								<TableCell className="font-medium text-[#F5F5F5]">{row.company}</TableCell>
+								<TableCell className="text-[#A1A1A1]">{row.symbol}</TableCell>
+								<TableCell className="mono text-[#FDD458]">{row.aiScore != null ? `${row.aiScore}/100` : '—'}</TableCell>
+								<TableCell className="text-[#F5F5F5]">{formatCurrency(row.price)}</TableCell>
 								<TableCell className={clsx(
-									'text-sm',
+									'mono text-sm',
 									typeof row.changePercent === 'number'
 										? row.changePercent >= 0
-											? 'text-emerald-400'
-											: 'text-red-400'
-										: 'text-gray-400'
+											? 'text-[#22C55E]'
+											: 'text-[#EF4444]'
+										: 'text-[#6E6E6E]'
 								)}>
 									{typeof row.changePercent === 'number' ? `${row.changePercent.toFixed(2)}%` : '-'}
 								</TableCell>
-								<TableCell className="text-gray-300">{formatPrice(row.dayHigh)}</TableCell>
-								<TableCell className="text-gray-300">{formatPrice(row.dayLow)}</TableCell>
+								<TableCell className="text-[#A1A1A1]">{formatPrice(row.dayHigh)}</TableCell>
+								<TableCell className="text-[#A1A1A1]">{formatPrice(row.dayLow)}</TableCell>
 								<TableCell className="text-right">
 									<Button
 										variant="secondary"
 										size="sm"
-										className="bg-amber-400 text-black hover:bg-amber-300"
+										className="bg-[#FDD458] text-[#0A0A0A] hover:bg-[#E8BA40]"
 										onClick={() => onAddAlert?.(row)}
 									>
 										Add Alert

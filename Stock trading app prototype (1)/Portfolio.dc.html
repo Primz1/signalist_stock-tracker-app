@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0A0A;position:relative;}
+*{box-sizing:border-box;}
+button{font-family:inherit;}
+button:focus-visible{outline:2px solid #FDD458;outline-offset:2px;}
+a{color:#A1A1A1;text-decoration:none;}
+a:hover{color:#FDD458;}
+::placeholder{color:#6E6E6E;}
+body::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:0.05;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes pulse{0%,100%{opacity:.4;}50%{opacity:.7;}}
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:#0A0A0A;font-family:'Geist',sans-serif;display:flex;justify-content:center;">
+<div style="width:{{ shellWidth }};min-height:100vh;background:#0A0A0A;">
+
+  <div style="height:56px;position:sticky;top:0;z-index:20;background:#141414;border-bottom:1px solid #242424;display:flex;align-items:center;padding:0 20px;gap:20px;">
+    <div style="display:flex;align-items:center;gap:8px;flex:none;">
+      <div style="width:26px;height:26px;border-radius:7px;background:#FDD458;display:flex;align-items:center;justify-content:center;font-weight:700;color:#0A0A0A;font-size:14px;">S</div>
+      <div style="font-weight:600;font-size:14px;color:#F5F5F5;">Signalist</div>
+    </div>
+    <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">
+    <button style="background:#0A0A0A;border:1px solid #2E2E2E;border-radius:8px;padding:7px 10px;display:flex;align-items:center;gap:8px;color:#6E6E6E;font-size:13px;cursor:pointer;width:280px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      <span style="flex:1;text-align:left;">Search stocks...</span><span style="font-size:11px;">⌘K</span>
+    </button>
+    <div style="display:flex;align-items:center;gap:24px;flex:1;">
+      <a href="#" style="font-size:13px;">Dashboard</a>
+      <a href="#" style="font-size:13px;">Watchlist</a>
+      <div style="height:56px;display:flex;align-items:center;color:#F5F5F5;font-size:13px;font-weight:500;border-bottom:2px solid #FDD458;">Portfolio</div>
+      <a href="#" style="font-size:13px;">Research</a>
+      <a href="#" style="font-size:13px;">API</a>
+      <a href="#" style="font-size:13px;">Settings</a>
+    </div>
+    </sc-if>
+    <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}"><div style="flex:1;"></div></sc-if>
+    <div style="display:flex;align-items:center;gap:14px;flex:none;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A1A1A1" stroke-width="1.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+      <div style="width:26px;height:26px;border-radius:50%;background:rgba(253,212,88,0.12);color:#F5F5F5;font-size:11px;font-weight:600;font-family:'Geist Mono',monospace;display:flex;align-items:center;justify-content:center;">JT</div>
+    </div>
+  </div>
+
+  <!-- LOADING SKELETON -->
+  <sc-if value="{{ pageLoading }}" hint-placeholder-val="{{ false }}">
+  <div style="padding:{{ bodyPadding }};display:flex;flex-direction:column;gap:20px;">
+    <div style="height:28px;width:180px;background:#1C1C1C;border-radius:6px;animation:pulse 1.4s ease-in-out infinite;"></div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;">
+      <sc-for list="{{ skeletonFive }}" as="s" hint-placeholder-count="5">
+        <div style="height:88px;background:#141414;border:1px solid #242424;border-radius:12px;padding:14px;">
+          <div style="height:10px;width:60%;background:#1C1C1C;border-radius:4px;margin-bottom:12px;animation:pulse 1.4s ease-in-out infinite;"></div>
+          <div style="height:16px;width:80%;background:#1C1C1C;border-radius:4px;animation:pulse 1.4s ease-in-out infinite;"></div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="height:180px;background:#141414;border:1px solid #242424;border-radius:12px;animation:pulse 1.4s ease-in-out infinite;"></div>
+    <div style="display:grid;grid-template-columns:{{ mainCols }};gap:20px;">
+      <div style="height:420px;background:#141414;border:1px solid #242424;border-radius:12px;animation:pulse 1.4s ease-in-out infinite;"></div>
+      <div style="height:420px;background:#141414;border:1px solid #242424;border-radius:12px;animation:pulse 1.4s ease-in-out infinite;"></div>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ pageReady }}" hint-placeholder-val="{{ true }}">
+  <div style="padding:{{ bodyPadding }};display:flex;flex-direction:column;gap:20px;">
+
+    <!-- Header -->
+    <div style="display:flex;flex-direction:{{ headerDir }};justify-content:space-between;gap:16px;align-items:{{ headerAlign }};">
+      <div>
+        <div style="font-size:24px;line-height:32px;font-weight:600;color:#F5F5F5;margin-bottom:4px;">Portfolio</div>
+        <div style="font-size:12px;color:#6E6E6E;">Practice trading with a $10,000 virtual balance.</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span style="font-size:11px;color:#FDD458;border:1px solid rgba(253,212,88,0.4);background:rgba(253,212,88,0.08);border-radius:20px;padding:4px 10px;">Paper trading</span>
+        <span style="font-size:11px;color:#A1A1A1;border:1px solid #242424;background:#141414;border-radius:20px;padding:4px 10px;display:flex;align-items:center;gap:5px;">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="3"></circle></svg>
+          Growth · Moderate risk
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"></path></svg>
+        </span>
+        <div style="display:flex;gap:2px;background:#0A0A0A;border:1px solid #242424;border-radius:8px;padding:3px;">
+          <sc-for list="{{ timeframes }}" as="tf" hint-placeholder-count="6">
+            <button onClick="{{ setTimeframe }}" data-tf="{{ tf.label }}" style="background:{{ tf.bg }};color:{{ tf.color }};border:none;border-radius:6px;padding:5px 9px;font-size:11px;cursor:pointer;">{{ tf.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <!-- Equity cards -->
+    <div style="display:grid;grid-template-columns:{{ equityCols }};gap:12px;overflow-x:{{ equityOverflow }};">
+      <sc-for list="{{ equityCards }}" as="c" hint-placeholder-count="5">
+        <div style="background:#141414;border:1px solid #242424;border-radius:12px;padding:14px;min-width:{{ equityMinWidth }};">
+          <div style="font-size:11px;color:#6E6E6E;text-transform:uppercase;letter-spacing:0.02em;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+            {{ c.label }}
+            <sc-if value="{{ c.warn }}" hint-placeholder-val="{{ false }}">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FDD458" stroke-width="1.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            </sc-if>
+          </div>
+          <div style="font-size:18px;font-family:'Geist Mono',monospace;font-weight:500;color:{{ c.color }};margin-bottom:8px;">{{ c.value }}</div>
+          <sc-if value="{{ c.hasBar }}" hint-placeholder-val="{{ false }}">
+            <div style="height:4px;background:#1C1C1C;border-radius:2px;overflow:hidden;"><div style="height:100%;width:{{ c.barPct }};background:{{ c.barColor }};"></div></div>
+          </sc-if>
+          <sc-if value="{{ c.hasPill }}" hint-placeholder-val="{{ false }}">
+            <span style="font-size:11px;font-family:'Geist Mono',monospace;color:{{ c.color }};background:{{ c.pillBg }};border-radius:20px;padding:2px 7px;">{{ c.pillText }}</span>
+          </sc-if>
+          <sc-if value="{{ c.caption }}" hint-placeholder-val="{{ false }}"><div style="font-size:10px;color:#6E6E6E;">{{ c.caption }}</div></sc-if>
+        </div>
+      </sc-for>
+    </div>
+
+    <!-- Performance strip -->
+    <div style="background:#141414;border:1px solid #242424;border-radius:12px;padding:16px;display:flex;flex-direction:{{ perfDir }};gap:16px;height:{{ perfHeight }};">
+      <div style="flex:3;position:relative;">
+        <svg width="100%" height="130" viewBox="0 0 600 130" preserveAspectRatio="none">
+          <defs><linearGradient id="perfFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FDD458" stop-opacity="0.22"/><stop offset="100%" stop-color="#FDD458" stop-opacity="0"/></linearGradient></defs>
+          <path d="M0,100 L60,90 L120,95 L180,70 L240,78 L300,50 L360,60 L420,35 L480,45 L540,20 L600,30 L600,130 L0,130 Z" fill="url(#perfFill)"></path>
+          <path d="M0,100 L60,90 L120,95 L180,70 L240,78 L300,50 L360,60 L420,35 L480,45 L540,20 L600,30" fill="none" stroke="#FDD458" stroke-width="2"></path>
+          <path d="M0,105 L60,100 L120,98 L180,92 L240,88 L300,80 L360,75 L420,68 L480,62 L540,58 L600,52" fill="none" stroke="#8A8A8A" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.6"></path>
+        </svg>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:6px;border-left:1px solid #242424;padding-left:16px;">
+        <div style="font-size:20px;font-family:'Geist Mono',monospace;color:#22C55E;">+$847</div>
+        <div style="font-size:13px;font-family:'Geist Mono',monospace;color:#22C55E;">+8.47% · 1M</div>
+        <div style="font-size:12px;font-family:'Geist Mono',monospace;color:#22C55E;">vs S&amp;P +2.14% <span style="color:#6E6E6E;font-family:'Geist';">beating</span></div>
+      </div>
+    </div>
+
+    <!-- Main grid -->
+    <div style="display:grid;grid-template-columns:{{ mainCols }};gap:20px;align-items:start;">
+
+      <div style="display:flex;flex-direction:column;gap:20px;min-width:0;">
+
+        <!-- Allocation -->
+        <div style="background:#141414;border:1px solid #242424;border-radius:12px;padding:16px;">
+          <div style="font-size:12px;color:#6E6E6E;text-transform:uppercase;letter-spacing:0.02em;margin-bottom:16px;">Allocation</div>
+          <div style="display:flex;flex-direction:{{ allocDir }};gap:20px;align-items:center;">
+            <div style="position:relative;width:160px;height:160px;flex:none;">
+              <svg width="160" height="160" viewBox="0 0 160 160">
+                <circle cx="80" cy="80" r="60" fill="none" stroke="#1C1C1C" stroke-width="24"></circle>
+                <circle cx="80" cy="80" r="60" fill="none" stroke="#FDD458" stroke-width="24" stroke-dasharray="150 377" stroke-dashoffset="0" transform="rotate(-90 80 80)"></circle>
+                <circle cx="80" cy="80" r="60" fill="none" stroke="#F97316" stroke-width="24" stroke-dasharray="90 377" stroke-dashoffset="-150" transform="rotate(-90 80 80)"></circle>
+                <circle cx="80" cy="80" r="60" fill="none" stroke="#EAB308" stroke-width="24" stroke-dasharray="60 377" stroke-dashoffset="-240" transform="rotate(-90 80 80)"></circle>
+                <circle cx="80" cy="80" r="60" fill="none" stroke="#6E6E6E" stroke-width="24" stroke-dasharray="77 377" stroke-dashoffset="-300" transform="rotate(-90 80 80)"></circle>
+              </svg>
+              <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:16px;font-family:'Geist Mono',monospace;color:#F5F5F5;">$10,847</div>
+                <div style="font-size:10px;color:#6E6E6E;">Total value</div>
+              </div>
+            </div>
+            <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px;min-width:0;">
+              <sc-for list="{{ allocations }}" as="a" hint-placeholder-count="5">
+                <div style="display:flex;align-items:center;gap:6px;font-size:12px;">
+                  <span style="width:8px;height:8px;border-radius:50%;background:{{ a.color }};flex:none;"></span>
+                  <span style="color:#F5F5F5;flex:1;">{{ a.name }}</span>
+                  <span style="font-family:'Geist Mono',monospace;color:#A1A1A1;">{{ a.weight }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+
+        <!-- Holdings table -->
+        <div style="background:#141414;border:1px solid #242424;border-radius:12px;overflow:hidden;">
+          <div style="padding:14px 16px;border-bottom:1px solid #242424;font-size:12px;color:#6E6E6E;text-transform:uppercase;letter-spacing:0.02em;">Holdings</div>
+          <sc-for list="{{ holdings }}" as="h" hint-placeholder-count="4">
+            <div>
+              <div onClick="{{ toggleRow }}" data-symbol="{{ h.symbol }}" style="display:grid;grid-template-columns:1.6fr 0.7fr 0.9fr 0.9fr 1fr 1fr 1fr 1fr 0.8fr;align-items:center;gap:8px;padding:0 16px;height:56px;border-bottom:1px solid #1C1C1C;border-left:{{ h.borderLeft }};cursor:pointer;">
+                <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+                  <div style="width:28px;height:28px;border-radius:50%;background:rgba(253,212,88,0.12);display:flex;align-items:center;justify-content:center;font-size:10px;font-family:'Geist Mono',monospace;color:#F5F5F5;font-weight:600;flex:none;">{{ h.initials }}</div>
+                  <div style="min-width:0;">
+                    <div style="font-size:12px;font-family:'Geist Mono',monospace;color:#F5F5F5;">{{ h.symbol }}</div>
+                    <div style="font-size:10px;color:#6E6E6E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ h.name }}</div>
+                  </div>
+                </div>
+                <div style="font-size:12px;font-family:'Geist Mono',monospace;color:#F5F5F5;text-align:right;">{{ h.qty }}</div>
+                <div style="font-size:12px;font-family:'Geist Mono',monospace;color:#A1A1A1;text-align:right;">{{ h.avgCost }}</div>
+                <div style="font-size:12px;font-family:'Geist Mono',monospace;color:#F5F5F5;text-align:right;">{{ h.price }}</div>
+                <div style="font-size:12px;font-family:'Geist Mono',monospace;color:#F5F5F5;text-align:right;">{{ h.marketValue }}</div>
+                <div style="font-size:12px;font-family:'Geist Mono',monospace;color:{{ h.dayColor }};text-align:right;">{{ h.dayChange }}</div>
+                <div style="font-size:12px;font-family:'Geist Mono',monospace;color:{{ h.plColor }};text-align:right;">{{ h.pl }}</div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;">
+                  <span style="font-size:11px;font-family:'Geist Mono',monospace;color:{{ h.weightColor }};display:flex;align-items:center;gap:3px;">
+                    <sc-if value="{{ h.overweight }}" hint-placeholder-val="{{ false }}">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#FDD458" stroke-width="2"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path></svg>
+                    </sc-if>
+                    {{ h.weight }}
+                  </span>
+                  <div style="width:50px;height:3px;background:#1C1C1C;border-radius:2px;overflow:hidden;"><div style="height:100%;width:{{ h.weightBarPct }};background:{{ h.weightColor }};"></div></div>
+                </div>
+                <div style="display:flex;gap:4px;justify-content:flex-end;">
+                  <button aria-label="Trade" style="background:none;border:none;color:#6E6E6E;cursor:pointer;padding:3px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3v18h18"></path><path d="M18 9l-5 5-4-4-4 4"></path></svg></button>
+                </div>
+              </div>
+              <sc-if value="{{ h.expanded }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:14px 16px 14px 52px;background:#0A0A0A;border-bottom:1px solid #1C1C1C;display:flex;flex-direction:column;gap:8px;">
+                  <div style="font-size:11px;color:#6E6E6E;">Since purchase</div>
+                  <svg width="200" height="40" viewBox="0 0 200 40"><path d="M0,30 L30,25 L60,28 L90,15 L120,20 L150,8 L200,12" fill="none" stroke="#22C55E" stroke-width="1.5"></path></svg>
+                  <div style="font-size:12px;font-family:'Geist Mono',monospace;color:#22C55E;">+$4.20 (+2.4%) from entry</div>
+                  <div style="font-size:11px;color:#A1A1A1;font-style:italic;">"Earnings play — expecting a beat on services revenue."</div>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+
+        <!-- Recent trades -->
+        <div style="background:#141414;border:1px solid #242424;border-radius:12px;overflow:hidden;">
+          <div style="padding:14px 16px;border-bottom:1px solid #242424;display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:12px;color:#6E6E6E;text-transform:uppercase;letter-spacing:0.02em;">Recent trades</div>
+            <a href="#" onClick="{{ goHistory }}" style="font-size:12px;color:#FDD458;">See full history →</a>
+          </div>
+          <sc-for list="{{ trades }}" as="t" hint-placeholder-count="4">
+            <div style="display:grid;grid-template-columns:60px 1fr 1fr 1fr 1fr;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid #1C1C1C;">
+              <span style="font-size:10px;font-weight:600;padding:2px 6px;border-radius:20px;text-align:center;background:{{ t.sideBg }};color:{{ t.sideColor }};border:{{ t.sideBorder }};">{{ t.side }}</span>
+              <span style="font-size:12px;font-family:'Geist Mono',monospace;color:#F5F5F5;">{{ t.symbol }}</span>
+              <span style="font-size:12px;font-family:'Geist Mono',monospace;color:#A1A1A1;">{{ t.qtyPrice }}</span>
+              <span style="font-size:12px;font-family:'Geist Mono',monospace;color:#F5F5F5;">{{ t.total }}</span>
+              <span style="font-size:11px;font-family:'Geist Mono',monospace;color:#6E6E6E;text-align:right;">{{ t.time }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <!-- Right column -->
+      <div style="display:flex;flex-direction:column;gap:16px;position:{{ rightSticky }};top:24px;min-width:0;">
+
+        <!-- Trade ticket -->
+        <div style="background:#141414;border:1px solid #242424;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;">
+          <div style="font-size:12px;color:#6E6E6E;text-transform:uppercase;letter-spacing:0.02em;">Trade ticket</div>
+          <div style="display:flex;background:#0A0A0A;border:1px solid #242424;border-radius:8px;padding:3px;">
+            <button onClick="{{ setSideBuy }}" style="flex:1;background:{{ buyBg }};color:{{ buyColor }};border:{{ buyRing }};border-radius:6px;padding:8px;font-size:13px;font-weight:600;cursor:pointer;">Buy</button>
+            <button onClick="{{ setSideSell }}" style="flex:1;background:{{ sellBg }};color:{{ sellColor }};border:{{ sellRing }};border-radius:6px;padding:8px;font-size:13px;font-weight:600;cursor:pointer;">Sell</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;background:#0A0A0A;border:1px solid #242424;border-radius:8px;padding:8px 10px;">
+            <div style="width:22px;height:22px;border-radius:50%;background:rgba(253,212,88,0.12);display:flex;align-items:center;justify-content:center;font-size:9px;font-family:'Geist Mono',monospace;color:#F5F5F5;font-weight:600;">AA</div>
+            <div style="flex:1;font-size:13px;font-family:'Geist Mono',monospace;color:#F5F5F5;">AAPL <span style="color:#6E6E6E;font-family:'Geist';">Apple Inc.</span></div>
+          </div>
+          <div>
+            <input value="{{ qty }}" onChange="{{ onQtyChange }}" style="width:100%;background:#0A0A0A;border:1px solid #242424;border-radius:8px;padding:12px;color:#F5F5F5;font-size:24px;font-family:'Geist Mono',monospace;text-align:right;"/>
+            <div style="font-size:11px;color:#6E6E6E;margin-top:4px;">Max: 24 shares at $180.50</div>
+          </div>
+          <div style="background:#0A0A0A;border-radius:8px;padding:10px 12px;font-size:12px;color:#A1A1A1;">
+            Buying <span style="font-family:'Geist Mono',monospace;color:#F5F5F5;">{{ qty }}</span> AAPL @ <span style="font-family:'Geist Mono',monospace;color:#F5F5F5;">$180.25</span> = <span style="font-family:'Geist Mono',monospace;color:#F5F5F5;">{{ orderTotal }}</span> · Cash after: <span style="font-family:'Geist Mono',monospace;color:#F5F5F5;">{{ cashAfter }}</span>
+          </div>
+          <sc-if value="{{ showRiskAlert }}" hint-placeholder-val="{{ false }}">
+            <div style="background:rgba(253,212,88,0.08);border:1px solid rgba(253,212,88,0.4);border-radius:8px;padding:10px 12px;display:flex;gap:8px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FDD458" stroke-width="1.5" style="flex:none;margin-top:1px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+              <div style="font-size:12px;color:#F5F5F5;flex:1;">This would put 32% of your portfolio in AAPL. Your Capital Guard limit is 25%.
+                <div style="display:flex;gap:10px;margin-top:6px;">
+                  <button onClick="{{ dismissRisk }}" style="background:none;border:1px solid #2E2E2E;color:#F5F5F5;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;">Adjust</button>
+                  <button style="background:none;border:none;color:#6E6E6E;font-size:11px;cursor:pointer;text-decoration:underline;">Override &amp; continue</button>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+          <button onClick="{{ toggleJournal }}" style="background:none;border:none;color:#A1A1A1;font-size:12px;cursor:pointer;text-align:left;padding:0;">+ Add journal note (optional)</button>
+          <sc-if value="{{ journalOpen }}" hint-placeholder-val="{{ false }}">
+            <textarea placeholder="Why are you making this trade?" maxLength="240" style="width:100%;min-height:60px;background:#0A0A0A;border:1px solid #242424;border-radius:8px;padding:10px;color:#F5F5F5;font-size:12px;font-family:inherit;resize:vertical;"></textarea>
+          </sc-if>
+          <button onClick="{{ submitTrade }}" style="width:100%;background:#FDD458;color:#0A0A0A;border:none;border-radius:8px;padding:12px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+            <sc-if value="{{ tradeLoading }}" hint-placeholder-val="{{ false }}">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 0.8s linear infinite;"><path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"></path></svg>
+            </sc-if>
+            <span>{{ tradeLabel }}</span>
+          </button>
+        </div>
+
+        <!-- Risk overview -->
+        <div style="background:#141414;border:1px solid #242424;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;">
+          <div style="font-size:12px;color:#6E6E6E;text-transform:uppercase;letter-spacing:0.02em;">Risk overview</div>
+          <sc-for list="{{ riskRows }}" as="r" hint-placeholder-count="4">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <span style="font-size:12px;color:#A1A1A1;">{{ r.label }}</span>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:12px;font-family:'Geist Mono',monospace;color:#F5F5F5;">{{ r.value }}</span>
+                <sc-if value="{{ r.hasBar }}" hint-placeholder-val="{{ false }}">
+                  <div style="width:50px;height:4px;background:#1C1C1C;border-radius:2px;overflow:hidden;"><div style="height:100%;width:{{ r.barPct }};background:{{ r.barColor }};"></div></div>
+                </sc-if>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+
+        <!-- Capital guard -->
+        <div style="background:#141414;border:1px solid #242424;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div style="font-size:12px;color:#6E6E6E;text-transform:uppercase;letter-spacing:0.02em;display:flex;align-items:center;gap:6px;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#FDD458" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+              Capital guard
+            </div>
+          </div>
+          <sc-for list="{{ guards }}" as="g" hint-placeholder-count="3">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="width:8px;height:8px;border-radius:50%;background:{{ g.dot }};flex:none;"></span>
+              <span style="font-size:12px;color:#F5F5F5;flex:1;">{{ g.label }}</span>
+              <span style="font-size:12px;font-family:'Geist Mono',monospace;color:#A1A1A1;">{{ g.value }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI portfolio review -->
+    <div style="background:#141414;border:1px solid #242424;border-left:2px solid #FDD458;border-radius:12px;padding:20px;box-shadow:0 0 40px -26px rgba(249,115,22,0.4);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FDD458" stroke-width="1.5"><path d="M12 3l1.9 4.5L18 9.2l-4.1 1.7L12 15l-1.9-4.1L6 9.2l4.1-1.7z"></path></svg>
+          <span style="font-size:12px;color:#6E6E6E;text-transform:uppercase;letter-spacing:0.02em;">AI portfolio review</span>
+        </div>
+        <button style="background:none;border:1px solid #2E2E2E;color:#F5F5F5;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+          Analyze now
+        </button>
+      </div>
+      <div style="display:grid;grid-template-columns:{{ aiCols }};gap:20px;">
+        <div>
+          <div style="font-size:11px;color:#6E6E6E;text-transform:uppercase;margin-bottom:8px;">Health score</div>
+          <div style="font-size:24px;font-family:'Geist Mono',monospace;color:#22C55E;margin-bottom:6px;">74/100</div>
+          <div style="height:4px;background:#1C1C1C;border-radius:2px;overflow:hidden;margin-bottom:6px;"><div style="height:100%;width:74%;background:#22C55E;"></div></div>
+          <span style="font-size:11px;color:#22C55E;background:rgba(34,197,94,0.12);border-radius:20px;padding:2px 8px;">Balanced</span>
+        </div>
+        <div>
+          <div style="font-size:11px;color:#6E6E6E;text-transform:uppercase;margin-bottom:8px;">Concentration &amp; risk</div>
+          <div style="display:flex;flex-direction:column;gap:5px;font-size:12px;font-family:'Geist Mono',monospace;color:#F5F5F5;">
+            <div>HHI 0.21 · Effective N 4.8</div>
+            <div>Top-1 wt 32% · Cash 12%</div>
+            <div>Weighted β 1.14 · Vol 18.2%</div>
+            <div>Avg corr 0.42</div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:#6E6E6E;text-transform:uppercase;margin-bottom:8px;">P/L attribution</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;">
+            <span style="font-size:11px;font-family:'Geist Mono',monospace;color:#22C55E;background:rgba(34,197,94,0.12);border-radius:20px;padding:3px 8px;">NVDA +4.2%</span>
+            <span style="font-size:11px;font-family:'Geist Mono',monospace;color:#22C55E;background:rgba(34,197,94,0.12);border-radius:20px;padding:3px 8px;">AAPL +1.1%</span>
+            <span style="font-size:11px;font-family:'Geist Mono',monospace;color:#EF4444;background:rgba(239,68,68,0.12);border-radius:20px;padding:3px 8px;">TSLA −0.8%</span>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid #242424;">
+        <div style="font-size:13px;color:#F5F5F5;line-height:20px;margin-bottom:10px;">Your portfolio is moderately concentrated in tech, with NVDA at 32% — above your 25% Capital Guard limit. Diversification across sectors would reduce single-name risk without giving up much upside.</div>
+        <div style="display:flex;align-items:flex-start;gap:8px;font-size:12px;color:#F5F5F5;background:rgba(253,212,88,0.06);border-left:2px solid #FDD458;padding:8px 10px;margin-bottom:8px;">
+          Rule fired: Max % in one name — NVDA at 32% exceeds your 25% limit.
+        </div>
+        <div style="font-size:12px;color:#A1A1A1;">Suggested: trim NVDA by ~7% and rotate into a defensive sector. <button style="background:none;border:1px solid #2E2E2E;color:#F5F5F5;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;margin-left:6px;">Prepare trade</button></div>
+      </div>
+    </div>
+
+    <!-- Weekly check-in -->
+    <div style="background:#141414;border:1px solid #242424;border-left:2px solid rgba(253,212,88,0.5);border-radius:12px;padding:18px;margin-bottom:40px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <span style="font-size:12px;color:#6E6E6E;text-transform:uppercase;letter-spacing:0.02em;">This week</span>
+        <button aria-label="Dismiss" style="background:none;border:none;color:#6E6E6E;cursor:pointer;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+      </div>
+      <div style="display:flex;gap:24px;margin-bottom:14px;flex-wrap:wrap;">
+        <div><span style="font-size:11px;color:#6E6E6E;">Trades made</span><div style="font-size:15px;font-family:'Geist Mono',monospace;color:#F5F5F5;">4</div></div>
+        <div><span style="font-size:11px;color:#6E6E6E;">Return</span><div style="font-size:15px;font-family:'Geist Mono',monospace;color:#22C55E;">+2.1%</div></div>
+        <div><span style="font-size:11px;color:#6E6E6E;">vs last week</span><div style="font-size:15px;font-family:'Geist Mono',monospace;color:#22C55E;">+0.6%</div></div>
+      </div>
+      <input placeholder="What worked this week?" style="width:100%;background:#0A0A0A;border:1px solid #242424;border-radius:8px;padding:10px 12px;color:#F5F5F5;font-size:13px;font-family:inherit;margin-bottom:10px;"/>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <span style="font-size:11px;color:#A1A1A1;background:#0A0A0A;border:1px solid #242424;border-radius:20px;padding:4px 9px;">Bought NVDA — "Earnings play"</span>
+        <span style="font-size:11px;color:#A1A1A1;background:#0A0A0A;border:1px solid #242424;border-radius:20px;padding:4px 9px;">Sold AMD — "Cut loss at 5%"</span>
+      </div>
+    </div>
+
+  </div>
+  </sc-if>
+</div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:2000},&quot;viewport&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;desktop&quot;,&quot;options&quot;:[&quot;desktop&quot;,&quot;mobile&quot;],&quot;tsType&quot;:&quot;'desktop'|'mobile'&quot;,&quot;section&quot;:&quot;Layout&quot;},&quot;pageLoading&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;State&quot;}}">
+class Component extends DCLogic {
+  state = { timeframe: '1M', side: 'buy', qty: '5', expandedRow: null, journalOpen: false, tradeLoading: false, dismissedRisk: false };
+
+  setTimeframe = (e) => this.setState({ timeframe: e.currentTarget.getAttribute('data-tf') });
+  setSideBuy = () => this.setState({ side: 'buy' });
+  setSideSell = () => this.setState({ side: 'sell' });
+  onQtyChange = (e) => this.setState({ qty: e.target.value });
+  toggleJournal = () => this.setState(s => ({ journalOpen: !s.journalOpen }));
+  toggleRow = (e) => {
+    const sym = e.currentTarget.getAttribute('data-symbol');
+    this.setState(s => ({ expandedRow: s.expandedRow === sym ? null : sym }));
+  };
+  dismissRisk = () => this.setState({ dismissedRisk: true });
+  submitTrade = () => {
+    this.setState({ tradeLoading: true });
+    setTimeout(() => this.setState({ tradeLoading: false }), 1000);
+  };
+  goHistory = (e) => e.preventDefault();
+
+  renderVals() {
+    const viewport = this.props.viewport || 'desktop';
+    const isMobile = viewport === 'mobile';
+    const pageLoading = this.props.pageLoading === true;
+    const up = '#22C55E', down = '#EF4444';
+    const qty = parseFloat(this.state.qty) || 0;
+    const price = 180.25;
+    const total = (qty * price).toFixed(2);
+    return {
+      isMobile, isDesktop: !isMobile,
+      shellWidth: isMobile ? '390px' : '100%',
+      bodyPadding: isMobile ? '20px 16px' : '24px 32px',
+      headerDir: isMobile ? 'column' : 'row',
+      headerAlign: isMobile ? 'flex-start' : 'center',
+      equityCols: isMobile ? 'repeat(5,140px)' : 'repeat(5,1fr)',
+      equityOverflow: isMobile ? 'auto' : 'visible',
+      equityMinWidth: isMobile ? '140px' : 'auto',
+      perfDir: isMobile ? 'column' : 'row',
+      perfHeight: isMobile ? 'auto' : '180px',
+      mainCols: isMobile ? '1fr' : '2fr 1fr',
+      allocDir: isMobile ? 'column' : 'row',
+      rightSticky: isMobile ? 'static' : 'sticky',
+      aiCols: isMobile ? '1fr' : 'repeat(3,1fr)',
+      pageLoading, pageReady: !pageLoading,
+      skeletonFive: [1,2,3,4,5],
+      timeframes: ['1D','1W','1M','3M','YTD','ALL'].map(l => ({ label: l, bg: l === this.state.timeframe ? '#1C1C1C' : 'transparent', color: l === this.state.timeframe ? '#F5F5F5' : '#A1A1A1' })),
+      setTimeframe: this.setTimeframe,
+      equityCards: [
+        { label: 'Cash', value: '$1,847.20', color: '#F5F5F5', hasBar: true, barPct: '18%', barColor: '#22C55E', warn: false, hasPill: false },
+        { label: 'Equity', value: '$9,000.12', color: '#F5F5F5', hasBar: false, hasPill: false },
+        { label: 'Buying power', value: '$1,847.20', color: '#F5F5F5', hasBar: false, hasPill: false, caption: '= Cash' },
+        { label: 'Day P/L', value: '+$126.40', color: up, hasBar: false, hasPill: true, pillText: '+1.24%', pillBg: 'rgba(34,197,94,0.12)' },
+        { label: 'Total P/L', value: '+$847.00', color: up, hasBar: false, hasPill: true, pillText: '+8.47%', pillBg: 'rgba(34,197,94,0.12)' },
+      ],
+      allocations: [
+        { name: 'NVDA', weight: '32%', color: '#FDD458' },
+        { name: 'AAPL', weight: '19%', color: '#F97316' },
+        { name: 'MSFT', weight: '13%', color: '#EAB308' },
+        { name: 'TSLA', weight: '9%', color: '#A1A1A1' },
+        { name: 'Cash', weight: '12%', color: '#6E6E6E' },
+      ],
+      holdings: [
+        { symbol: 'NVDA', name: 'NVIDIA Corp.', initials: 'NV', qty: '18', avgCost: '112.40', price: '128.44', marketValue: '2,312', dayChange: '+2.81%', dayColor: up, pl: '+14.3%', plColor: up, weight: '32%', weightBarPct: '64%', weightColor: '#FDD458', overweight: true, borderLeft: '2px solid #FDD458', expanded: this.state.expandedRow === 'NVDA' },
+        { symbol: 'AAPL', name: 'Apple Inc.', initials: 'AA', qty: '10', avgCost: '176.30', price: '180.50', marketValue: '1,805', dayChange: '+1.24%', dayColor: up, pl: '+2.4%', plColor: up, weight: '19%', weightBarPct: '38%', weightColor: '#22C55E', overweight: false, borderLeft: 'none', expanded: this.state.expandedRow === 'AAPL' },
+        { symbol: 'MSFT', name: 'Microsoft Corp.', initials: 'MS', qty: '3', avgCost: '430.10', price: '441.02', marketValue: '1,323', dayChange: '+0.31%', dayColor: up, pl: '+2.5%', plColor: up, weight: '13%', weightBarPct: '26%', weightColor: '#22C55E', overweight: false, borderLeft: 'none', expanded: this.state.expandedRow === 'MSFT' },
+        { symbol: 'TSLA', name: 'Tesla, Inc.', initials: 'TS', qty: '4', avgCost: '250.00', price: '241.10', marketValue: '964', dayChange: '−0.53%', dayColor: down, pl: '−3.6%', plColor: down, weight: '9%', weightBarPct: '18%', weightColor: '#22C55E', overweight: false, borderLeft: 'none', expanded: this.state.expandedRow === 'TSLA' },
+      ],
+      trades: [
+        { side: 'BUY', sideBg: '#FDD458', sideColor: '#0A0A0A', sideBorder: 'none', symbol: 'NVDA', qtyPrice: '5 @ $126.10', total: '$630.50', time: '2h ago' },
+        { side: 'SELL', sideBg: 'transparent', sideColor: down, sideBorder: '1px solid ' + down, symbol: 'AMD', qtyPrice: '8 @ $142.00', total: '$1,136.00', time: '1d ago' },
+        { side: 'BUY', sideBg: '#FDD458', sideColor: '#0A0A0A', sideBorder: 'none', symbol: 'AAPL', qtyPrice: '10 @ $176.30', total: '$1,763.00', time: '3d ago' },
+      ],
+      qty: this.state.qty, onQtyChange: this.onQtyChange,
+      buyBg: this.state.side === 'buy' ? '#FDD458' : 'transparent', buyColor: this.state.side === 'buy' ? '#0A0A0A' : '#A1A1A1', buyRing: this.state.side === 'buy' ? '2px solid #FDD458' : 'none',
+      sellBg: this.state.side === 'sell' ? 'rgba(239,68,68,0.15)' : 'transparent', sellColor: this.state.side === 'sell' ? down : '#A1A1A1', sellRing: this.state.side === 'sell' ? '2px solid ' + down : 'none',
+      setSideBuy: this.setSideBuy, setSideSell: this.setSideSell,
+      orderTotal: '$' + total, cashAfter: '$' + (1847.20 - total).toFixed(2),
+      showRiskAlert: !this.state.dismissedRisk && qty >= 5,
+      dismissRisk: this.dismissRisk,
+      toggleJournal: this.toggleJournal, journalOpen: this.state.journalOpen,
+      submitTrade: this.submitTrade, tradeLoading: this.state.tradeLoading,
+      tradeLabel: this.state.tradeLoading ? 'Placing trade…' : (this.state.side === 'buy' ? `Buy ${this.state.qty || 0} AAPL — $${total}` : `Sell ${this.state.qty || 0} AAPL — $${total}`),
+      toggleRow: this.toggleRow,
+      riskRows: [
+        { label: 'Concentration', value: '32%', hasBar: true, barPct: '64%', barColor: '#EF4444' },
+        { label: 'Cash buffer', value: '18%', hasBar: true, barPct: '36%', barColor: '#FDD458' },
+        { label: 'Largest position', value: 'NVDA', hasBar: false },
+        { label: 'Positions', value: '4', hasBar: false },
+      ],
+      guards: [
+        { label: 'Max % in one name', value: '25%', dot: down },
+        { label: 'Min cash reserve', value: '10%', dot: up },
+        { label: 'Max trade size', value: '$2,500', dot: up },
+      ],
+      goHistory: this.goHistory,
+    };
+  }
+}
+
+</script>
+</body>
+</html>

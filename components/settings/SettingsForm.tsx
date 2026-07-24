@@ -10,6 +10,8 @@ import { updateProfile } from '@/lib/actions/userProfile.actions';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 
+import { PageEnter } from '@/components/ui/motion';
+
 type ProfileForm = {
   country: string;
   investmentGoals: string;
@@ -46,6 +48,7 @@ export default function SettingsForm({
   };
 
   return (
+    <PageEnter>
     <form onSubmit={handleSubmit(onSubmit)} className="mx-auto max-w-lg space-y-5">
       <h1 className="section-title">Profile Settings</h1>
       <p className="text-sm text-[#6E6E6E]">Your investment preferences power AI personalization.</p>
@@ -95,5 +98,6 @@ export default function SettingsForm({
         )}
       </Button>
     </form>
+    </PageEnter>
   );
 }

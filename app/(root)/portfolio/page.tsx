@@ -1,8 +1,11 @@
-import { getPortfolio } from '@/lib/actions/portfolio.actions';
+import { getPortfolio, getTradeHistory } from '@/lib/actions/portfolio.actions';
 import PortfolioClient from '@/components/portfolio/PortfolioClient';
 
 export default async function PortfolioPage() {
-  const res = await getPortfolio();
+  const [res, histRes] = await Promise.all([
+    getPortfolio(),
+    getTradeHistory({ range: '7d' }),
+  ]);
   const initial = res.success
     ? (res.data as Parameters<typeof PortfolioClient>[0]['initial'])
     : {
@@ -12,7 +15,11 @@ export default async function PortfolioPage() {
         totalValue: 10000,
         plTotal: 0,
         plPercent: 0,
+        dayPl: 0,
+        dayPlPercent: 0,
       };
 
-  return <PortfolioClient initial={initial} />;
+  const initialRecent = histRes.success ? histRes.data.trades.slice(0, 8) : [];
+
+  return <PortfolioClient initial={initial} initialRecent={initialRecent} />;
 }

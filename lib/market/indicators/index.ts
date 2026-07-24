@@ -89,20 +89,26 @@ export function computeIndicators(candles: Candle[]) {
   const macdResult = macd(closes);
   const bb = bollingerBands(closes, 20);
 
-  const last = closes.length - 1;
+  const lastFinite = (arr: number[]) => {
+    for (let i = arr.length - 1; i >= 0; i--) {
+      if (Number.isFinite(arr[i])) return arr[i];
+    }
+    return NaN;
+  };
+
   return {
-    sma20: sma20[last],
-    sma50: sma50[last],
-    rsi14: rsi14[last],
+    sma20: lastFinite(sma20),
+    sma50: lastFinite(sma50),
+    rsi14: lastFinite(rsi14),
     macd: {
-      macd: macdResult.macdLine[last],
-      signal: macdResult.signalLine[last],
-      histogram: macdResult.histogram[last],
+      macd: lastFinite(macdResult.macdLine),
+      signal: lastFinite(macdResult.signalLine),
+      histogram: lastFinite(macdResult.histogram),
     },
     bollinger: {
-      upper: bb.upper[last],
-      middle: bb.middle[last],
-      lower: bb.lower[last],
+      upper: lastFinite(bb.upper),
+      middle: lastFinite(bb.middle),
+      lower: lastFinite(bb.lower),
     },
     series: {
       sma20,
@@ -111,21 +117,66 @@ export function computeIndicators(candles: Candle[]) {
       macd: macdResult,
       bollinger: bb,
     },
+    ...(candles.length ? { barCount: candles.length } : {}),
   };
 }
 
-export function deriveSignals(indicators: ReturnType<typeof computeIndicators>) {
+export function deriveSignals(
+  indicators: ReturnType<typeof computeIndicators>,
+  candles?: Candle[]
+) {
   const signals: { label: string; type: 'bullish' | 'bearish' | 'neutral' | 'warning' }[] = [];
 
-  if (indicators.rsi14 > 70) signals.push({ label: 'Overbought RSI', type: 'warning' });
-  else if (indicators.rsi14 < 30) signals.push({ label: 'Oversold RSI', type: 'bullish' });
-  else signals.push({ label: 'Neutral RSI', type: 'neutral' });
+  if (Number.isFinite(indicators.sma20) && Number.isFinite(indicators.sma50)) {
+    if (indicators.sma20 > indicators.sma50) {
+      signals.push({ label: 'Bullish trend', type: 'bullish' });
+    } else {
+      signals.push({ label: 'Bearish trend', type: 'bearish' });
+    }
+  }
 
-  if (indicators.macd.histogram > 0) signals.push({ label: 'Bullish momentum', type: 'bullish' });
-  else signals.push({ label: 'Bearish momentum', type: 'bearish' });
+  // Volatility from Bollinger band width vs recent average
+  const bb = indicators.series.bollinger;
+  const widths: number[] = [];
+  for (let i = 0; i < bb.upper.length; i++) {
+    if (Number.isFinite(bb.upper[i]) && Number.isFinite(bb.lower[i]) && bb.middle[i]) {
+      widths.push((bb.upper[i] - bb.lower[i]) / bb.middle[i]);
+    }
+  }
+  if (widths.length >= 5) {
+    const last = widths[widths.length - 1];
+    const avg =
+      widths.slice(-20).reduce((a, b) => a + b, 0) / Math.min(20, widths.length);
+    if (last > avg * 1.35) signals.push({ label: 'Volatility warning', type: 'warning' });
+    else if (last < avg * 0.7) signals.push({ label: 'Low volatility', type: 'neutral' });
+    else signals.push({ label: 'Volatility normal', type: 'neutral' });
+  }
 
-  if (indicators.sma20 > indicators.sma50) signals.push({ label: 'Uptrend (MA20 > MA50)', type: 'bullish' });
-  else signals.push({ label: 'Downtrend (MA20 < MA50)', type: 'bearish' });
+  // Volume vs short SMA
+  if (candles && candles.length >= 10) {
+    const vols = candles.map((c) => c.volume ?? 0);
+    const lastVol = vols[vols.length - 1];
+    const lookback = vols.slice(-21, -1).filter((v) => v > 0);
+    if (lookback.length >= 5 && lastVol > 0) {
+      const avgVol = lookback.reduce((a, b) => a + b, 0) / lookback.length;
+      if (lastVol > avgVol * 1.4) signals.push({ label: 'Volume elevated', type: 'bullish' });
+      else if (lastVol < avgVol * 0.6) signals.push({ label: 'Volume light', type: 'warning' });
+      else signals.push({ label: 'Volume neutral', type: 'neutral' });
+    } else {
+      signals.push({ label: 'Volume neutral', type: 'neutral' });
+    }
+  }
+
+  if (Number.isFinite(indicators.rsi14)) {
+    if (indicators.rsi14 > 70) signals.push({ label: 'Overbought RSI', type: 'warning' });
+    else if (indicators.rsi14 < 30) signals.push({ label: 'Oversold RSI', type: 'bullish' });
+  }
+
+  if (indicators.macd.histogram > 0) {
+    signals.push({ label: 'Bullish momentum', type: 'bullish' });
+  } else if (indicators.macd.histogram < 0) {
+    signals.push({ label: 'Bearish momentum', type: 'bearish' });
+  }
 
   return signals;
 }

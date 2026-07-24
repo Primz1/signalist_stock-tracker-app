@@ -1,14 +1,9 @@
 import Header from '@/components/layout/Header';
-import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { auth } from '@/lib/better-auth/auth';
-
-export const dynamic = 'force-dynamic';
+import { getCachedSession } from '@/lib/auth/session';
 
 const layout = async ({ children }: { children: React.ReactNode }) => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const session = await getCachedSession();
 
   if (!session?.user) redirect('/sign-in');
 

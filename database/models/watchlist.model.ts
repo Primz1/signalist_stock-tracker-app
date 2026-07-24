@@ -12,7 +12,6 @@ const WatchlistSchema = new Schema<WatchlistItem>({
   userId: {
     type: String,
     required: true,
-    index: true
   },
   symbol: {
     type: String,
@@ -31,8 +30,9 @@ const WatchlistSchema = new Schema<WatchlistItem>({
   }
 });          
 
-// Add compound index on userId + symbol to prevent duplicates
+// Compound unique covers userId prefix queries; symbol for global jobs
 WatchlistSchema.index({ userId: 1, symbol: 1 }, { unique: true });
+WatchlistSchema.index({ symbol: 1 });
 
 // Use the models?.Watchlist || model pattern to avoid hot-reload issues
 export const Watchlist: Model<WatchlistItem> =

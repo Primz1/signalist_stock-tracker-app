@@ -4,12 +4,14 @@ import { cn } from '@/lib/utils';
 export default function BrandLogo({
   showWordmark = true,
   className,
+  href = '/dashboard',
 }: {
   showWordmark?: boolean;
   className?: string;
+  href?: string;
 }) {
   return (
-    <Link href="/" className={cn('flex items-center gap-2 flex-none', className)}>
+    <Link href={href} className={cn('flex items-center gap-2 flex-none', className)}>
       <div className="flex h-[26px] w-[26px] items-center justify-center rounded-[7px] bg-[#FDD458] text-[14px] font-bold text-[#0A0A0A]">
         S
       </div>

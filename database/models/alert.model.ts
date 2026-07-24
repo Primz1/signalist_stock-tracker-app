@@ -42,6 +42,7 @@ const AlertSchema = new Schema<AlertItem>(
 );
 
 AlertSchema.index({ userId: 1, symbol: 1, alertType: 1, condition: 1, threshold: 1, frequency: 1 });
+AlertSchema.index({ isActive: 1, symbol: 1 });
 
 export const Alert: Model<AlertItem> = (models?.Alert as Model<AlertItem>) || model<AlertItem>('Alert', AlertSchema);
 

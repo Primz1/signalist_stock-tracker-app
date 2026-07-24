@@ -10,6 +10,7 @@ from quant.data.series import (
     get_daily_ohlcv,
     get_earnings_calendar,
     get_fundamentals,
+    is_crypto_symbol,
 )
 from quant.factors.core import (
     atr,
@@ -34,6 +35,7 @@ from quant.types import (
     DataQuality,
     Quality,
     SymbolEvent,
+    SymbolExtras,
     SymbolLevels,
     SymbolMomentum,
     SymbolQuality,
@@ -45,47 +47,84 @@ from quant.types import (
     SymbolVolatility,
     SymbolVolume,
 )
+from quant.ta_indicators import compute_ta_latest
 
 
-def _score_from_parts(cfg: QuantConfig, trend_signal: float, rsi_14: float | None,
-                      realized_vol: float | None, vol_ratio: float | None,
-                      excess_1m: float | None, days_to_earn: int | None) -> SymbolScore:
+def _quality_score(fundamentals: dict) -> float:
+    """Map available fundamentals into a 0–1 quality factor (neutral 0.5 when sparse)."""
+    scores: list[float] = []
+    pe = fundamentals.get("pe")
+    if isinstance(pe, (int, float)) and pe > 0:
+        if pe < 15:
+            scores.append(0.85)
+        elif pe < 25:
+            scores.append(0.65)
+        elif pe < 40:
+            scores.append(0.4)
+        else:
+            scores.append(0.2)
+    gm = fundamentals.get("gross_margin")
+    if isinstance(gm, (int, float)):
+        scores.append(max(0.0, min(1.0, float(gm))))
+    om = fundamentals.get("operating_margin")
+    if isinstance(om, (int, float)):
+        scores.append(max(0.0, min(1.0, 0.5 + float(om))))
+    de = fundamentals.get("debt_to_equity")
+    if isinstance(de, (int, float)) and de >= 0:
+        scores.append(max(0.0, min(1.0, 1.0 - float(de) / 3.0)))
+    rg = fundamentals.get("revenue_growth_yoy")
+    if isinstance(rg, (int, float)):
+        scores.append(max(0.0, min(1.0, 0.5 + float(rg))))
+    if not scores:
+        return 0.5
+    return sum(scores) / len(scores)
+
+
+def _score_from_parts(
+    cfg: QuantConfig,
+    trend_signal: float,
+    rsi_14: float | None,
+    realized_vol: float | None,
+    vol_ratio: float | None,
+    excess_1m: float | None,
+    days_to_earn: int | None,
+    quality_signal: float = 0.5,
+) -> SymbolScore:
+    """Store raw 0–1 factor scores in `components`; apply weights only for `total`."""
     w = cfg.score_weights
-    parts: dict[str, float] = {}
-    parts["trend"] = trend_signal * w["trend"]
+    raw: dict[str, float] = {}
+    raw["trend"] = max(0.0, min(1.0, trend_signal))
 
     if rsi_14 is not None:
-        rsi_score = max(0.0, min(1.0, 1.0 - abs(rsi_14 - 55) / 55))
+        raw["momentum"] = max(0.0, min(1.0, 1.0 - abs(rsi_14 - 55) / 55))
     else:
-        rsi_score = 0.5
-    parts["momentum"] = rsi_score * w["momentum"]
+        raw["momentum"] = 0.5
 
     if realized_vol is not None:
-        vol_score = max(0.0, min(1.0, 1.0 - (realized_vol - 0.15) / 0.45))
+        raw["volatility_inv"] = max(0.0, min(1.0, 1.0 - (realized_vol - 0.15) / 0.45))
     else:
-        vol_score = 0.5
-    parts["volatility_inv"] = vol_score * w["volatility_inv"]
+        raw["volatility_inv"] = 0.5
 
     if vol_ratio is not None:
-        volume_score = max(0.0, min(1.0, (vol_ratio - 0.5) / 1.5))
+        raw["volume"] = max(0.0, min(1.0, (vol_ratio - 0.5) / 1.5))
     else:
-        volume_score = 0.5
-    parts["volume"] = volume_score * w["volume"]
+        raw["volume"] = 0.5
 
     if excess_1m is not None:
-        rel_score = max(0.0, min(1.0, 0.5 + excess_1m * 5))
+        raw["relative"] = max(0.0, min(1.0, 0.5 + excess_1m * 5))
     else:
-        rel_score = 0.5
-    parts["relative"] = rel_score * w["relative"]
-    parts["quality"] = 0.5 * w["quality"]
+        raw["relative"] = 0.5
+
+    raw["quality"] = max(0.0, min(1.0, quality_signal))
 
     if days_to_earn is not None and days_to_earn < 3:
-        parts["event_penalty"] = -0.5 * w["event_penalty"]
+        raw["event_penalty"] = -0.5
     else:
-        parts["event_penalty"] = 0.0
+        raw["event_penalty"] = 0.0
 
-    total = int(round(sum(parts.values()) * 100))
-    return SymbolScore(total=max(0, min(100, total)), components=parts)
+    weighted = sum(raw.get(k, 0.0) * w.get(k, 0.0) for k in w)
+    total = int(round(weighted * 100))
+    return SymbolScore(total=max(0, min(100, total)), components=raw)
 
 
 async def build_symbol_snapshot(
@@ -284,6 +323,7 @@ async def build_symbol_snapshot(
         vol_ratio,
         relative.excess_return_1m,
         event.days_to_next_earnings,
+        quality_signal=_quality_score(fundamentals),
     )
 
     if len(df) < 60:
@@ -291,6 +331,14 @@ async def build_symbol_snapshot(
         quality.momentum = DataQuality.PARTIAL
     if len(df) < 200:
         quality.trend = DataQuality.PARTIAL if quality.trend != DataQuality.MISSING else quality.trend
+
+    ta_latest = compute_ta_latest(df)
+    extras = SymbolExtras(**{k: ta_latest.get(k) for k in SymbolExtras.model_fields})
+
+    if is_crypto_symbol(sym):
+        # Fundamentals / earnings do not apply — don't flag as "missing history"
+        quality.quality = DataQuality.PARTIAL
+        quality.event = DataQuality.PARTIAL
 
     return SymbolQuantSnapshot(
         symbol=sym,
@@ -306,4 +354,5 @@ async def build_symbol_snapshot(
         event=event,
         score=score,
         data_quality=quality,
+        extras=extras,
     )

@@ -16,6 +16,8 @@ from tools.market_tools import fetch_company_news
 from quant.composites.portfolio_snapshot import build_portfolio_snapshot
 from quant.composites.symbol_snapshot import build_symbol_snapshot
 from quant.narrator.gemini import narrate_research, narrate_review
+from quant.ta_indicators import build_indicators_response
+from quant.tearsheet import build_tearsheet
 
 app = FastAPI(title="Signalist AI Service", version="2.0.0")
 
@@ -37,6 +39,19 @@ def _verify_secret(x_internal_secret: str | None) -> None:
 class PortfolioReviewRequest(BaseModel):
     cash: float = 0
     holdings: list[dict] = Field(default_factory=list)
+
+
+class IndicatorsRequest(BaseModel):
+    symbol: str
+    indicators: list[str] | None = None
+    lookback_days: int = 370
+
+
+class TearsheetRequest(BaseModel):
+    returns: dict[str, float] = Field(default_factory=dict)
+    benchmark: str | None = "SPY"
+    benchmark_returns: dict[str, float] | None = None
+    title: str | None = None
 
 
 @app.get("/health")
@@ -65,6 +80,33 @@ async def quant_portfolio(
     _verify_secret(x_internal_secret)
     snap, _ = await build_portfolio_snapshot(payload.cash, payload.holdings)
     return snap.model_dump()
+
+
+@app.post("/quant/indicators")
+async def quant_indicators(
+    payload: IndicatorsRequest,
+    x_internal_secret: str | None = Header(default=None),
+):
+    _verify_secret(x_internal_secret)
+    return await build_indicators_response(
+        payload.symbol,
+        indicators=payload.indicators,
+        lookback_days=payload.lookback_days,
+    )
+
+
+@app.post("/quant/tearsheet")
+async def quant_tearsheet(
+    payload: TearsheetRequest,
+    x_internal_secret: str | None = Header(default=None),
+):
+    _verify_secret(x_internal_secret)
+    return await build_tearsheet(
+        returns=payload.returns,
+        benchmark=payload.benchmark,
+        benchmark_returns=payload.benchmark_returns,
+        title=payload.title,
+    )
 
 
 @app.post("/agent/research", response_model=ResearchResponse)

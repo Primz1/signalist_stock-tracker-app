@@ -32,6 +32,8 @@ declare global {
         validation?: RegisterOptions;
         disabled?: boolean;
         value?: string;
+        className?: string;
+        style?: React.CSSProperties;
     };
 
     type Option = {
@@ -114,6 +116,7 @@ declare global {
         isInWatchlist: boolean;
         showTrashIcon?: boolean;
         type?: 'button' | 'icon';
+        variant?: 'filled' | 'outline';
         onWatchlistChange?: (symbol: string, isAdded: boolean) => void;
     };
 

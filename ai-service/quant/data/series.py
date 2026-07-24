@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 from datetime import datetime, timedelta, timezone
 
 import httpx
@@ -8,10 +9,63 @@ import pandas as pd
 
 FINNHUB_BASE = "https://finnhub.io/api/v1"
 YAHOO_CHART = "https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
+BINANCE_KLINES = "https://data-api.binance.vision/api/v3/klines"
+
+_CRYPTO_QUOTE_RE = re.compile(r"(USDT|USDC|USD|BTC|ETH|BNB)$", re.I)
+_YAHOO_CRYPTO_BASES = {
+    "BTC",
+    "ETH",
+    "BNB",
+    "XRP",
+    "ADA",
+    "SOL",
+    "DOGE",
+    "DOT",
+    "AVAX",
+    "MATIC",
+    "LINK",
+    "LTC",
+    "ATOM",
+    "UNI",
+    "NEAR",
+}
 
 
 def _token() -> str:
     return os.getenv("FINNHUB_API_KEY") or os.getenv("NEXT_PUBLIC_FINNHUB_API_KEY") or ""
+
+
+def _normalize_symbol(symbol: str) -> str:
+    s = (symbol or "").upper().strip()
+    if s.startswith("BINANCE:"):
+        s = s.split(":", 1)[1]
+    return s
+
+
+def is_crypto_symbol(symbol: str) -> bool:
+    s = _normalize_symbol(symbol)
+    raw = (symbol or "").upper()
+    if raw.startswith("BINANCE:"):
+        return True
+    return bool(_CRYPTO_QUOTE_RE.search(s)) and len(s) >= 5
+
+
+def yahoo_crypto_symbol(symbol: str) -> str | None:
+    """Map BTCUSDT → BTC-USD for Yahoo; None when Yahoo has no good series."""
+    s = _normalize_symbol(symbol)
+    m = _CRYPTO_QUOTE_RE.search(s)
+    if not m:
+        return None
+    quote = m.group(1).upper()
+    base = s[: -len(quote)]
+    if not base or quote in ("BTC", "ETH", "BNB"):
+        # Cross pairs like EVXBTC — skip Yahoo
+        return None
+    if quote not in ("USDT", "USDC", "USD"):
+        return None
+    if base not in _YAHOO_CRYPTO_BASES and len(base) > 5:
+        return None
+    return f"{base}-USD"
 
 
 def _empty() -> pd.DataFrame:
@@ -50,33 +104,42 @@ async def _fetch_finnhub(symbol: str, lookback_days: int) -> pd.DataFrame:
     now = datetime.now(timezone.utc)
     to_ts = int(now.timestamp())
     from_ts = int((now - timedelta(days=lookback_days + 30)).timestamp())
+    sym = _normalize_symbol(symbol)
 
     async with httpx.AsyncClient(timeout=30) as client:
-        res = await client.get(
-            f"{FINNHUB_BASE}/stock/candle",
-            params={
-                "symbol": symbol.upper(),
-                "resolution": "D",
-                "from": from_ts,
-                "to": to_ts,
-                "token": token,
-            },
-        )
-        if res.status_code != 200:
-            return _empty()
-        data = res.json()
+        # Crypto candle best-effort with BINANCE: prefix; then stock candle
+        endpoints = [(f"{FINNHUB_BASE}/stock/candle", sym)]
+        if is_crypto_symbol(sym):
+            endpoints.insert(0, (f"{FINNHUB_BASE}/crypto/candle", f"BINANCE:{sym}"))
 
-    if not data or data.get("s") != "ok":
-        return _empty()
+        for url, candle_sym in endpoints:
+            res = await client.get(
+                url,
+                params={
+                    "symbol": candle_sym,
+                    "resolution": "D",
+                    "from": from_ts,
+                    "to": to_ts,
+                    "token": token,
+                },
+            )
+            if res.status_code != 200:
+                continue
+            data = res.json()
+            if not data or data.get("s") != "ok":
+                continue
+            df = _from_arrays(
+                data.get("o", []),
+                data.get("h", []),
+                data.get("l", []),
+                data.get("c", []),
+                data.get("v", []),
+                data.get("t", []),
+            )
+            if not df.empty:
+                return df
 
-    return _from_arrays(
-        data.get("o", []),
-        data.get("h", []),
-        data.get("l", []),
-        data.get("c", []),
-        data.get("v", []),
-        data.get("t", []),
-    )
+    return _empty()
 
 
 async def _fetch_yahoo(symbol: str, lookback_days: int) -> pd.DataFrame:
@@ -92,7 +155,10 @@ async def _fetch_yahoo(symbol: str, lookback_days: int) -> pd.DataFrame:
     else:
         range_ = "5y"
 
-    url = YAHOO_CHART.format(symbol=symbol.upper())
+    yahoo_sym = yahoo_crypto_symbol(symbol) if is_crypto_symbol(symbol) else None
+    ticker = yahoo_sym or _normalize_symbol(symbol)
+
+    url = YAHOO_CHART.format(symbol=ticker)
     headers = {"User-Agent": "Mozilla/5.0 (compatible; SignalistQuant/1.0)"}
     async with httpx.AsyncClient(timeout=30, headers=headers, follow_redirects=True) as client:
         res = await client.get(url, params={"interval": "1d", "range": range_})
@@ -120,11 +186,44 @@ async def _fetch_yahoo(symbol: str, lookback_days: int) -> pd.DataFrame:
         return _empty()
 
 
+async def _fetch_binance_klines(symbol: str, lookback_days: int) -> pd.DataFrame:
+    """Daily klines for Binance spot pairs (BTCUSDT, EVXBTC, …)."""
+    sym = _normalize_symbol(symbol)
+    limit = max(25, min(1000, lookback_days + 10))
+    async with httpx.AsyncClient(timeout=30) as client:
+        res = await client.get(
+            BINANCE_KLINES,
+            params={"symbol": sym, "interval": "1d", "limit": limit},
+        )
+        if res.status_code != 200:
+            return _empty()
+        rows = res.json()
+    if not isinstance(rows, list) or not rows:
+        return _empty()
+
+    opens, highs, lows, closes, volumes, times = [], [], [], [], [], []
+    for row in rows:
+        # [openTime, open, high, low, close, volume, closeTime, ...]
+        try:
+            times.append(int(row[0]) // 1000)
+            opens.append(float(row[1]))
+            highs.append(float(row[2]))
+            lows.append(float(row[3]))
+            closes.append(float(row[4]))
+            volumes.append(float(row[5]))
+        except (TypeError, ValueError, IndexError):
+            continue
+    return _from_arrays(opens, highs, lows, closes, volumes, times)
+
+
 async def get_daily_ohlcv(symbol: str, lookback_days: int = 400) -> pd.DataFrame:
-    """Fetch daily candles. Prefer Finnhub; fall back to Yahoo Finance chart API."""
-    df = await _fetch_finnhub(symbol, lookback_days)
+    """Fetch daily candles. Prefer Finnhub; Yahoo; Binance klines for crypto."""
+    sym = _normalize_symbol(symbol)
+    df = await _fetch_finnhub(sym, lookback_days)
     if df.empty:
-        df = await _fetch_yahoo(symbol, lookback_days)
+        df = await _fetch_yahoo(sym, lookback_days)
+    if df.empty and is_crypto_symbol(sym):
+        df = await _fetch_binance_klines(sym, lookback_days)
     if df.empty:
         return df
     return df.tail(lookback_days)
@@ -135,17 +234,20 @@ async def get_benchmark_series(symbol: str = "SPY", lookback_days: int = 400) ->
 
 
 async def get_fundamentals(symbol: str) -> dict:
+    if is_crypto_symbol(symbol):
+        return {}
     token = _token()
     if not token:
         return {}
+    sym = _normalize_symbol(symbol)
     async with httpx.AsyncClient(timeout=20) as client:
         metric = await client.get(
             f"{FINNHUB_BASE}/stock/metric",
-            params={"symbol": symbol.upper(), "metric": "all", "token": token},
+            params={"symbol": sym, "metric": "all", "token": token},
         )
         profile = await client.get(
             f"{FINNHUB_BASE}/stock/profile2",
-            params={"symbol": symbol.upper(), "token": token},
+            params={"symbol": sym, "token": token},
         )
     out: dict = {}
     if metric.status_code == 200:
@@ -163,15 +265,18 @@ async def get_fundamentals(symbol: str) -> dict:
 
 
 async def get_earnings_calendar(symbol: str) -> dict:
+    if is_crypto_symbol(symbol):
+        return {"days_to_next_earnings": None, "last_4_earnings_surprise_pct": []}
     token = _token()
     if not token:
         return {}
+    sym = _normalize_symbol(symbol)
     today = datetime.now(timezone.utc).date()
     async with httpx.AsyncClient(timeout=20) as client:
         res = await client.get(
             f"{FINNHUB_BASE}/calendar/earnings",
             params={
-                "symbol": symbol.upper(),
+                "symbol": sym,
                 "from": today.isoformat(),
                 "to": (today + timedelta(days=120)).isoformat(),
                 "token": token,
@@ -179,7 +284,7 @@ async def get_earnings_calendar(symbol: str) -> dict:
         )
         surprises = await client.get(
             f"{FINNHUB_BASE}/stock/earnings",
-            params={"symbol": symbol.upper(), "token": token},
+            params={"symbol": sym, "token": token},
         )
     days = None
     if res.status_code == 200:

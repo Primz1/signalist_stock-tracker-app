@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { Bell } from 'lucide-react';
 import BrandLogo from '@/components/layout/BrandLogo';
 import NavItems from '@/components/layout/NavItems';
 import UserDropdown from '@/components/layout/UserDropdown';
 import { SearchCommand } from '@/components/search/SearchCommand';
-import { getNotifications, markNotifications } from '@/lib/actions/alertNotification.actions';
+import { markNotifications } from '@/lib/actions/alertNotification.actions';
 
 type Notification = {
   _id?: string;
@@ -21,19 +21,15 @@ export default function AppHeader({
   user,
   initialStocks,
   watchlistSymbols,
+  initialNotifications = [],
 }: {
   user: User;
   initialStocks: StockWithWatchlistStatus[];
   watchlistSymbols?: string[];
+  initialNotifications?: Notification[];
 }) {
   const [notifOpen, setNotifOpen] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-
-  useEffect(() => {
-    getNotifications().then((res) => {
-      if (res.success) setNotifications(res.data as Notification[]);
-    });
-  }, []);
+  const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
 
   const unread = notifications.filter((n) => !n.read).length;
 
@@ -44,28 +40,44 @@ export default function AppHeader({
 
   return (
     <header className="sticky top-0 z-20 border-b border-[#242424] bg-[#141414]">
-      <div className="mx-auto flex h-14 max-w-[1400px] items-center gap-3 px-4 md:gap-4 md:px-6 lg:px-8">
-        <BrandLogo />
+      <div className="relative mx-auto flex h-14 max-w-[1400px] items-center px-4 md:px-6 lg:px-8">
+        {/* Left — brand */}
+        <div className="relative z-10 flex flex-none items-center">
+          <BrandLogo />
+        </div>
 
-        <nav className="hidden min-w-0 flex-1 overflow-x-auto md:block">
-          <NavItems />
-        </nav>
-        <div className="flex-1 md:hidden" />
+        {/* Center — nav links + search (true center on desktop) */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 hidden h-14 items-center justify-center md:flex">
+          <div className="pointer-events-auto flex items-center gap-5 lg:gap-6">
+            <NavItems className="h-14 gap-5 lg:gap-6" />
+            <SearchCommand
+              renderAs="button"
+              label="Search stocks..."
+              initialStocks={initialStocks}
+              watchlistSymbols={watchlistSymbols}
+              quickAddEnabled
+              className="!max-w-[240px] lg:!max-w-[280px]"
+            />
+          </div>
+        </div>
 
-        <div className="relative flex flex-none items-center gap-2 md:gap-3">
-          <SearchCommand
-            renderAs="modal"
-            label="Search..."
-            initialStocks={initialStocks}
-            watchlistSymbols={watchlistSymbols}
-            quickAddEnabled
-          />
+        {/* Right — mobile search + alerts + account */}
+        <div className="relative z-10 ml-auto flex flex-none items-center gap-2 md:gap-3.5">
+          <div className="md:hidden">
+            <SearchCommand
+              renderAs="icon"
+              label="Search"
+              initialStocks={initialStocks}
+              watchlistSymbols={watchlistSymbols}
+              quickAddEnabled
+            />
+          </div>
 
           <button
             type="button"
             aria-label="Notifications"
             onClick={() => setNotifOpen((o) => !o)}
-            className="relative flex p-1.5 text-[#A1A1A1] hover:text-[#FDD458]"
+            className="relative flex p-1.5 text-[#A1A1A1] transition-colors hover:text-[#FDD458]"
           >
             <Bell className="h-[18px] w-[18px]" strokeWidth={1.5} />
             {unread > 0 && (
@@ -83,7 +95,7 @@ export default function AppHeader({
                 className="fixed inset-0 z-20 cursor-default"
                 onClick={() => setNotifOpen(false)}
               />
-              <div className="absolute right-9 top-10 z-30 w-80 overflow-hidden rounded-xl border border-[#2E2E2E] bg-[#141414] shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
+              <div className="animate-toast absolute right-9 top-10 z-30 w-80 overflow-hidden rounded-xl border border-[#2E2E2E] bg-[#141414] shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
                 <div className="flex items-center justify-between border-b border-[#242424] px-3.5 py-3">
                   <div className="text-[13px] font-semibold text-[#F5F5F5]">Alerts</div>
                   <button

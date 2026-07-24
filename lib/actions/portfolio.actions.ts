@@ -1,8 +1,7 @@
 'use server';
 
-import { headers } from 'next/headers';
 import { revalidatePath, revalidateTag, unstable_cache } from 'next/cache';
-import { auth } from '@/lib/better-auth/auth';
+import { getCachedUser } from '@/lib/auth/session';
 import { connectToDatabase } from '@/database/mongoose';
 import {
   getOrCreatePortfolio,
@@ -19,6 +18,7 @@ const tradeHistoryTag = (userId: string) => `portfolio-trades:${userId}`;
 
 const invalidateTradeHistory = (userId: string) => {
   revalidateTag(tradeHistoryTag(userId));
+  revalidateTag(`tearsheet-${userId}`);
   revalidatePath('/portfolio');
   revalidatePath('/portfolio/history');
 };
@@ -36,16 +36,17 @@ const serializePortfolio = (portfolio: Record<string, unknown>) => ({
     price: h.price != null ? Number(h.price) : undefined,
     value: h.value != null ? Number(h.value) : undefined,
     pl: h.pl != null ? Number(h.pl) : undefined,
+    changePercent: h.changePercent != null ? Number(h.changePercent) : undefined,
+    dayPl: h.dayPl != null ? Number(h.dayPl) : undefined,
   })),
   totalValue: Number(portfolio.totalValue ?? 0),
   plTotal: Number(portfolio.plTotal ?? 0),
   plPercent: Number(portfolio.plPercent ?? 0),
+  dayPl: Number(portfolio.dayPl ?? 0),
+  dayPlPercent: Number(portfolio.dayPlPercent ?? 0),
 });
 
-const getUser = async () => {
-  const session = await auth.api.getSession({ headers: await headers() });
-  return session?.user || null;
-};
+const getUser = async () => getCachedUser();
 
 export async function getPortfolio(): Promise<ActionResult<Record<string, unknown>>> {
   try {
@@ -56,6 +57,7 @@ export async function getPortfolio(): Promise<ActionResult<Record<string, unknow
     const portfolio = await getOrCreatePortfolio(user.id);
 
     let totalValue = portfolio.cash;
+    let dayPl = 0;
     const holdingsWithPrice = await Promise.all(
       (portfolio.holdings || []).map(async (h) => {
         const quote = await fetchQuote(h.symbol);
@@ -63,12 +65,17 @@ export async function getPortfolio(): Promise<ActionResult<Record<string, unknow
         const value = price * h.quantity;
         totalValue += value;
         const pl = (price - h.avgCost) * h.quantity;
-        return { ...h, price, value, pl };
+        const changePercent = quote?.changePercent ?? 0;
+        const holdingDayPl = value * (changePercent / 100);
+        dayPl += holdingDayPl;
+        return { ...h, price, value, pl, changePercent, dayPl: holdingDayPl };
       })
     );
 
     const plTotal = totalValue - portfolio.initialCash;
     const plPercent = portfolio.initialCash ? (plTotal / portfolio.initialCash) * 100 : 0;
+    const equity = totalValue - portfolio.cash;
+    const dayPlPercent = totalValue > 0 ? (dayPl / totalValue) * 100 : 0;
 
     return {
       success: true,
@@ -78,6 +85,9 @@ export async function getPortfolio(): Promise<ActionResult<Record<string, unknow
         totalValue,
         plTotal,
         plPercent,
+        dayPl,
+        dayPlPercent,
+        equity,
       }),
     };
   } catch {
@@ -90,8 +100,9 @@ export async function executeTrade(params: {
   company: string;
   side: 'buy' | 'sell';
   quantity: number;
+  note?: string;
 }): Promise<ActionResult<Record<string, unknown>>> {
-  const { symbol, company, side, quantity } = params;
+  const { symbol, company, side, quantity, note } = params;
   if (!symbol || quantity <= 0) return { success: false, message: 'Invalid trade' };
 
   try {
@@ -145,6 +156,7 @@ export async function executeTrade(params: {
       price,
       total,
       fees: 0,
+      note: note?.trim() || undefined,
       avgCostAtSale,
       realizedPl,
     });
@@ -436,5 +448,228 @@ export async function getPortfolioAiReview(): Promise<
     };
   } catch {
     return { success: false, message: 'AI service unavailable' };
+  }
+}
+
+export type TearsheetMetrics = {
+  cagr?: number | null;
+  sharpe?: number | null;
+  sortino?: number | null;
+  max_drawdown?: number | null;
+  volatility?: number | null;
+  best_day?: number | null;
+  worst_day?: number | null;
+  skew?: number | null;
+  win_rate?: number | null;
+  alpha?: number | null;
+  beta?: number | null;
+};
+
+export type TearsheetResult = {
+  enough_history: boolean;
+  message?: string;
+  metrics: TearsheetMetrics;
+  monthly_returns: Record<string, number>;
+  drawdown_series: { t: string; v: number }[];
+  equity_series: { t: string; v: number }[];
+  day_count?: number;
+};
+
+/** Rebuild approximate daily NAV from initial cash + fills, then ask QuantStats. */
+export async function getPortfolioTearsheet(): Promise<ActionResult<TearsheetResult>> {
+  try {
+    const user = await getUser();
+    if (!user?.id) return { success: false, message: 'Not authenticated' };
+
+    const cached = unstable_cache(
+      () => computePortfolioTearsheet(user.id),
+      [`tearsheet-${user.id}`],
+      { revalidate: 300, tags: [`tearsheet-${user.id}`] }
+    );
+    return cached();
+  } catch {
+    return { success: false, message: 'Failed to build portfolio tear sheet' };
+  }
+}
+
+async function computePortfolioTearsheet(userId: string): Promise<ActionResult<TearsheetResult>> {
+  try {
+    await connectToDatabase();
+    const portfolio = await getOrCreatePortfolio(userId);
+    const trades = (await getCachedEnrichedTrades(userId))
+      .filter((t) => !t.undoneAt)
+      .slice()
+      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+    const initialCash = Number(portfolio.initialCash ?? 0) || 10000;
+    const symbols = new Set<string>();
+    for (const t of trades) symbols.add(t.symbol.toUpperCase());
+    for (const h of portfolio.holdings || []) symbols.add(String(h.symbol).toUpperCase());
+
+    if (symbols.size === 0 && trades.length === 0) {
+      return {
+        success: true,
+        data: {
+          enough_history: false,
+          message: 'No trades yet — tear sheet needs paper trade history.',
+          metrics: {},
+          monthly_returns: {},
+          drawdown_series: [],
+          equity_series: [],
+        },
+      };
+    }
+
+    const { fetchOhlcv } = await import('@/lib/market/ohlcv');
+    const closesBySymbol = new Map<string, Map<string, number>>();
+    const allDates = new Set<string>();
+
+    await Promise.all(
+      [...symbols].map(async (sym) => {
+        const candles = await fetchOhlcv(sym, { resolution: 'D', days: 400, range: '1Y' });
+        const m = new Map<string, number>();
+        for (const c of candles) {
+          const d = new Date(c.time * 1000);
+          const key = d.toISOString().slice(0, 10);
+          m.set(key, c.close);
+          allDates.add(key);
+        }
+        closesBySymbol.set(sym, m);
+      })
+    );
+
+    const dates = [...allDates].sort();
+    if (dates.length < 6) {
+      return {
+        success: true,
+        data: {
+          enough_history: false,
+          message: 'Not enough market history to build a tear sheet yet.',
+          metrics: {},
+          monthly_returns: {},
+          drawdown_series: [],
+          equity_series: [],
+        },
+      };
+    }
+
+    // Start NAV series a few days before first trade (or earliest date)
+    const firstTradeDay = trades[0]
+      ? new Date(trades[0].timestamp).toISOString().slice(0, 10)
+      : dates[0];
+    const startIdx = Math.max(0, dates.findIndex((d) => d >= firstTradeDay) - 5);
+    const window = dates.slice(startIdx);
+
+    let cash = initialCash;
+    const qty = new Map<string, number>();
+    let tradeIdx = 0;
+    const equitySeries: { t: string; v: number }[] = [];
+    const returnsMap: Record<string, number> = {};
+    let prevNav: number | null = null;
+
+    const lastClose = (sym: string, day: string): number | null => {
+      const m = closesBySymbol.get(sym);
+      if (!m) return null;
+      if (m.has(day)) return m.get(day)!;
+      return null;
+    };
+
+    for (const day of window) {
+      while (
+        tradeIdx < trades.length &&
+        new Date(trades[tradeIdx].timestamp).toISOString().slice(0, 10) <= day
+      ) {
+        const t = trades[tradeIdx];
+        const sym = t.symbol.toUpperCase();
+        const q = Number(t.quantity) || 0;
+        const total = Number(t.total) || Number(t.price) * q;
+        if (t.side === 'buy') {
+          cash -= total;
+          qty.set(sym, (qty.get(sym) || 0) + q);
+        } else {
+          cash += total;
+          qty.set(sym, Math.max(0, (qty.get(sym) || 0) - q));
+        }
+        tradeIdx += 1;
+      }
+
+      let equity = cash;
+      for (const [sym, q] of qty) {
+        if (q <= 0) continue;
+        const px = lastClose(sym, day);
+        if (px != null) equity += q * px;
+        else equity += q * (Number(trades.find((x) => x.symbol.toUpperCase() === sym)?.price) || 0);
+      }
+
+      equitySeries.push({ t: day, v: equity });
+      if (prevNav != null && prevNav > 0) {
+        returnsMap[day] = (equity - prevNav) / prevNav;
+      }
+      prevNav = equity;
+    }
+
+    const returnDays = Object.keys(returnsMap).length;
+    if (returnDays < 5) {
+      return {
+        success: true,
+        data: {
+          enough_history: false,
+          message: 'Need ~5+ trading days of paper history for tear-sheet metrics.',
+          metrics: {},
+          monthly_returns: {},
+          drawdown_series: [],
+          equity_series: equitySeries,
+          day_count: returnDays,
+        },
+      };
+    }
+
+    const fastApiUrl = process.env.FASTAPI_URL || 'http://localhost:8000';
+    const secret = process.env.INTERNAL_API_SECRET || '';
+
+    const res = await fetch(`${fastApiUrl}/quant/tearsheet`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Internal-Secret': secret,
+      },
+      body: JSON.stringify({
+        returns: returnsMap,
+        benchmark: 'SPY',
+        title: 'Paper portfolio',
+      }),
+      cache: 'no-store',
+    });
+
+    if (!res.ok) {
+      return {
+        success: true,
+        data: {
+          enough_history: false,
+          message: 'QuantStats service unavailable — showing equity estimate only.',
+          metrics: {},
+          monthly_returns: {},
+          drawdown_series: [],
+          equity_series: equitySeries,
+          day_count: returnDays,
+        },
+      };
+    }
+
+    const data = await res.json();
+    return {
+      success: true,
+      data: {
+        enough_history: Boolean(data.enough_history),
+        message: data.message,
+        metrics: data.metrics ?? {},
+        monthly_returns: data.monthly_returns ?? {},
+        drawdown_series: data.drawdown_series ?? [],
+        equity_series: equitySeries,
+        day_count: data.day_count ?? returnDays,
+      },
+    };
+  } catch {
+    return { success: false, message: 'Failed to build portfolio tear sheet' };
   }
 }

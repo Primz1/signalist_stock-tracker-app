@@ -38,7 +38,7 @@ export interface PortfolioTrade extends Document {
 
 const PortfolioSchema = new Schema<Portfolio>(
   {
-    userId: { type: String, required: true, index: true },
+    userId: { type: String, required: true },
     name: { type: String, default: 'Paper Portfolio', trim: true },
     cash: { type: Number, required: true, default: 10000 },
     initialCash: { type: Number, required: true, default: 10000 },
@@ -62,7 +62,7 @@ PortfolioSchema.index({ userId: 1 }, { unique: true });
 const PortfolioTradeSchema = new Schema<PortfolioTrade>(
   {
     portfolioId: { type: String, required: true, index: true },
-    userId: { type: String, required: true, index: true },
+    userId: { type: String, required: true },
     symbol: { type: String, required: true, uppercase: true, trim: true },
     company: { type: String, required: true, trim: true },
     side: { type: String, required: true, enum: ['buy', 'sell'] },

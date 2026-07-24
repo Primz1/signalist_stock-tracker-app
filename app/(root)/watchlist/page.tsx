@@ -1,6 +1,6 @@
 import WatchlistClient from '@/components/watchlist/WatchlistClient';
 import { getNews, searchStocks, fetchJSON } from '@/lib/actions/finnhub.actions';
-import { listWatchlist, listWatchlistSymbols } from '@/lib/actions/watchlist.actions';
+import { listWatchlist } from '@/lib/actions/watchlist.actions';
 import { listAlerts } from '@/lib/actions/alert.actions';
 import { getNotifications } from '@/lib/actions/alertNotification.actions';
 import { connectToDatabase } from '@/database/mongoose';
@@ -151,14 +151,13 @@ const fetchMetricsForSymbol = async (symbol: string) => {
 };
 
 const WatchlistPage = async () => {
-  const [watchlistRes, symbolsRes, alertsRes, notificationsRes] = await Promise.all([
+  const [watchlistRes, alertsRes, notificationsRes] = await Promise.all([
     listWatchlist(),
-    listWatchlistSymbols(),
     listAlerts(),
     getNotifications(),
   ]);
   const itemsRaw = watchlistRes.success ? watchlistRes.data : [];
-  const symbols = (symbolsRes.success ? symbolsRes.data : []).map((s: string) => s.toUpperCase());
+  const symbols = itemsRaw.map((item) => (item.symbol || '').toUpperCase()).filter(Boolean);
   const alertsRaw = alertsRes.success ? alertsRes.data : [];
   const notificationsRaw = notificationsRes.success ? notificationsRes.data : [];
 
@@ -170,7 +169,9 @@ const WatchlistPage = async () => {
       metricsBySymbol[sym] = metrics[idx] || {};
     });
     await connectToDatabase();
-    const scores = await StockScoreModel.find({ symbol: { $in: symbols } }).lean();
+    const scores = await StockScoreModel.find({ symbol: { $in: symbols } })
+      .select('symbol score')
+      .lean();
     scores.forEach((s) => {
       scoresBySymbol[String(s.symbol).toUpperCase()] = s.score;
     });

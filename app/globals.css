@@ -159,7 +159,39 @@
   0%, 100% { opacity: 0.4; }
   50% { opacity: 0.55; }
 }
-
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes pulse-soft {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.7; }
+}
+@keyframes fadeSlideIn {
+  from { opacity: 0; filter: blur(6px); transform: translateY(14px); }
+  to { opacity: 1; filter: blur(0); transform: translateY(0); }
+}
+@keyframes slideRightIn {
+  from { opacity: 0; filter: blur(6px); transform: translateX(24px); }
+  to { opacity: 1; filter: blur(0); transform: translateX(0); }
+}
+@keyframes testimonialIn {
+  from { opacity: 0; filter: blur(6px); transform: translateY(10px) scale(0.97); }
+  to { opacity: 1; filter: blur(0); transform: translateY(0) scale(1); }
+}
+@keyframes toastIn {
+  from { transform: translateY(12px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes drawline {
+  from { stroke-dashoffset: 1000; }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes background-gradient {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(calc(var(--tx-1, 0.2) * 40%), calc(var(--ty-1, -0.1) * 40%)); }
+  50% { transform: translate(calc(var(--tx-2, -0.15) * 40%), calc(var(--ty-2, 0.2) * 40%)); }
+  75% { transform: translate(calc(var(--tx-3, 0.1) * 40%), calc(var(--ty-3, 0.15) * 40%)); }
+}
 @keyframes shiny-sheen {
   0% {
     transform: translateX(-120%);
@@ -168,13 +200,94 @@
     transform: translateX(120%);
   }
 }
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@keyframes accordion-down {
+  from { height: 0; opacity: 0.6; }
+  to { height: var(--radix-accordion-content-height); opacity: 1; }
+}
+@keyframes accordion-up {
+  from { height: var(--radix-accordion-content-height); opacity: 1; }
+  to { height: 0; opacity: 0.6; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-el,
+  .animate-hero,
+  .animate-test,
+  .animate-toast,
+  .animate-marquee,
+  .animate-breathe,
+  .animate-drawline,
+  .animate-bg-gradient,
+  .animate-pulse-soft,
+  .skeleton-shimmer,
+  .shiny-btn-sheen,
+  .search-dialog {
+    animation: none !important;
+  }
+}
 
 @layer utilities {
   .container {
     @apply mx-auto max-w-screen-2xl px-4 md:px-6 lg:px-8;
   }
+  .animate-el {
+    animation: fadeSlideIn 700ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  .animate-hero {
+    animation: slideRightIn 900ms cubic-bezier(0.2, 0.8, 0.2, 1) 300ms both;
+  }
+  .animate-test {
+    animation: testimonialIn 800ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  .animate-toast {
+    animation: toastIn 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  .animate-marquee {
+    animation: marquee 24s linear infinite;
+  }
+  .animate-breathe {
+    animation: breathe 8s ease-in-out infinite;
+  }
+  .animate-drawline {
+    stroke-dasharray: 1000;
+    animation: drawline 1.2s ease-out forwards;
+  }
+  .animate-pulse-soft {
+    animation: pulse-soft 1.4s ease-in-out infinite;
+  }
+  .animate-accordion-down {
+    animation: accordion-down 0.2s ease-out;
+  }
+  .animate-accordion-up {
+    animation: accordion-up 0.2s ease-out;
+  }
+  .animate-bg-gradient {
+    animation: background-gradient var(--background-gradient-speed, 8s) ease-in-out infinite;
+  }
+  .skeleton-shimmer {
+    background: linear-gradient(
+      90deg,
+      #1c1c1c 0%,
+      #2a2a2a 50%,
+      #1c1c1c 100%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.4s ease-in-out infinite;
+  }
+  .hero-glow {
+    background: radial-gradient(
+      circle,
+      rgba(249, 115, 22, 0.2) 0%,
+      rgba(124, 45, 18, 0.06) 45%,
+      transparent 70%
+    );
+  }
   .yellow-btn {
-    @apply h-auto cursor-pointer bg-[#FDD458] hover:bg-[#E8BA40] text-[#0A0A0A] font-semibold text-sm rounded-2xl py-3.5 shadow-none disabled:opacity-50;
+    @apply inline-flex h-auto cursor-pointer items-center justify-center gap-2 bg-[#FDD458] hover:bg-[#E8BA40] text-[#0A0A0A] font-semibold text-sm rounded-2xl py-3.5 shadow-none disabled:opacity-50;
   }
   .shiny-btn-sheen {
     background: linear-gradient(
@@ -252,7 +365,8 @@
     @apply cursor-pointer px-2.5 py-[7px] w-full max-w-[280px] flex items-center gap-2 text-[13px] bg-[#0A0A0A] hover:bg-[#0A0A0A] text-[#6E6E6E] font-normal rounded-lg border border-[#2E2E2E];
   }
   .search-dialog {
-    @apply !bg-[#141414] lg:min-w-[600px] border-[#2E2E2E] fixed top-[12vh] left-1/2 -translate-x-1/2 translate-y-0 rounded-xl;
+    animation: toastIn 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    @apply !bg-[#141414] lg:min-w-[600px] border-[#2E2E2E] fixed top-[12vh] left-1/2 -translate-x-1/2 translate-y-0 rounded-xl shadow-[0_16px_48px_rgba(0,0,0,0.55)];
   }
   .search-field {
     @apply !bg-[#141414] border-b border-[#242424] relative;
@@ -291,10 +405,10 @@
     @apply w-full grid-cols-1 gap-6 xl:grid-cols-3 space-y-6 sm:space-y-8;
   }
   .watchlist-btn {
-    @apply bg-[#FDD458] text-sm hover:bg-[#E8BA40] text-[#0A0A0A] w-full rounded-lg h-10 font-semibold cursor-pointer;
+    @apply inline-flex h-9 w-auto cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-[#FDD458] px-3.5 text-[13px] font-medium text-[#0A0A0A] hover:bg-[#E8BA40];
   }
   .watchlist-remove {
-    @apply bg-[#EF4444]! hover:bg-[#EF4444]! text-white!
+    @apply border border-[#EF4444] bg-transparent! text-[#EF4444]! hover:bg-[rgba(239,68,68,0.08)]!;
   }
   .watchlist-empty-container {
     @apply container gap-8 flex-col items-center md:mt-10 p-6 text-center;

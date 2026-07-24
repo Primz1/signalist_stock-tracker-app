@@ -26,8 +26,11 @@ import { createAlert, deleteAlert, setAlertActive, runAlertSweepAction } from "@
 import { getNotifications, markNotifications } from "@/lib/actions/alertNotification.actions";
 import { ArrowUpRight, Bell, Loader2, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { notify } from "@/lib/notify";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageEnter } from "@/components/ui/motion";
+import { NewsCard } from "@/components/ui/news-card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export type WatchlistEntry = {
   _id?: string;
@@ -77,53 +80,65 @@ type AlertNotificationEntry = {
 const NewsGrid = ({ articles }: { articles: MarketNewsArticle[] }) => {
   if (!articles?.length) {
     return (
-      <div className="rounded-xl border border-gray-800 bg-[#0c0c0f] p-4 text-sm text-gray-400">
+      <div className="rounded-xl border border-[#242424] bg-[#141414] p-4 text-sm text-[#A1A1A1]">
         No news available right now.
       </div>
     );
   }
 
   return (
-    <div className="rounded-xl border border-gray-800 bg-[#0c0c0f] p-4">
+    <div className="space-y-4">
+      <NewsCard
+        title="Market news"
+        items={articles.slice(0, 6).map((article) => ({
+          time: article.datetimeString || '',
+          headline: article.headline,
+          source: article.source || 'News',
+          href: article.url || undefined,
+        }))}
+      />
+      <div className="rounded-xl border border-[#242424] bg-[#141414] p-4">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-100">News</h2>
-        <span className="text-xs uppercase text-gray-500">Latest</span>
+        <h2 className="text-lg font-semibold text-[#F5F5F5]">All headlines</h2>
+        <span className="text-xs uppercase text-[#6E6E6E]">Latest</span>
       </div>
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-        {articles.map((article) => (
+        {articles.map((article, i) => (
           <Link
             key={`${article.id}-${article.url}`}
             href={article.url || "#"}
             target="_blank"
-            className="group block rounded-lg border border-gray-800 bg-black/40 p-3 transition hover:border-gray-700"
+            className="animate-el group block rounded-lg border border-[#242424] bg-[#0A0A0A]/60 p-3 transition hover:border-[#2E2E2E]"
+            style={{ animationDelay: `${80 + i * 60}ms` }}
           >
-            <div className="flex items-center justify-between text-xs text-gray-500">
+            <div className="flex items-center justify-between text-xs text-[#6E6E6E]">
               <span>{article.source}</span>
               <span>{article.datetimeString}</span>
             </div>
-            <div className="mt-2 text-sm font-semibold text-gray-100 group-hover:text-gray-50">
+            <div className="mt-2 text-sm font-semibold text-[#F5F5F5] group-hover:text-[#F5F5F5]">
               {article.headline}
             </div>
-            <div className="mt-1 line-clamp-3 text-xs text-gray-400">{article.summary}</div>
-            <div className="mt-3 inline-flex items-center gap-1 text-[11px] font-medium text-amber-300">
+            <div className="mt-1 line-clamp-3 text-xs text-[#A1A1A1]">{article.summary}</div>
+            <div className="mt-3 inline-flex items-center gap-1 text-[11px] font-medium text-[#FDD458]">
               Read more <ArrowUpRight className="h-3 w-3" />
             </div>
           </Link>
         ))}
+      </div>
       </div>
     </div>
   );
 };
 
 const AlertsPlaceholder = () => (
-  <div className="h-full rounded-xl border border-gray-800 bg-[#0c0c0f] p-4 text-gray-200">
+  <div className="h-full rounded-xl border border-[#242424] bg-[#141414] p-4 text-[#F5F5F5]">
     <div className="mb-3 flex items-center justify-between">
       <h2 className="text-lg font-semibold">Alerts</h2>
-      <Button size="sm" variant="secondary" className="bg-amber-400 text-black hover:bg-amber-300">
+      <Button size="sm" variant="secondary" className="yellow-btn">
         Create Alert
       </Button>
     </div>
-    <p className="text-sm text-gray-400">Alert management UI coming soon.</p>
+    <p className="text-sm text-[#A1A1A1]">Alert management UI coming soon.</p>
   </div>
 );
 
@@ -142,10 +157,9 @@ const WatchlistClient = ({ initialItems, initialStocks, initialSymbols, initialA
   const [alerts, setAlerts] = useState<AlertEntry[]>(initialAlerts ?? []);
   const [notifications, setNotifications] = useState<AlertNotificationEntry[]>(initialNotifications ?? []);
   const notificationsRef = useRef<AlertNotificationEntry[]>(initialNotifications ?? []);
-  const [isPending, startTransition] = useTransition();
+  const [isPending] = useTransition();
   const [refreshing, setRefreshing] = useState(false);
   const [alertModalOpen, setAlertModalOpen] = useState(false);
-  const router = useRouter();
 
   const token = process.env.NEXT_PUBLIC_FINNHUB_API_KEY;
   const isCryptoSymbol = (sym: string) => /USDT$|USDC$|USD$|BTC$|ETH$|BNB$/i.test(sym);
@@ -237,7 +251,7 @@ const WatchlistClient = ({ initialItems, initialStocks, initialSymbols, initialA
     setRefreshing(true);
     const res = await addToWatchlist(stock.symbol, stock.name);
     if (!res.success) {
-      toast.error(res.message || "Failed to add to watchlist");
+      notify.watchlistFailed("add", res.message);
       setRefreshing(false);
       return;
     }
@@ -251,19 +265,15 @@ const WatchlistClient = ({ initialItems, initialStocks, initialSymbols, initialA
       const symUpper = stock.symbol.toUpperCase();
       return prev.includes(symUpper) ? prev : [...prev, symUpper];
     });
-    toast.success(`${stock.symbol.toUpperCase()} added to watchlist`);
+    notify.watchlistAdded(stock.symbol);
 
     // Grab fresh quote immediately for the added symbol
     await refreshQuotes([stock.symbol]);
-
-    startTransition(() => {
-      router.refresh();
-      setRefreshing(false);
-    });
+    setRefreshing(false);
   };
 
   useEffect(() => {
-    refreshQuotes();
+    // SSR already provided prices — poll later, don't storm quotes on mount
     const interval = setInterval(() => refreshQuotes(), 30000);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -303,11 +313,11 @@ const WatchlistClient = ({ initialItems, initialStocks, initialSymbols, initialA
   const handleCreateAlert = () => {
     const thresholdValue = Number(alertThreshold);
     if (!Number.isFinite(thresholdValue)) {
-      toast.error("Enter a numeric threshold");
+      notify.warning("Invalid threshold", "Enter a numeric price level.");
       return;
     }
     if (!alertSymbol) {
-      toast.error("Select a symbol");
+      notify.warning("Pick a symbol", "Select a symbol before creating an alert.");
       return;
     }
 
@@ -322,7 +332,7 @@ const WatchlistClient = ({ initialItems, initialStocks, initialSymbols, initialA
         frequency: alertFrequency,
       });
       if (!res.success) {
-        toast.error(res.message || "Failed to create alert");
+        notify.alertFailed(res.message);
         return;
       }
 
@@ -342,7 +352,7 @@ const WatchlistClient = ({ initialItems, initialStocks, initialSymbols, initialA
       setAlerts((prev) => [newAlert, ...prev]);
       setAlertModalOpen(false);
       resetAlertForm();
-      toast.success("Alert created");
+      notify.alertCreated(alertSymbol);
       runAlertSweepAction();
     });
   };
@@ -353,11 +363,11 @@ const WatchlistClient = ({ initialItems, initialStocks, initialSymbols, initialA
     try {
       const res = await deleteAlert(alertId);
       if (!res.success) {
-        toast.error(res.message || "Failed to remove alert");
+        notify.alertFailed(res.message);
         return;
       }
       setAlerts((prev) => prev.filter((a) => a._id !== alertId));
-      toast.success("Alert removed");
+      notify.alertRemoved();
     } finally {
       setRefreshing(false);
     }
@@ -366,11 +376,11 @@ const WatchlistClient = ({ initialItems, initialStocks, initialSymbols, initialA
   const handleToggleAlert = async (alertId: string, isActive: boolean) => {
     const res = await setAlertActive(alertId, isActive);
     if (!res.success) {
-      toast.error(res.message || "Failed to update alert");
+      notify.alertFailed(res.message);
       return;
     }
     setAlerts((prev) => prev.map((a) => (a._id === alertId ? { ...a, isActive } : a)));
-    toast.success(isActive ? "Alert resumed" : "Alert paused");
+    notify.alertUpdated(isActive);
   };
 
   const conditionLabel = (cond: "gt" | "lt") => (cond === "gt" ? "Greater than (>)" : "Less than (<)");
@@ -386,8 +396,8 @@ const WatchlistClient = ({ initialItems, initialStocks, initialSymbols, initialA
   };
 
   const changeColor = (cp?: number) => {
-    if (typeof cp !== "number") return "text-gray-400";
-    return cp >= 0 ? "text-emerald-400" : "text-red-400";
+    if (typeof cp !== "number") return "text-[#A1A1A1]";
+    return cp >= 0 ? "text-[#22C55E]" : "text-[#EF4444]";
   };
 
   const changeText = (cp?: number) => (typeof cp === "number" ? `${cp.toFixed(2)}%` : "-");
@@ -432,7 +442,9 @@ const WatchlistClient = ({ initialItems, initialStocks, initialSymbols, initialA
 
         const newOnes = mapped.filter((n) => !existingIds.has(n._id || `${n.alertId}-${n.triggeredAt}`));
         if (newOnes.length > 0) {
-          newOnes.forEach((n) => toast.info(`${n.symbol}: ${n.message}`));
+          newOnes.forEach((n) =>
+            notify.info(`${n.symbol} alert`, n.message)
+          );
         }
         notificationsRef.current = mapped;
         setNotifications(mapped);
@@ -460,25 +472,32 @@ const WatchlistClient = ({ initialItems, initialStocks, initialSymbols, initialA
   const handleMarkNotifications = async () => {
     const res = await markNotifications();
     if (!res.success) {
-      toast.error(res.message || "Failed to mark notifications");
+      notify.error("Couldn’t mark notifications", res.message);
       return;
     }
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   };
 
   return (
-    <section className="space-y-6">
+    <PageEnter>
+      <section className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-50">Watchlist</h1>
-          <p className="text-sm text-gray-400">Track your symbols and manage alerts.</p>
+          <h1 className="section-title">Watchlist</h1>
+          <p className="text-sm text-[#A1A1A1]">Track your symbols and manage alerts.</p>
         </div>
       </div>
 
+      <Tabs defaultValue="overview" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="news">News</TabsTrigger>
+        </TabsList>
+        <TabsContent value="overview" className="mt-0 space-y-6">
       <div className="grid gap-6 lg:grid-cols-[3fr_2fr] relative">
         {refreshing && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-black/40 backdrop-blur-sm">
-            <div className="h-12 w-12 animate-spin rounded-full border-2 border-amber-300 border-t-transparent" />
+          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-[#0A0A0A]/40 backdrop-blur-sm">
+            <div className="h-12 w-12 animate-spin rounded-full border-2 border-[#FDD458] border-t-transparent" />
           </div>
         )}
         <div className="space-y-3">
@@ -494,15 +513,15 @@ const WatchlistClient = ({ initialItems, initialStocks, initialSymbols, initialA
           </div>
           <WatchlistTable items={rows} onAddAlert={openAlertFor} />
         </div>
-        <div className="rounded-xl border border-gray-800 bg-[#0c0c0f] p-4 text-gray-100 shadow-md space-y-4">
+        <div className="rounded-xl border border-[#242424] bg-[#141414] p-4 text-[#F5F5F5] shadow-md space-y-4">
           <div className="flex items-center justify-between gap-2">
             <div>
               <h2 className="text-lg font-semibold">Alerts</h2>
-              <p className="text-sm text-gray-400">Create price alerts for stocks or crypto.</p>
+              <p className="text-sm text-[#A1A1A1]">Create price alerts for stocks or crypto.</p>
             </div>
             <Button
               size="sm"
-              className="bg-amber-400 text-black hover:bg-amber-300"
+              className="yellow-btn"
               onClick={() => setAlertModalOpen(true)}
             >
               Create Alert
@@ -511,30 +530,32 @@ const WatchlistClient = ({ initialItems, initialStocks, initialSymbols, initialA
 
           <div className="space-y-3 max-h-[540px] overflow-y-auto pr-1">
             {alerts.length === 0 && (
-              <div className="rounded-lg border border-dashed border-gray-800 bg-black/30 p-4 text-sm text-gray-400">
-                No alerts yet. Create one to stay notified.
-              </div>
+              <EmptyState
+                icon={Bell}
+                title="No alerts yet"
+                description="Create one to stay notified."
+              />
             )}
             {alerts.map((alert) => {
               const quote = priceLookup.get(alert.symbol.toUpperCase());
               return (
-                <div key={alert._id || `${alert.symbol}-${alert.threshold}`} className="rounded-lg border border-gray-800 bg-black/30 p-3">
+                <div key={alert._id || `${alert.symbol}-${alert.threshold}`} className="rounded-lg border border-[#242424] bg-[#1C1C1C] p-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full border border-amber-400/40 bg-amber-400/10 text-sm font-semibold text-amber-200">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#FDD458]/40 bg-[#FDD458]/10 text-sm font-semibold text-[#FDD458]">
                         {alert.symbol.slice(0, 3)}
                       </div>
                       <div>
-                        <div className="text-sm font-semibold text-gray-100">{alert.company}</div>
-                        <div className="text-xs text-gray-400">{alert.symbol}</div>
+                        <div className="text-sm font-semibold text-[#F5F5F5]">{alert.company}</div>
+                        <div className="text-xs text-[#A1A1A1]">{alert.symbol}</div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="rounded-full bg-gray-800 px-2 py-1 text-[11px] text-gray-200 border border-gray-700">
+                      <span className="rounded-full bg-[#1C1C1C] px-2 py-1 text-[11px] text-[#F5F5F5] border border-[#2E2E2E]">
                         {frequencyLabel(alert.frequency)}
                       </span>
                       {!alert.isActive && (
-                        <span className="rounded-full bg-red-500/10 px-2 py-1 text-[11px] text-red-300 border border-red-500/30">
+                        <span className="rounded-full bg-[#EF4444]/10 px-2 py-1 text-[11px] text-[#EF4444] border border-[#EF4444]/30">
                           Inactive
                         </span>
                       )}
@@ -542,7 +563,7 @@ const WatchlistClient = ({ initialItems, initialStocks, initialSymbols, initialA
                         <Button
                           size="sm"
                           variant="secondary"
-                          className="h-8 bg-gray-800 text-gray-200 hover:bg-gray-700 border border-gray-700"
+                          className="h-8 border border-[#2E2E2E] bg-[#1C1C1C] text-[#F5F5F5] hover:bg-[#242424]"
                           onClick={() => handleToggleAlert(alert._id!, !alert.isActive)}
                         >
                           {alert.isActive ? "Pause" : "Resume"}
@@ -551,7 +572,7 @@ const WatchlistClient = ({ initialItems, initialStocks, initialSymbols, initialA
                       {alert._id && (
                         <button
                           onClick={() => handleDeleteAlert(alert._id!)}
-                          className="rounded-full border border-gray-800 p-2 text-gray-400 transition hover:text-red-300 hover:border-red-300/40"
+                          className="rounded-full border border-[#242424] p-2 text-[#A1A1A1] transition hover:border-[#EF4444]/40 hover:text-[#EF4444]"
                           title="Delete alert"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -561,16 +582,16 @@ const WatchlistClient = ({ initialItems, initialStocks, initialSymbols, initialA
                   </div>
 
                   <div className="mt-3 flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2 text-gray-200">
-                      <Bell className="h-4 w-4 text-amber-300" />
+                    <div className="flex items-center gap-2 text-[#F5F5F5]">
+                      <Bell className="h-4 w-4 text-[#FDD458]" />
                       <span>
                         {conditionLabel(alert.condition)} {formatPriceDisplay(alert.threshold)}
                       </span>
                     </div>
                     <div className="text-right">
-                      <div className="text-gray-200">{formatPriceDisplay(quote?.price)}</div>
+                      <div className="text-[#F5F5F5]">{formatPriceDisplay(quote?.price)}</div>
                       <div className={`text-xs ${changeColor(quote?.changePercent)}`}>{changeText(quote?.changePercent)}</div>
-                      <div className="text-[11px] text-gray-500">
+                      <div className="text-[11px] text-[#6E6E6E]">
                         {alert.lastTriggeredAt ? `Triggered ${timeAgo(alert.lastTriggeredAt)}` : alert.isActive ? "Waiting" : "Triggered"}
                       </div>
                     </div>
@@ -581,22 +602,22 @@ const WatchlistClient = ({ initialItems, initialStocks, initialSymbols, initialA
           </div>
         </div>
 
-          <div className="rounded-xl border border-gray-800 bg-[#0c0c0f] p-4 text-gray-100 shadow-md space-y-4">
+          <div className="rounded-xl border border-[#242424] bg-[#141414] p-4 text-[#F5F5F5] shadow-md space-y-4">
             <div className="flex items-center justify-between gap-2">
               <div>
                 <h2 className="text-lg font-semibold">Recent Alerts</h2>
-                <p className="text-sm text-gray-400">In-app notifications when alerts fire.</p>
+                <p className="text-sm text-[#A1A1A1]">In-app notifications when alerts fire.</p>
               </div>
               <div className="flex items-center gap-2">
                 {unreadCount > 0 && (
-                  <span className="rounded-full bg-red-500/15 px-2 py-1 text-[11px] text-red-300 border border-red-500/30">
+                  <span className="rounded-full bg-[#EF4444]/15 px-2 py-1 text-[11px] text-[#EF4444] border border-[#EF4444]/30">
                     {unreadCount} new
                   </span>
                 )}
                 <Button
                   size="sm"
                   variant="secondary"
-                  className="bg-gray-800 text-gray-200 hover:bg-gray-700 border border-gray-700"
+                  className="border border-[#2E2E2E] bg-[#1C1C1C] text-[#F5F5F5] hover:bg-[#242424]"
                   onClick={handleMarkNotifications}
                 >
                   Mark read
@@ -606,37 +627,44 @@ const WatchlistClient = ({ initialItems, initialStocks, initialSymbols, initialA
 
             <div className="space-y-3 max-h-[540px] overflow-y-auto pr-1">
               {notifications.length === 0 && (
-                <div className="rounded-lg border border-dashed border-gray-800 bg-black/30 p-4 text-sm text-gray-400">
-                  No alerts have fired yet.
-                </div>
+                <EmptyState
+                  icon={Bell}
+                  title="No alerts have fired yet"
+                  description="Notifications appear here when your price alerts trigger."
+                />
               )}
               {notifications.map((n) => (
                 <div
                   key={n._id || `${n.alertId}-${n.triggeredAt}`}
-                  className={`rounded-lg border p-3 ${n.read ? 'border-gray-800 bg-black/30' : 'border-amber-400/40 bg-amber-400/5'}`}
+                  className={`rounded-lg border p-3 ${n.read ? 'border-[#242424] bg-[#1C1C1C]' : 'border-[#FDD458]/40 bg-[#FDD458]/5'}`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <div className="text-sm font-semibold text-gray-100">{n.company}</div>
-                      <div className="text-xs text-gray-400">{n.symbol}</div>
-                      <div className="mt-1 text-sm text-gray-100">{n.message}</div>
-                      <div className="mt-1 text-xs text-gray-500">
+                      <div className="text-sm font-semibold text-[#F5F5F5]">{n.company}</div>
+                      <div className="text-xs text-[#A1A1A1]">{n.symbol}</div>
+                      <div className="mt-1 text-sm text-[#F5F5F5]">{n.message}</div>
+                      <div className="mt-1 text-xs text-[#6E6E6E]">
                         {formatPriceDisplay(n.price)} {changeText(n.changePercent)}
                       </div>
                     </div>
-                    <div className="text-right text-xs text-gray-400">{timeAgo(n.triggeredAt) || ''}</div>
+                    <div className="text-right text-xs text-[#A1A1A1]">{timeAgo(n.triggeredAt) || ''}</div>
                   </div>
                 </div>
               ))}
             </div>
           </div>
       </div>
+        </TabsContent>
+        <TabsContent value="news" className="mt-0">
+          <NewsGrid articles={initialNews} />
+        </TabsContent>
+      </Tabs>
 
       <Dialog open={alertModalOpen} onOpenChange={setAlertModalOpen}>
-        <DialogContent className="bg-[#0f0f12] border-gray-800 text-gray-50 max-w-xl">
+        <DialogContent className="max-w-xl border-[#242424] bg-[#141414] text-[#F5F5F5]">
           <DialogHeader>
             <DialogTitle>Price Alert</DialogTitle>
-            <DialogDescription className="text-gray-400">
+            <DialogDescription className="text-[#A1A1A1]">
               Choose a symbol, set a condition, and we will keep an eye on it.
             </DialogDescription>
           </DialogHeader>
@@ -655,10 +683,10 @@ const WatchlistClient = ({ initialItems, initialStocks, initialSymbols, initialA
             <div className="space-y-1">
               <Label>Stock / Crypto</Label>
               <Select value={alertSymbol} onValueChange={setAlertSymbol}>
-                <SelectTrigger className="w-full bg-[#141418] text-gray-100 border-gray-800">
+                <SelectTrigger className="w-full border-[#242424] bg-[#1C1C1C] text-[#F5F5F5]">
                   <SelectValue placeholder="Select symbol" />
                 </SelectTrigger>
-                <SelectContent className="bg-[#0f0f12] border-gray-800 text-gray-100">
+                <SelectContent className="border-[#242424] bg-[#141414] text-[#F5F5F5]">
                   {symbols.map((sym) => (
                     <SelectItem key={sym} value={sym}>
                       {sym}
@@ -672,10 +700,10 @@ const WatchlistClient = ({ initialItems, initialStocks, initialSymbols, initialA
               <div className="space-y-1">
                 <Label>Condition</Label>
                 <Select value={alertCondition} onValueChange={(v: "gt" | "lt") => setAlertCondition(v)}>
-                  <SelectTrigger className="w-full bg-[#141418] text-gray-100 border-gray-800">
+                  <SelectTrigger className="w-full border-[#242424] bg-[#1C1C1C] text-[#F5F5F5]">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#0f0f12] border-gray-800 text-gray-100">
+                  <SelectContent className="border-[#242424] bg-[#141414] text-[#F5F5F5]">
                     <SelectItem value="gt">Greater than (&gt;)</SelectItem>
                     <SelectItem value="lt">Less than (&lt;)</SelectItem>
                   </SelectContent>
@@ -695,10 +723,10 @@ const WatchlistClient = ({ initialItems, initialStocks, initialSymbols, initialA
               <div className="space-y-1">
                 <Label>Frequency</Label>
                 <Select value={alertFrequency} onValueChange={(v: "once" | "per_hour" | "per_day") => setAlertFrequency(v)}>
-                  <SelectTrigger className="w-full bg-[#141418] text-gray-100 border-gray-800">
+                  <SelectTrigger className="w-full border-[#242424] bg-[#1C1C1C] text-[#F5F5F5]">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#0f0f12] border-gray-800 text-gray-100">
+                  <SelectContent className="border-[#242424] bg-[#141414] text-[#F5F5F5]">
                     <SelectItem value="once">Once</SelectItem>
                     <SelectItem value="per_hour">Once per hour</SelectItem>
                     <SelectItem value="per_day">Once per day</SelectItem>
@@ -710,7 +738,7 @@ const WatchlistClient = ({ initialItems, initialStocks, initialSymbols, initialA
 
           <DialogFooter>
             <Button
-              className="bg-amber-400 text-black hover:bg-amber-300 w-full"
+              className="yellow-btn w-full"
               onClick={handleCreateAlert}
               disabled={isCreatingAlert}
               aria-busy={isCreatingAlert}
@@ -727,9 +755,8 @@ const WatchlistClient = ({ initialItems, initialStocks, initialSymbols, initialA
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <NewsGrid articles={initialNews} />
     </section>
+    </PageEnter>
   );
 };
 

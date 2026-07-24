@@ -15,21 +15,21 @@ Table.displayName = "Table";
 
 const TableHeader = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(
 	({ className, ...props }, ref) => (
-		<thead ref={ref} className={cn("text-xs uppercase text-gray-400", className)} {...props} />
+		<thead ref={ref} className={cn("text-xs uppercase text-[#6E6E6E]", className)} {...props} />
 	)
 );
 TableHeader.displayName = "TableHeader";
 
 const TableBody = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(
 	({ className, ...props }, ref) => (
-		<tbody ref={ref} className={cn("divide-y divide-gray-800", className)} {...props} />
+		<tbody ref={ref} className={cn("divide-y divide-[#1C1C1C]", className)} {...props} />
 	)
 );
 TableBody.displayName = "TableBody";
 
 const TableFooter = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(
 	({ className, ...props }, ref) => (
-		<tfoot ref={ref} className={cn("bg-gray-900 font-medium text-gray-100", className)} {...props} />
+		<tfoot ref={ref} className={cn("bg-[#141414] font-medium text-[#F5F5F5]", className)} {...props} />
 	)
 );
 TableFooter.displayName = "TableFooter";
@@ -39,7 +39,7 @@ const TableRow = React.forwardRef<HTMLTableRowElement, React.HTMLAttributes<HTML
 		<tr
 			ref={ref}
 			className={cn(
-				"transition-colors hover:bg-gray-900/60",
+				"transition-colors hover:bg-[#1C1C1C]/60",
 				className
 			)}
 			{...props}
@@ -74,7 +74,7 @@ const TableCaption = React.forwardRef<HTMLTableCaptionElement, React.HTMLAttribu
 	({ className, ...props }, ref) => (
 		<caption
 			ref={ref}
-			className={cn("mt-4 text-sm text-gray-500", className)}
+			className={cn("mt-4 text-sm text-[#6E6E6E]", className)}
 			{...props}
 		/>
 	)

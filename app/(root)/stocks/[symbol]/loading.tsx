@@ -1,5 +1,5 @@
 import RouteLoadingSkeleton from '@/components/layout/RouteLoadingSkeleton';
 
-export default function StockLoading() {
+export default function Loading() {
   return <RouteLoadingSkeleton variant="stock" />;
 }

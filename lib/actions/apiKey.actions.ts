@@ -1,12 +1,11 @@
 'use server';
 
-import { headers } from 'next/headers';
-import { auth } from '@/lib/better-auth/auth';
+import { getCachedSession } from '@/lib/auth/session';
 import { connectToDatabase } from '@/database/mongoose';
 import { createApiKey, listApiKeys } from '@/database/models/apiKey.model';
 
 export async function generateDeveloperApiKey(name: string) {
-  const session = await auth.api.getSession({ headers: await headers() });
+  const session = await getCachedSession();
   if (!session?.user?.id) return { success: false as const, message: 'Not authenticated' };
 
   await connectToDatabase();
@@ -15,7 +14,7 @@ export async function generateDeveloperApiKey(name: string) {
 }
 
 export async function getDeveloperApiKeys() {
-  const session = await auth.api.getSession({ headers: await headers() });
+  const session = await getCachedSession();
   if (!session?.user?.id) return { success: false as const, message: 'Not authenticated' };
 
   await connectToDatabase();

@@ -287,3 +287,37 @@ export const searchStocks = async (
     return [];
   }
 };
+
+export type StockProfile = {
+  symbol: string;
+  name: string;
+  exchange?: string;
+  logo?: string;
+  ticker?: string;
+};
+
+export async function getStockProfile(symbol: string): Promise<StockProfile | null> {
+  try {
+    const token = process.env.FINNHUB_API_KEY ?? NEXT_PUBLIC_FINNHUB_API_KEY;
+    if (!token) return null;
+    const sym = symbol.toUpperCase();
+    const url = `${FINNHUB_BASE_URL}/stock/profile2?symbol=${encodeURIComponent(sym)}&token=${token}`;
+    const profile = await fetchJSON<{
+      name?: string;
+      exchange?: string;
+      logo?: string;
+      ticker?: string;
+    }>(url, 3600);
+    if (!profile?.name && !profile?.ticker) return null;
+    return {
+      symbol: sym,
+      name: profile.name || profile.ticker || sym,
+      exchange: profile.exchange,
+      logo: profile.logo,
+      ticker: profile.ticker,
+    };
+  } catch (e) {
+    console.error('Error fetching stock profile for', symbol, e);
+    return null;
+  }
+}

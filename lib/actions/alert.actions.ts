@@ -1,11 +1,10 @@
 'use server';
 
-import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { connectToDatabase } from '@/database/mongoose';
 import { AlertItem, createAlertItem, listAlertItems, removeAlertItem, Alert } from '@/database/models/alert.model';
 import { runAlertSweep } from '@/lib/inngest/alert-check';
-import { auth } from '@/lib/better-auth/auth';
+import { getCachedUser } from '@/lib/auth/session';
 
 export type AlertCondition = 'gt' | 'lt';
 export type AlertFrequency = 'once' | 'per_hour' | 'per_day';
@@ -22,10 +21,7 @@ const serializeAlert = (item: any): AlertItem & { _id?: string; createdAt?: stri
   } as any;
 };
 
-const getSessionUser = async () => {
-  const session = await auth.api.getSession({ headers: await headers() });
-  return session?.user || null;
-};
+const getSessionUser = async () => getCachedUser();
 
 export async function listAlerts(): Promise<ActionResult<AlertItem[]>> {
   try {

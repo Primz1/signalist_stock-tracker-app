@@ -20,7 +20,7 @@ const UserDropdown = ({ user }: { user: User }) => {
 
   const handleSignOut = async () => {
     await signOut();
-    router.push('/sign-in');
+    router.push('/');
   };
 
   return (
@@ -35,7 +35,7 @@ const UserDropdown = ({ user }: { user: User }) => {
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="w-[200px] overflow-hidden rounded-xl border border-[#2E2E2E] bg-[#141414] text-[#A1A1A1] shadow-[0_8px_24px_rgba(0,0,0,0.4)]"
+        className="w-[200px] animate-toast overflow-hidden rounded-xl border border-[#2E2E2E] bg-[#141414] text-[#A1A1A1] shadow-[0_8px_24px_rgba(0,0,0,0.4)]"
       >
         <DropdownMenuLabel className="border-b border-[#242424] px-3.5 py-3">
           <div className="text-[13px] font-medium text-[#F5F5F5]">{user.name}</div>

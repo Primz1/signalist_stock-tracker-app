@@ -26,7 +26,7 @@ export default function HeroSymbolChart({
         indicators: chartData.indicators,
       }}
       height={220}
-      showMA
+      overlays={{ SMA20: true, SMA50: true }}
     />
   );
 }

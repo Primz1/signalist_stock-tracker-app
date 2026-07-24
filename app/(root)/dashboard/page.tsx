@@ -1,7 +1,6 @@
 import Link from 'next/link';
-import { headers } from 'next/headers';
 import { Sparkles } from 'lucide-react';
-import { auth } from '@/lib/better-auth/auth';
+import { getCachedSession } from '@/lib/auth/session';
 import { getPortfolio } from '@/lib/actions/portfolio.actions';
 import { listWatchlist } from '@/lib/actions/watchlist.actions';
 import { fetchJSON, searchStocks } from '@/lib/actions/finnhub.actions';
@@ -12,6 +11,11 @@ import { formatPrice } from '@/lib/utils';
 import TickerTape from '@/components/dashboard/TickerTape';
 import { SearchCommand } from '@/components/search/SearchCommand';
 import TradingViewWidget from '@/components/market/TradingViewWidget';
+import { AmbientGlow } from '@/components/ui/ambient';
+import { PageEnter } from '@/components/ui/motion';
+import { DrawlineSpark } from '@/components/ui/drawline-spark';
+import { getEconomicCalendarEvents } from '@/lib/actions/economic.actions';
+import { EconomicCalendar } from '@/components/ui/economic-calendar';
 import {
   HEATMAP_WIDGET_CONFIG,
   MARKET_DATA_WIDGET_CONFIG,
@@ -33,7 +37,7 @@ const greeting = () => {
 };
 
 const scoreStyle = (score?: number) => {
-  if (score == null) return { bg: 'rgba(110,110,110,0.12)', color: '#6E6E6E', label: 'â€”' };
+  if (score == null) return { bg: 'rgba(110,110,110,0.12)', color: '#6E6E6E', label: '—' };
   if (score >= 65) return { bg: 'rgba(34,197,94,0.12)', color: '#22C55E', label: `${score}/100` };
   if (score >= 45) return { bg: 'rgba(253,212,88,0.12)', color: '#FDD458', label: `${score}/100` };
   return { bg: 'rgba(239,68,68,0.12)', color: '#EF4444', label: `${score}/100` };
@@ -42,7 +46,7 @@ const scoreStyle = (score?: number) => {
 const scriptUrl = 'https://s3.tradingview.com/external-embedding/embed-widget-';
 
 export default async function Home() {
-  const session = await auth.api.getSession({ headers: await headers() });
+  const session = await getCachedSession();
   const firstName = session?.user?.name?.split(/\s+/)[0] || 'Trader';
 
   const [portfolioRes, watchlistRes, initialStocks] = await Promise.all([
@@ -61,11 +65,16 @@ export default async function Home() {
 
   await connectToDatabase();
   const symbols = watchlist.map((w) => w.symbol.toUpperCase()).slice(0, 6);
-  const [scores, reports] = await Promise.all([
+  const [scores, reports, ecoEvents] = await Promise.all([
     symbols.length
-      ? StockScoreModel.find({ symbol: { $in: symbols } }).lean()
+      ? StockScoreModel.find({ symbol: { $in: symbols } }).select('symbol score').lean()
       : Promise.resolve([]),
-    AiReportModel.find().sort({ createdAt: -1 }).limit(3).lean(),
+    AiReportModel.find()
+      .sort({ createdAt: -1 })
+      .limit(3)
+      .select('symbol summary confidence createdAt')
+      .lean(),
+    getEconomicCalendarEvents(),
   ]);
 
   const scoreMap = new Map(
@@ -109,20 +118,13 @@ export default async function Home() {
   const heroSym = heroHolding?.symbol || watchlist[0]?.symbol || 'NVDA';
 
   return (
-    <div className="flex flex-col">
+    <PageEnter className="flex flex-col">
       <TickerTape items={tapeItems} />
 
       <div className="flex flex-col gap-8">
         {/* Hero */}
         <div className="relative flex flex-col gap-6 overflow-hidden rounded-2xl border border-[rgba(253,212,88,0.3)] bg-[#141414] p-5 shadow-[0_0_60px_-25px_rgba(249,115,22,0.35)] md:flex-row md:p-8">
-          <div
-            className="pointer-events-none absolute -left-[10%] -top-[30%] h-[520px] w-[520px]"
-            style={{
-              background:
-                'radial-gradient(circle,rgba(249,115,22,0.2) 0%,rgba(124,45,18,0.06) 45%,transparent 70%)',
-              animation: 'breathe 8s ease-in-out infinite',
-            }}
-          />
+          <AmbientGlow className="-left-[10%] -top-[30%]" />
           <div className="relative flex flex-1 flex-col justify-center gap-3">
             <div className="text-xl font-semibold text-[#F5F5F5]">
               {greeting()}, {firstName}
@@ -175,9 +177,10 @@ export default async function Home() {
                 href={`/stocks/${heroSym.toUpperCase()}`}
                 className="text-[11px] text-[#FDD458] hover:underline"
               >
-                Open chart â†’
+                Open chart →
               </Link>
             </div>
+            <DrawlineSpark className="pointer-events-none absolute inset-x-4 top-10 z-[1] h-14 w-auto opacity-80" />
             <TradingViewWidget
               scriptUrl={`${scriptUrl}mini-symbol-overview.js`}
               config={MINI_CHART_WIDGET_CONFIG(heroSym)}
@@ -186,7 +189,7 @@ export default async function Home() {
           </div>
         </div>
 
-        {/* Markets â€” real TradingView widgets */}
+        {/* Markets — real TradingView widgets */}
         <section>
           <div className="mb-4 flex items-baseline gap-2.5">
             <h2 className="section-title">Markets</h2>
@@ -275,7 +278,7 @@ export default async function Home() {
                         <span className="mono text-[13px] text-[#F5F5F5]">{sym}</span>
                       </div>
                       <div className="mono text-right text-[13px] text-[#F5F5F5]">
-                        {q?.price != null ? formatPrice(q.price) : 'â€”'}
+                        {q?.price != null ? formatPrice(q.price) : '—'}
                       </div>
                       <div
                         className={`mono text-right text-[13px] ${up ? 'text-[#22C55E]' : 'text-[#EF4444]'}`}
@@ -299,6 +302,11 @@ export default async function Home() {
           </div>
         </section>
 
+        {/* Economic calendar — P2 prompt */}
+        <section>
+          <EconomicCalendar events={ecoEvents} title="Economic calendar" seeAllHref="/research" />
+        </section>
+
         {/* Research */}
         <section className="pb-10">
           <h2 className="section-title mb-4">Latest research</h2>
@@ -320,16 +328,21 @@ export default async function Home() {
             ) : (
               (
                 reports as {
+                  _id?: { toString(): string };
                   symbol: string;
                   query?: string;
                   summary?: string;
                   confidence?: number;
+                  createdAt?: string | Date;
                 }[]
-              ).map((r) => {
+              ).map((r, i) => {
                 const conf = Math.round((r.confidence ?? 0.7) * 100);
+                const key =
+                  (r._id && String(r._id)) ||
+                  `${r.symbol}-${r.createdAt ? new Date(r.createdAt).getTime() : i}-${i}`;
                 return (
                   <Link
-                    key={`${r.symbol}-${r.query}`}
+                    key={key}
                     href={`/research?symbol=${r.symbol}`}
                     className="rounded-xl border border-[#242424] border-l-2 border-l-[#FDD458] bg-[#141414] p-4"
                   >
@@ -353,6 +366,6 @@ export default async function Home() {
           </div>
         </section>
       </div>
-    </div>
+    </PageEnter>
   );
 }

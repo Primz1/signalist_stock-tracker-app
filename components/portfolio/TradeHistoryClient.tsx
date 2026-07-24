@@ -12,8 +12,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn, formatPrice } from '@/lib/utils';
 import { toast } from 'sonner';
-import { Download, Filter, History, Loader2, Undo2 } from 'lucide-react';
+import { Download, Filter, Loader2, Undo2 } from 'lucide-react';
+import { HistoryEmptyState } from '@/components/ui/empty-state';
+import { PageEnter } from '@/components/ui/motion';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 type Summary = {
   tradeCount: number;
@@ -132,7 +135,7 @@ export default function TradeHistoryClient() {
   }, [summary]);
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <PageEnter className="mx-auto max-w-6xl space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="section-title">Trade history</h1>
@@ -168,53 +171,48 @@ export default function TradeHistoryClient() {
 
       {showFilters && (
         <div className="space-y-3 rounded-xl border border-[#242424] bg-[#141414] p-4">
-          <div className="flex flex-wrap gap-2">
-            {(['all', 'buy', 'sell'] as const).map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => setSide(s)}
-                className={cn(
-                  'rounded-md border px-3 py-1.5 text-xs uppercase tracking-wide',
-                  side === s
-                    ? 'border-[#FDD458] bg-[#FDD458]/10 text-[#FDD458]'
-                    : 'border-[#2E2E2E] text-[#A1A1A1]'
-                )}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {RANGES.map((r) => (
-              <button
-                key={r.id}
-                type="button"
-                onClick={() => setRange(r.id)}
-                className={cn(
-                  'rounded-md border px-3 py-1.5 text-xs',
-                  range === r.id
-                    ? 'border-[#FDD458] bg-[#FDD458]/10 text-[#FDD458]'
-                    : 'border-[#2E2E2E] text-[#A1A1A1]'
-                )}
-              >
-                {r.label}
-              </button>
-            ))}
-          </div>
-          <div className="grid gap-2 sm:grid-cols-2">
-            <Input
-              value={symbolQuery}
-              onChange={(e) => setSymbolQuery(e.target.value.toUpperCase())}
-              placeholder="Symbols (AAPL TSLA)"
-              className="form-input"
-            />
-            <Input
-              value={noteQuery}
-              onChange={(e) => setNoteQuery(e.target.value)}
-              placeholder="Search notes"
-              className="form-input"
-            />
+          <Tabs
+            value={side}
+            onValueChange={(v) => setSide(v as 'all' | 'buy' | 'sell')}
+          >
+            <TabsList>
+              <TabsTrigger value="all">All</TabsTrigger>
+              <TabsTrigger value="buy">Buys</TabsTrigger>
+              <TabsTrigger value="sell">Sells</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <div className="mt-3 space-y-3">
+              <div className="flex flex-wrap gap-2">
+                {RANGES.map((r) => (
+                  <button
+                    key={r.id}
+                    type="button"
+                    onClick={() => setRange(r.id)}
+                    className={cn(
+                      'rounded-md border px-3 py-1.5 text-xs',
+                      range === r.id
+                        ? 'border-[#FDD458] bg-[#FDD458]/10 text-[#FDD458]'
+                        : 'border-[#2E2E2E] text-[#A1A1A1]'
+                    )}
+                  >
+                    {r.label}
+                  </button>
+                ))}
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Input
+                  value={symbolQuery}
+                  onChange={(e) => setSymbolQuery(e.target.value.toUpperCase())}
+                  placeholder="Symbols (AAPL TSLA)"
+                  className="form-input"
+                />
+                <Input
+                  value={noteQuery}
+                  onChange={(e) => setNoteQuery(e.target.value)}
+                  placeholder="Search notes"
+                  className="form-input"
+                />
+              </div>
           </div>
         </div>
       )}
@@ -248,16 +246,7 @@ export default function TradeHistoryClient() {
           ))}
         </div>
       ) : !trades.length && !isPending ? (
-        <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-[#2E2E2E] py-16 text-center">
-          <History className="size-8 text-[#6E6E6E]" strokeWidth={1.25} />
-          <p className="text-sm text-[#A1A1A1]">
-            No trades in this range. Widen the filter or head to{' '}
-            <Link href="/portfolio" className="text-[#FDD458] hover:underline">
-              /portfolio
-            </Link>{' '}
-            to make a trade.
-          </p>
-        </div>
+        <HistoryEmptyState />
       ) : (
         <div
           className={cn(
@@ -351,7 +340,7 @@ export default function TradeHistoryClient() {
           </table>
         </div>
       )}
-    </div>
+    </PageEnter>
   );
 }
 

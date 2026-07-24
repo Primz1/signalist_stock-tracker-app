@@ -32,6 +32,8 @@ const AiReportSchema = new Schema<AiReport>(
 );
 
 AiReportSchema.index({ symbol: 1, createdAt: -1 });
+AiReportSchema.index({ userId: 1, createdAt: -1 });
+AiReportSchema.index({ createdAt: -1 });
 
 export const AiReportModel: Model<AiReport> =
   (models?.AiReport as Model<AiReport>) || model<AiReport>('AiReport', AiReportSchema);

@@ -1,16 +1,12 @@
 'use server';
 
-import { headers } from 'next/headers';
 import { connectToDatabase } from '@/database/mongoose';
 import { getUserProfile, upsertUserProfile } from '@/database/models/userProfile.model';
-import { auth } from '@/lib/better-auth/auth';
+import { getCachedUser } from '@/lib/auth/session';
 
 type ActionResult<T> = { success: true; data: T } | { success: false; message: string };
 
-const getSessionUser = async () => {
-  const session = await auth.api.getSession({ headers: await headers() });
-  return session?.user || null;
-};
+const getSessionUser = async () => getCachedUser();
 
 export async function saveUserProfileOnSignUp(params: {
   userId: string;

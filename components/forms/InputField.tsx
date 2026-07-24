@@ -16,13 +16,15 @@ const InputField = ({
   validation,
   disabled = false,
   value,
+  className,
+  style,
 }: FormInputProps) => {
   const [showPassword, setShowPassword] = useState(false);
   const isPassword = type === 'password';
   const inputType = isPassword ? (showPassword ? 'text' : 'password') : type;
 
   return (
-    <div className="space-y-1.5">
+    <div className={cn('space-y-1.5', className)} style={style}>
       <Label htmlFor={name} className="form-label">
         {label}
       </Label>
