@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: signalist-ai
+    runtime: docker
+    plan: free
+    region: oregon
+    rootDir: ai-service
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: FINNHUB_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: INTERNAL_API_SECRET
+        sync: false
+      - key: PYTHONUNBUFFERED
+        value: "1"
