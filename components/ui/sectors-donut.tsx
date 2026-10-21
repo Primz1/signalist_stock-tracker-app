@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { PALETTE, SERIES } from '@/lib/theme';
 
 /** Portfolio allocation donut — sized to fill the card; legend stays tight. */
 
@@ -11,14 +12,7 @@ export interface DonutSector {
   pct: number;
 }
 
-const SIGNALIST_COLORS = [
-  '#FDD458',
-  '#F97316',
-  '#E8BA40',
-  '#A1A1A1',
-  '#6E6E6E',
-  '#8B7355',
-];
+const SIGNALIST_COLORS = SERIES;
 
 const DEFAULT_SECTORS: DonutSector[] = [
   { label: 'NVDA', pct: 32 },
@@ -30,8 +24,8 @@ const DEFAULT_SECTORS: DonutSector[] = [
 
 const SIZE = 200;
 const CX = SIZE / 2;
-const R = 78;
-const STROKE = 22;
+const R = 84;
+const STROKE = 16;
 const C = 2 * Math.PI * R;
 const EASE = [0.16, 1, 0.3, 1] as const;
 
@@ -77,7 +71,7 @@ export function SectorsDonut({
             cy={CX}
             r={R}
             fill="none"
-            stroke="#1C1C1C"
+            stroke={PALETTE.surface2}
             strokeWidth={STROKE}
           />
           {arcs.map((a, i) => (
@@ -104,20 +98,20 @@ export function SectorsDonut({
           ))}
         </svg>
 
-        <div className="pointer-events-none absolute inset-[18%] flex flex-col items-center justify-center text-center">
+        <div className="pointer-events-none absolute inset-[14%] flex flex-col items-center justify-center text-center">
           {active ? (
             <>
-              <span className="mono text-[13px] font-medium text-[#A1A1A1]">{active.label}</span>
-              <span className="mono mt-0.5 text-[28px] font-semibold leading-none tracking-tight text-[#F5F5F5]">
+              <span className="mono text-[13px] font-medium text-ink-2">{active.label}</span>
+              <span className="figure mt-0.5 text-[28px] leading-none text-ink">
                 {Math.round(active.pct)}%
               </span>
             </>
           ) : (
             <>
-              <span className="mono text-[22px] font-semibold leading-none tracking-tight text-[#F5F5F5] sm:text-[26px]">
+              <span className="figure text-[19px] leading-none text-ink sm:text-[21px]">
                 {symbol}
               </span>
-              <span className="mt-1.5 text-[11px] leading-none text-[#6E6E6E]">{caption}</span>
+              <span className="mt-1.5 text-[12px] leading-none text-ink-3">{caption}</span>
             </>
           )}
         </div>
@@ -135,7 +129,7 @@ export function SectorsDonut({
             onBlur={() => setHot(null)}
             className={cn(
               'flex items-center gap-2.5 rounded-lg px-2 py-2 text-left transition-colors',
-              hot === i ? 'bg-[#1C1C1C]' : 'hover:bg-[#1C1C1C]/60',
+              hot === i ? 'bg-surface-2' : 'hover:bg-surface-2/60',
               hot !== null && hot !== i && 'opacity-40'
             )}
           >
@@ -143,12 +137,12 @@ export function SectorsDonut({
               className="size-2.5 shrink-0 rounded-full"
               style={{ background: a.color }}
             />
-            <span className="mono text-[14px] font-medium text-[#F5F5F5]">{a.label}</span>
-            <span className="mono text-[14px] tabular-nums text-[#A1A1A1]">
+            <span className="mono text-[14px] font-medium text-ink">{a.label}</span>
+            <span className="mono text-[14px] tabular-nums text-ink-2">
               {Math.round(a.pct)}%
             </span>
             {/* thin weight bar fills remaining space — visual proportion, not empty gap */}
-            <span className="ml-auto hidden h-1.5 min-w-[48px] max-w-[120px] flex-1 overflow-hidden rounded-full bg-[#1C1C1C] sm:block">
+            <span className="ml-auto hidden h-1.5 min-w-[48px] max-w-[120px] flex-1 overflow-hidden rounded-full bg-surface-2 sm:block">
               <span
                 className="block h-full rounded-full"
                 style={{

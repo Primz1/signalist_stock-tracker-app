@@ -123,7 +123,7 @@ export default async function Home() {
 
       <div className="flex flex-col gap-8">
         {/* Hero */}
-        <div className="relative flex flex-col gap-6 overflow-hidden rounded-2xl border border-[rgba(253,212,88,0.3)] bg-[#141414] p-5 shadow-[0_0_60px_-25px_rgba(249,115,22,0.35)] md:flex-row md:p-8">
+        <div className="relative flex flex-col gap-6 overflow-hidden rounded-2xl border border-signal/30 bg-surface p-5 shadow-[0_0_60px_-25px_rgba(249,115,22,0.35)] md:flex-row md:p-8">
           <div
             className="pointer-events-none absolute -left-[10%] -top-[30%] h-[520px] w-[520px]"
             style={{
@@ -133,25 +133,25 @@ export default async function Home() {
             }}
           />
           <div className="relative flex flex-1 flex-col justify-center gap-3">
-            <div className="text-xl font-semibold text-[#F5F5F5]">
+            <div className="text-xl font-semibold text-ink">
               {greeting()}, {firstName}
             </div>
-            <div className="mono text-[32px] font-medium text-[#F5F5F5]">
+            <div className="mono text-[32px] font-medium text-ink">
               {formatPrice(totalValue || Number(portfolio?.cash ?? 10000))}
             </div>
             <div
               className={`mono w-fit rounded-full px-2.5 py-0.5 text-[13px] ${
                 plUp
-                  ? 'bg-[rgba(34,197,94,0.12)] text-[#22C55E]'
-                  : 'bg-[rgba(239,68,68,0.12)] text-[#EF4444]'
+                  ? 'bg-up/12 text-up'
+                  : 'bg-down/12 text-down'
               }`}
             >
               {plUp ? '+' : ''}
               {formatPrice(plTotal)} ({plUp ? '+' : ''}
               {plPercent.toFixed(2)}%) today
             </div>
-            <div className="mt-1 flex max-w-md items-start gap-1.5 text-[13px] text-[#A1A1A1]">
-              <Sparkles className="mt-0.5 h-3.5 w-3.5 flex-none text-[#FDD458]" strokeWidth={1.5} />
+            <div className="mt-1 flex max-w-md items-start gap-1.5 text-[13px] text-ink-2">
+              <Sparkles className="mt-0.5 h-3.5 w-3.5 flex-none text-signal" strokeWidth={1.5} />
               Paper portfolio snapshot. Add symbols, set alerts, or run AI research to sharpen your edge.
             </div>
             <div className="mt-2 flex flex-wrap gap-2">
@@ -161,28 +161,28 @@ export default async function Home() {
                 initialStocks={initialStocks}
                 quickAddEnabled
                 pill
-                className="!h-auto !w-auto rounded-full border border-[#2E2E2E] bg-transparent px-3 py-1.5 text-xs font-normal text-[#F5F5F5] hover:border-[#FDD458] hover:bg-transparent hover:text-[#FDD458]"
+                className="!h-auto !w-auto rounded-full border border-line-strong bg-transparent px-3 py-1.5 text-xs font-normal text-ink hover:border-signal hover:bg-transparent hover:text-signal"
               />
               <Link
                 href="/watchlist"
-                className="rounded-full border border-[#2E2E2E] px-3 py-1.5 text-xs text-[#F5F5F5] hover:border-[#FDD458] hover:text-[#FDD458]"
+                className="rounded-full border border-line-strong px-3 py-1.5 text-xs text-ink hover:border-signal hover:text-signal"
               >
                 + New alert
               </Link>
               <Link
                 href="/research"
-                className="rounded-full border border-[#2E2E2E] px-3 py-1.5 text-xs text-[#F5F5F5] hover:border-[#FDD458] hover:text-[#FDD458]"
+                className="rounded-full border border-line-strong px-3 py-1.5 text-xs text-ink hover:border-signal hover:text-signal"
               >
                 Run research
               </Link>
             </div>
           </div>
-          <div className="relative min-h-[240px] flex-1 overflow-hidden rounded-xl bg-[#0A0A0A]">
+          <div className="relative min-h-[240px] flex-1 overflow-hidden rounded-xl bg-canvas">
             <div className="flex items-center justify-between px-3 pt-2.5">
-              <span className="mono text-xs text-[#A1A1A1]">{heroSym.toUpperCase()}</span>
+              <span className="mono text-xs text-ink-2">{heroSym.toUpperCase()}</span>
               <Link
                 href={`/stocks/${heroSym.toUpperCase()}`}
-                className="text-[11px] text-[#FDD458] hover:underline"
+                className="text-[11px] text-signal hover:underline"
               >
                 Open chart →
               </Link>
@@ -199,7 +199,7 @@ export default async function Home() {
         <section>
           <div className="mb-4 flex items-baseline gap-2.5">
             <h2 className="section-title">Markets</h2>
-            <span className="text-xs font-medium uppercase tracking-wide text-[#6E6E6E]">
+            <span className="text-xs font-medium uppercase tracking-wide text-ink-3">
               Live snapshot
             </span>
           </div>
@@ -241,26 +241,26 @@ export default async function Home() {
         <section>
           <div className="mb-4 flex items-center justify-between">
             <h2 className="section-title">Your watchlist</h2>
-            <Link href="/watchlist" className="text-[13px] text-[#A1A1A1] hover:text-[#FDD458]">
+            <Link href="/watchlist" className="text-[13px] text-ink-2 hover:text-signal">
               View all
             </Link>
           </div>
           <div className="surface-card overflow-x-auto">
             <div className="min-w-[520px]">
-              <div className="grid grid-cols-[1fr_100px_100px_100px] border-b border-[#242424] px-4 py-2.5">
+              <div className="grid grid-cols-[1fr_100px_100px_100px] border-b border-line px-4 py-2.5">
                 {['Symbol', 'Price', 'Change', 'AI Score'].map((h) => (
                   <div
                     key={h}
-                    className={`text-xs uppercase tracking-wide text-[#6E6E6E] ${h !== 'Symbol' ? 'text-right' : ''}`}
+                    className={`text-xs uppercase tracking-wide text-ink-3 ${h !== 'Symbol' ? 'text-right' : ''}`}
                   >
                     {h}
                   </div>
                 ))}
               </div>
               {watchlist.length === 0 ? (
-                <div className="px-4 py-8 text-center text-[13px] text-[#6E6E6E]">
+                <div className="px-4 py-8 text-center text-[13px] text-ink-3">
                   No symbols yet.{' '}
-                  <Link href="/watchlist" className="text-[#FDD458]">
+                  <Link href="/watchlist" className="text-signal">
                     Add to watchlist
                   </Link>
                 </div>
@@ -275,19 +275,19 @@ export default async function Home() {
                     <Link
                       key={sym}
                       href={`/stocks/${sym}`}
-                      className="grid grid-cols-[1fr_100px_100px_100px] items-center border-b border-[#1C1C1C] px-4 py-3 last:border-0 hover:bg-[#1C1C1C]/40"
+                      className="grid grid-cols-[1fr_100px_100px_100px] items-center border-b border-surface-2 px-4 py-3 last:border-0 hover:bg-surface-2/40"
                     >
                       <div className="flex items-center gap-2.5">
-                        <div className="mono flex h-[26px] w-[26px] items-center justify-center rounded-full bg-[rgba(253,212,88,0.12)] text-[10px] font-semibold text-[#F5F5F5]">
+                        <div className="mono flex h-[26px] w-[26px] items-center justify-center rounded-full bg-signal/12 text-[10px] font-semibold text-ink">
                           {initials}
                         </div>
-                        <span className="mono text-[13px] text-[#F5F5F5]">{sym}</span>
+                        <span className="mono text-[13px] text-ink">{sym}</span>
                       </div>
-                      <div className="mono text-right text-[13px] text-[#F5F5F5]">
+                      <div className="mono text-right text-[13px] text-ink">
                         {q?.price != null ? formatPrice(q.price) : '—'}
                       </div>
                       <div
-                        className={`mono text-right text-[13px] ${up ? 'text-[#22C55E]' : 'text-[#EF4444]'}`}
+                        className={`mono text-right text-[13px] ${up ? 'text-up' : 'text-down'}`}
                       >
                         {(q?.change ?? 0) >= 0 ? '+' : ''}
                         {(q?.change ?? 0).toFixed(2)}%
@@ -316,13 +316,13 @@ export default async function Home() {
               .length === 0 ? (
               <Link
                 href="/research"
-                className="rounded-xl border border-[#242424] border-l-2 border-l-[#FDD458] bg-[#141414] p-4 md:col-span-3"
+                className="rounded-xl border border-line border-l-2 border-l-signal bg-surface p-4 md:col-span-3"
               >
                 <div className="mb-2 flex items-center gap-1.5">
-                  <Sparkles className="h-3.5 w-3.5 text-[#FDD458]" strokeWidth={1.5} />
-                  <span className="text-[11px] uppercase tracking-wide text-[#6E6E6E]">AI</span>
+                  <Sparkles className="h-3.5 w-3.5 text-signal" strokeWidth={1.5} />
+                  <span className="text-[11px] uppercase tracking-wide text-ink-3">AI</span>
                 </div>
-                <p className="text-[13px] text-[#F5F5F5]">
+                <p className="text-[13px] text-ink">
                   No research yet. Run your first AI report on any symbol.
                 </p>
               </Link>
@@ -340,21 +340,21 @@ export default async function Home() {
                   <Link
                     key={`${r.symbol}-${r.query}`}
                     href={`/research?symbol=${r.symbol}`}
-                    className="rounded-xl border border-[#242424] border-l-2 border-l-[#FDD458] bg-[#141414] p-4"
+                    className="rounded-xl border border-line border-l-2 border-l-signal bg-surface p-4"
                   >
                     <div className="mb-2.5 flex items-center gap-1.5">
-                      <Sparkles className="h-3.5 w-3.5 text-[#FDD458]" strokeWidth={1.5} />
-                      <span className="text-[11px] uppercase tracking-wide text-[#6E6E6E]">
+                      <Sparkles className="h-3.5 w-3.5 text-signal" strokeWidth={1.5} />
+                      <span className="text-[11px] uppercase tracking-wide text-ink-3">
                         {r.symbol}
                       </span>
                     </div>
-                    <p className="mb-2.5 line-clamp-2 text-[13px] text-[#F5F5F5]">
+                    <p className="mb-2.5 line-clamp-2 text-[13px] text-ink">
                       {r.query || r.summary || 'Research report'}
                     </p>
-                    <div className="mb-2 h-1 overflow-hidden rounded-sm bg-[#1C1C1C]">
-                      <div className="h-full bg-[#FDD458]" style={{ width: `${conf}%` }} />
+                    <div className="mb-2 h-1 overflow-hidden rounded-sm bg-surface-2">
+                      <div className="h-full bg-signal" style={{ width: `${conf}%` }} />
                     </div>
-                    <div className="text-xs text-[#6E6E6E]">{conf}% confidence</div>
+                    <div className="text-xs text-ink-3">{conf}% confidence</div>
                   </Link>
                 );
               })

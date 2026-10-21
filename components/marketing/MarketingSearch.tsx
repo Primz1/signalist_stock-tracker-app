@@ -124,7 +124,7 @@ export function MarketingSearch({ className }: { className?: string }) {
         type="button"
         onClick={() => setOpen(true)}
         className={cn(
-          'flex items-center gap-2 rounded-lg border border-[#2E2E2E] bg-[#0A0A0A] px-2.5 py-1.5 text-xs text-[#6E6E6E] transition hover:border-[#FDD458]/40 hover:text-[#A1A1A1]',
+          'press flex h-9 items-center gap-2 rounded-lg px-2.5 text-[14px] text-ink-2 hover:bg-surface-2 hover:text-ink',
           className
         )}
       >
@@ -146,7 +146,7 @@ export function MarketingSearch({ className }: { className?: string }) {
               animate={{ opacity: open ? 1 : 0 }}
               transition={{ duration: open ? 0.18 : 0.12, ease: EASE_OUT }}
               onClick={() => setOpen(false)}
-              className="absolute inset-0 bg-[#0A0A0A]/70 backdrop-blur-md"
+              className="absolute inset-0 bg-black/65"
             />
             <div className="pointer-events-none absolute inset-0 flex items-start justify-center p-4 pt-[18vh]">
               <motion.div
@@ -161,12 +161,12 @@ export function MarketingSearch({ className }: { className?: string }) {
                 }}
                 transition={{ type: 'spring', stiffness: 560, damping: 40, mass: 0.5 }}
                 className={cn(
-                  'pointer-events-auto w-full max-w-lg overflow-hidden rounded-xl border border-[#2E2E2E] bg-[#141414] shadow-[0_24px_80px_rgba(0,0,0,0.55)]',
+                  'pointer-events-auto w-full max-w-lg overflow-hidden rounded-lg border border-line-strong bg-surface shadow-[0_24px_80px_rgba(0,0,0,0.55)]',
                   !open && 'invisible'
                 )}
               >
-                <div className="flex items-center gap-2 border-b border-[#242424] px-3">
-                  <Search className="size-4 text-[#6E6E6E]" />
+                <div className="flex items-center gap-2 border-b border-line px-3">
+                  <Search className="size-4 text-ink-3" />
                   <input
                     ref={inputRef}
                     id={uid}
@@ -177,19 +177,19 @@ export function MarketingSearch({ className }: { className?: string }) {
                     }}
                     onKeyDown={onKeyDown}
                     placeholder="Search symbols or jump…"
-                    className="h-12 flex-1 bg-transparent text-sm text-[#F5F5F5] outline-none placeholder:text-[#6E6E6E]"
+                    className="h-12 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-ink-3"
                   />
                   <button
                     type="button"
                     onClick={() => setOpen(false)}
-                    className="rounded border border-[#2E2E2E] px-1.5 py-0.5 text-[10px] text-[#6E6E6E] hover:text-[#A1A1A1]"
+                    className="rounded border border-line-strong px-1.5 py-0.5 text-[12px] text-ink-3 hover:text-ink-2"
                   >
                     Close
                   </button>
                 </div>
                 <div className="max-h-80 overflow-y-auto p-2">
                   {items.length === 0 ? (
-                    <div className="px-3 py-6 text-center text-sm text-[#6E6E6E]">No results</div>
+                    <div className="px-3 py-6 text-center text-sm text-ink-3">No results</div>
                   ) : (
                     items.map((item, i) => (
                       <button
@@ -201,12 +201,12 @@ export function MarketingSearch({ className }: { className?: string }) {
                         className={cn(
                           'flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm transition',
                           i === active
-                            ? 'bg-[#1C1C1C] text-[#F5F5F5]'
-                            : 'text-[#A1A1A1] hover:bg-[#1C1C1C]/60'
+                            ? 'bg-surface-2 text-ink'
+                            : 'text-ink-2 hover:bg-surface-2/60'
                         )}
                       >
                         <span>{item.label}</span>
-                        <span className="text-[11px] text-[#6E6E6E]">{item.hint}</span>
+                        <span className="text-[12px] text-ink-3">{item.hint}</span>
                       </button>
                     ))
                   )}

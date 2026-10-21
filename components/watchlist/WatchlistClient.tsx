@@ -24,7 +24,7 @@ import {
 import { addToWatchlist } from "@/lib/actions/watchlist.actions";
 import { createAlert, deleteAlert, setAlertActive, runAlertSweepAction } from "@/lib/actions/alert.actions";
 import { getNotifications, markNotifications } from "@/lib/actions/alertNotification.actions";
-import { ArrowUpRight, Bell, Loader2, Trash2 } from "lucide-react";
+import { ArrowUpRight, Bell, BellPlus, Loader2, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { notify } from "@/lib/notify";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -80,7 +80,7 @@ type AlertNotificationEntry = {
 const NewsGrid = ({ articles }: { articles: MarketNewsArticle[] }) => {
   if (!articles?.length) {
     return (
-      <div className="rounded-xl border border-[#242424] bg-[#141414] p-4 text-sm text-[#A1A1A1]">
+      <div className="rounded-lg border border-line bg-surface p-4 text-sm text-ink-2">
         No news available right now.
       </div>
     );
@@ -97,29 +97,28 @@ const NewsGrid = ({ articles }: { articles: MarketNewsArticle[] }) => {
           href: article.url || undefined,
         }))}
       />
-      <div className="rounded-xl border border-[#242424] bg-[#141414] p-4">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-[#F5F5F5]">All headlines</h2>
-        <span className="text-xs uppercase text-[#6E6E6E]">Latest</span>
+      <div>
+      <div className="mb-3 flex items-baseline justify-between">
+        <h2 className="section-title">All headlines</h2>
+        <span className="text-[13px] text-ink-3">Latest first</span>
       </div>
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-        {articles.map((article, i) => (
+        {articles.map((article) => (
           <Link
             key={`${article.id}-${article.url}`}
             href={article.url || "#"}
             target="_blank"
-            className="animate-el group block rounded-lg border border-[#242424] bg-[#0A0A0A]/60 p-3 transition hover:border-[#2E2E2E]"
-            style={{ animationDelay: `${80 + i * 60}ms` }}
+            className="group block rounded-lg border border-line bg-surface p-4 transition-colors duration-150 hover:border-line-strong hover:bg-surface-2"
           >
-            <div className="flex items-center justify-between text-xs text-[#6E6E6E]">
+            <div className="flex items-center justify-between text-xs text-ink-3">
               <span>{article.source}</span>
               <span>{article.datetimeString}</span>
             </div>
-            <div className="mt-2 text-sm font-semibold text-[#F5F5F5] group-hover:text-[#F5F5F5]">
+            <div className="mt-2 text-[15px] font-medium leading-snug text-ink">
               {article.headline}
             </div>
-            <div className="mt-1 line-clamp-3 text-xs text-[#A1A1A1]">{article.summary}</div>
-            <div className="mt-3 inline-flex items-center gap-1 text-[11px] font-medium text-[#FDD458]">
+            <div className="mt-1.5 line-clamp-3 text-[13px] leading-5 text-ink-2">{article.summary}</div>
+            <div className="mt-3 inline-flex items-center gap-1 text-[12px] font-medium text-ink-3 group-hover:text-signal">
               Read more <ArrowUpRight className="h-3 w-3" />
             </div>
           </Link>
@@ -131,14 +130,14 @@ const NewsGrid = ({ articles }: { articles: MarketNewsArticle[] }) => {
 };
 
 const AlertsPlaceholder = () => (
-  <div className="h-full rounded-xl border border-[#242424] bg-[#141414] p-4 text-[#F5F5F5]">
+  <div className="h-full rounded-lg border border-line bg-surface p-4 text-ink">
     <div className="mb-3 flex items-center justify-between">
       <h2 className="text-lg font-semibold">Alerts</h2>
       <Button size="sm" variant="secondary" className="yellow-btn">
         Create Alert
       </Button>
     </div>
-    <p className="text-sm text-[#A1A1A1]">Alert management UI coming soon.</p>
+    <p className="text-sm text-ink-2">Alert management UI coming soon.</p>
   </div>
 );
 
@@ -383,7 +382,6 @@ const WatchlistClient = ({ initialItems, initialStocks, initialSymbols, initialA
     notify.alertUpdated(isActive);
   };
 
-  const conditionLabel = (cond: "gt" | "lt") => (cond === "gt" ? "Greater than (>)" : "Less than (<)");
   const frequencyLabel = (freq: "once" | "per_hour" | "per_day") => {
     if (freq === "per_hour") return "Once per hour";
     if (freq === "per_day") return "Once per day";
@@ -394,13 +392,6 @@ const WatchlistClient = ({ initialItems, initialStocks, initialSymbols, initialA
     if (value === undefined || value === null || Number.isNaN(value)) return "-";
     return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(value);
   };
-
-  const changeColor = (cp?: number) => {
-    if (typeof cp !== "number") return "text-[#A1A1A1]";
-    return cp >= 0 ? "text-[#22C55E]" : "text-[#EF4444]";
-  };
-
-  const changeText = (cp?: number) => (typeof cp === "number" ? `${cp.toFixed(2)}%` : "-");
 
   const timeAgo = (iso?: string) => {
     if (!iso) return null;
@@ -478,181 +469,173 @@ const WatchlistClient = ({ initialItems, initialStocks, initialSymbols, initialA
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   };
 
+  const activeAlerts = alerts.filter((a) => a.isActive).length;
+
   return (
     <PageEnter>
-      <section className="space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <section className="space-y-8">
+      <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1 className="section-title">Watchlist</h1>
-          <p className="text-sm text-[#A1A1A1]">Track your symbols and manage alerts.</p>
+          <h1 className="page-title">Watchlist</h1>
+          <p className="page-lede">
+            {rows.length} {rows.length === 1 ? 'symbol' : 'symbols'} · {activeAlerts} active{' '}
+            {activeAlerts === 1 ? 'alert' : 'alerts'}
+          </p>
         </div>
-      </div>
-
-      <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="news">News</TabsTrigger>
-        </TabsList>
-        <TabsContent value="overview" className="mt-0 space-y-6">
-      <div className="grid gap-6 lg:grid-cols-[3fr_2fr] relative">
-        {refreshing && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-[#0A0A0A]/40 backdrop-blur-sm">
-            <div className="h-12 w-12 animate-spin rounded-full border-2 border-[#FDD458] border-t-transparent" />
-          </div>
-        )}
-        <div className="space-y-3">
-          <div className="flex items-center justify-end">
+        <div className="flex items-center gap-2">
+          <div className="w-[min(100%,260px)]">
             <SearchCommand
               renderAs="button"
-              label={refreshing || isPending ? "Adding…" : "Add to watchlist"}
+              label={refreshing || isPending ? "Adding…" : "Add symbol"}
               initialStocks={initialStocks}
               watchlistSymbols={symbols}
               onSelectStock={handleAdd}
               mode="add"
             />
           </div>
-          <WatchlistTable items={rows} onAddAlert={openAlertFor} />
+          <Button onClick={() => setAlertModalOpen(true)}>
+            <BellPlus className="size-4" />
+            New alert
+          </Button>
         </div>
-        <div className="rounded-xl border border-[#242424] bg-[#141414] p-4 text-[#F5F5F5] shadow-md space-y-4">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <h2 className="text-lg font-semibold">Alerts</h2>
-              <p className="text-sm text-[#A1A1A1]">Create price alerts for stocks or crypto.</p>
-            </div>
-            <Button
-              size="sm"
-              className="yellow-btn"
-              onClick={() => setAlertModalOpen(true)}
-            >
-              Create Alert
-            </Button>
-          </div>
+      </div>
 
-          <div className="space-y-3 max-h-[540px] overflow-y-auto pr-1">
-            {alerts.length === 0 && (
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="news">News</TabsTrigger>
+        </TabsList>
+        <TabsContent value="overview" className="mt-0">
+      <div className="relative grid items-start gap-8 xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
+        {refreshing && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-canvas/60">
+            <Loader2 className="size-6 animate-spin text-signal" />
+          </div>
+        )}
+        <WatchlistTable items={rows} onAddAlert={openAlertFor} />
+
+        <div className="space-y-8">
+          <div>
+            <div className="mb-3 flex items-baseline justify-between">
+              <h2 className="section-title">Alerts</h2>
+              <span className="text-[13px] text-ink-3">{alerts.length} set</span>
+            </div>
+            {alerts.length === 0 ? (
               <EmptyState
                 icon={Bell}
                 title="No alerts yet"
-                description="Create one to stay notified."
+                description="Pick a symbol, choose above or below a price, and Signalist checks it in the background."
+                actionLabel="New alert"
+                onAction={() => setAlertModalOpen(true)}
               />
-            )}
-            {alerts.map((alert) => {
-              const quote = priceLookup.get(alert.symbol.toUpperCase());
-              return (
-                <div key={alert._id || `${alert.symbol}-${alert.threshold}`} className="rounded-lg border border-[#242424] bg-[#1C1C1C] p-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#FDD458]/40 bg-[#FDD458]/10 text-sm font-semibold text-[#FDD458]">
-                        {alert.symbol.slice(0, 3)}
+            ) : (
+              <ul className="surface-card max-h-[560px] divide-y divide-line overflow-y-auto">
+                {alerts.map((alert) => {
+                  const quote = priceLookup.get(alert.symbol.toUpperCase());
+                  const price = quote?.price;
+                  const away =
+                    typeof price === 'number' && alert.threshold
+                      ? ((alert.threshold - price) / price) * 100
+                      : null;
+                  return (
+                    <li
+                      key={alert._id || `${alert.symbol}-${alert.threshold}`}
+                      className={`px-4 py-3.5 ${alert.isActive ? '' : 'opacity-60'}`}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex min-w-0 items-baseline gap-2">
+                          <span className="mono text-[14px] font-medium text-ink">{alert.symbol}</span>
+                          <span className="truncate text-[14px] text-ink-2">
+                            {alert.condition === 'gt' ? 'above' : 'below'}{' '}
+                            <span className="mono text-ink">{formatPriceDisplay(alert.threshold)}</span>
+                          </span>
+                        </div>
+                        <div className="flex flex-none items-center gap-1">
+                          {alert._id && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 px-2.5 text-[13px]"
+                              onClick={() => handleToggleAlert(alert._id!, !alert.isActive)}
+                            >
+                              {alert.isActive ? "Pause" : "Resume"}
+                            </Button>
+                          )}
+                          {alert._id && (
+                            <button
+                              onClick={() => handleDeleteAlert(alert._id!)}
+                              className="press flex size-8 items-center justify-center rounded-md text-ink-3 hover:bg-surface-2 hover:text-down"
+                              aria-label={`Delete ${alert.symbol} alert`}
+                              title="Delete alert"
+                            >
+                              <Trash2 className="size-4" />
+                            </button>
+                          )}
+                        </div>
                       </div>
-                      <div>
-                        <div className="text-sm font-semibold text-[#F5F5F5]">{alert.company}</div>
-                        <div className="text-xs text-[#A1A1A1]">{alert.symbol}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="rounded-full bg-[#1C1C1C] px-2 py-1 text-[11px] text-[#F5F5F5] border border-[#2E2E2E]">
-                        {frequencyLabel(alert.frequency)}
-                      </span>
-                      {!alert.isActive && (
-                        <span className="rounded-full bg-[#EF4444]/10 px-2 py-1 text-[11px] text-[#EF4444] border border-[#EF4444]/30">
-                          Inactive
+                      <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-0.5 text-[13px] text-ink-3">
+                        <span className="mono text-ink-2">{formatPriceDisplay(price)}</span>
+                        {away != null && (
+                          <span className="mono">{Math.abs(away).toFixed(1)}% away</span>
+                        )}
+                        <span>{frequencyLabel(alert.frequency)}</span>
+                        <span className={alert.lastTriggeredAt ? 'text-signal' : ''}>
+                          {alert.lastTriggeredAt
+                            ? `Fired ${timeAgo(alert.lastTriggeredAt)}`
+                            : alert.isActive
+                              ? 'Waiting'
+                              : 'Paused'}
                         </span>
-                      )}
-                      {alert._id && (
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          className="h-8 border border-[#2E2E2E] bg-[#1C1C1C] text-[#F5F5F5] hover:bg-[#242424]"
-                          onClick={() => handleToggleAlert(alert._id!, !alert.isActive)}
-                        >
-                          {alert.isActive ? "Pause" : "Resume"}
-                        </Button>
-                      )}
-                      {alert._id && (
-                        <button
-                          onClick={() => handleDeleteAlert(alert._id!)}
-                          className="rounded-full border border-[#242424] p-2 text-[#A1A1A1] transition hover:border-[#EF4444]/40 hover:text-[#EF4444]"
-                          title="Delete alert"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="mt-3 flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2 text-[#F5F5F5]">
-                      <Bell className="h-4 w-4 text-[#FDD458]" />
-                      <span>
-                        {conditionLabel(alert.condition)} {formatPriceDisplay(alert.threshold)}
-                      </span>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-[#F5F5F5]">{formatPriceDisplay(quote?.price)}</div>
-                      <div className={`text-xs ${changeColor(quote?.changePercent)}`}>{changeText(quote?.changePercent)}</div>
-                      <div className="text-[11px] text-[#6E6E6E]">
-                        {alert.lastTriggeredAt ? `Triggered ${timeAgo(alert.lastTriggeredAt)}` : alert.isActive ? "Waiting" : "Triggered"}
                       </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+
+          <div>
+            <div className="mb-3 flex items-baseline justify-between">
+              <h2 className="section-title">
+                Fired{unreadCount > 0 && <span className="mono ml-2 text-[13px] font-medium text-signal">{unreadCount} new</span>}
+              </h2>
+              {unreadCount > 0 && (
+                <button
+                  type="button"
+                  onClick={handleMarkNotifications}
+                  className="text-[13px] text-ink-2 hover:text-ink"
+                >
+                  Mark all read
+                </button>
+              )}
+            </div>
+            {notifications.length === 0 ? (
+              <EmptyState
+                icon={Bell}
+                title="Nothing has fired yet"
+                description="When a price crosses one of your levels, it shows up here and in the bell at the top."
+              />
+            ) : (
+              <ul className="surface-card max-h-[480px] divide-y divide-line overflow-y-auto">
+                {notifications.map((n) => (
+                  <li key={n._id || `${n.alertId}-${n.triggeredAt}`} className="flex gap-3 px-4 py-3.5">
+                    <span
+                      aria-hidden
+                      className={`mt-2 size-1.5 flex-none rounded-full ${n.read ? 'bg-transparent' : 'bg-signal'}`}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-baseline justify-between gap-3">
+                        <span className="mono text-[14px] font-medium text-ink">{n.symbol}</span>
+                        <span className="text-[12px] text-ink-3">{timeAgo(n.triggeredAt) || ''}</span>
+                      </div>
+                      <p className="mt-0.5 text-[14px] leading-5 text-ink-2">{n.message}</p>
                     </div>
-                  </div>
-                </div>
-              );
-            })}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
-
-          <div className="rounded-xl border border-[#242424] bg-[#141414] p-4 text-[#F5F5F5] shadow-md space-y-4">
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <h2 className="text-lg font-semibold">Recent Alerts</h2>
-                <p className="text-sm text-[#A1A1A1]">In-app notifications when alerts fire.</p>
-              </div>
-              <div className="flex items-center gap-2">
-                {unreadCount > 0 && (
-                  <span className="rounded-full bg-[#EF4444]/15 px-2 py-1 text-[11px] text-[#EF4444] border border-[#EF4444]/30">
-                    {unreadCount} new
-                  </span>
-                )}
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="border border-[#2E2E2E] bg-[#1C1C1C] text-[#F5F5F5] hover:bg-[#242424]"
-                  onClick={handleMarkNotifications}
-                >
-                  Mark read
-                </Button>
-              </div>
-            </div>
-
-            <div className="space-y-3 max-h-[540px] overflow-y-auto pr-1">
-              {notifications.length === 0 && (
-                <EmptyState
-                  icon={Bell}
-                  title="No alerts have fired yet"
-                  description="Notifications appear here when your price alerts trigger."
-                />
-              )}
-              {notifications.map((n) => (
-                <div
-                  key={n._id || `${n.alertId}-${n.triggeredAt}`}
-                  className={`rounded-lg border p-3 ${n.read ? 'border-[#242424] bg-[#1C1C1C]' : 'border-[#FDD458]/40 bg-[#FDD458]/5'}`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="text-sm font-semibold text-[#F5F5F5]">{n.company}</div>
-                      <div className="text-xs text-[#A1A1A1]">{n.symbol}</div>
-                      <div className="mt-1 text-sm text-[#F5F5F5]">{n.message}</div>
-                      <div className="mt-1 text-xs text-[#6E6E6E]">
-                        {formatPriceDisplay(n.price)} {changeText(n.changePercent)}
-                      </div>
-                    </div>
-                    <div className="text-right text-xs text-[#A1A1A1]">{timeAgo(n.triggeredAt) || ''}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
       </div>
         </TabsContent>
         <TabsContent value="news" className="mt-0">
@@ -661,17 +644,17 @@ const WatchlistClient = ({ initialItems, initialStocks, initialSymbols, initialA
       </Tabs>
 
       <Dialog open={alertModalOpen} onOpenChange={setAlertModalOpen}>
-        <DialogContent className="max-w-xl border-[#242424] bg-[#141414] text-[#F5F5F5]">
+        <DialogContent className="max-w-xl text-ink">
           <DialogHeader>
-            <DialogTitle>Price Alert</DialogTitle>
-            <DialogDescription className="text-[#A1A1A1]">
-              Choose a symbol, set a condition, and we will keep an eye on it.
+            <DialogTitle>New price alert</DialogTitle>
+            <DialogDescription className="text-ink-2">
+              Pick a symbol and a level. Signalist checks it in the background and tells you when price crosses.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-3">
             <div className="space-y-1">
-              <Label htmlFor="alertName">Alert Name</Label>
+              <Label htmlFor="alertName">Name</Label>
               <Input
                 id="alertName"
                 placeholder="Apple at Discount"
@@ -681,12 +664,12 @@ const WatchlistClient = ({ initialItems, initialStocks, initialSymbols, initialA
             </div>
 
             <div className="space-y-1">
-              <Label>Stock / Crypto</Label>
+              <Label>Symbol</Label>
               <Select value={alertSymbol} onValueChange={setAlertSymbol}>
-                <SelectTrigger className="w-full border-[#242424] bg-[#1C1C1C] text-[#F5F5F5]">
+                <SelectTrigger className="w-full border-line-strong bg-surface text-ink">
                   <SelectValue placeholder="Select symbol" />
                 </SelectTrigger>
-                <SelectContent className="border-[#242424] bg-[#141414] text-[#F5F5F5]">
+                <SelectContent className="border-line bg-surface text-ink">
                   {symbols.map((sym) => (
                     <SelectItem key={sym} value={sym}>
                       {sym}
@@ -700,10 +683,10 @@ const WatchlistClient = ({ initialItems, initialStocks, initialSymbols, initialA
               <div className="space-y-1">
                 <Label>Condition</Label>
                 <Select value={alertCondition} onValueChange={(v: "gt" | "lt") => setAlertCondition(v)}>
-                  <SelectTrigger className="w-full border-[#242424] bg-[#1C1C1C] text-[#F5F5F5]">
+                  <SelectTrigger className="w-full border-line-strong bg-surface text-ink">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="border-[#242424] bg-[#141414] text-[#F5F5F5]">
+                  <SelectContent className="border-line bg-surface text-ink">
                     <SelectItem value="gt">Greater than (&gt;)</SelectItem>
                     <SelectItem value="lt">Less than (&lt;)</SelectItem>
                   </SelectContent>
@@ -711,10 +694,10 @@ const WatchlistClient = ({ initialItems, initialStocks, initialSymbols, initialA
               </div>
 
               <div className="space-y-1">
-                <Label>Threshold value</Label>
+                <Label>Level</Label>
                 <Input
                   type="number"
-                  placeholder="$ eg: 140"
+                  placeholder="e.g. 140.00"
                   value={alertThreshold}
                   onChange={(e) => setAlertThreshold(e.target.value)}
                 />
@@ -723,10 +706,10 @@ const WatchlistClient = ({ initialItems, initialStocks, initialSymbols, initialA
               <div className="space-y-1">
                 <Label>Frequency</Label>
                 <Select value={alertFrequency} onValueChange={(v: "once" | "per_hour" | "per_day") => setAlertFrequency(v)}>
-                  <SelectTrigger className="w-full border-[#242424] bg-[#1C1C1C] text-[#F5F5F5]">
+                  <SelectTrigger className="w-full border-line-strong bg-surface text-ink">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="border-[#242424] bg-[#141414] text-[#F5F5F5]">
+                  <SelectContent className="border-line bg-surface text-ink">
                     <SelectItem value="once">Once</SelectItem>
                     <SelectItem value="per_hour">Once per hour</SelectItem>
                     <SelectItem value="per_day">Once per day</SelectItem>
@@ -738,7 +721,7 @@ const WatchlistClient = ({ initialItems, initialStocks, initialSymbols, initialA
 
           <DialogFooter>
             <Button
-              className="yellow-btn w-full"
+              className="w-full sm:w-auto"
               onClick={handleCreateAlert}
               disabled={isCreatingAlert}
               aria-busy={isCreatingAlert}
@@ -749,7 +732,7 @@ const WatchlistClient = ({ initialItems, initialStocks, initialSymbols, initialA
                   Creating...
                 </>
               ) : (
-                "Create Alert"
+                "Create alert"
               )}
             </Button>
           </DialogFooter>

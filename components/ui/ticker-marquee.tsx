@@ -28,34 +28,29 @@ export function TickerMarquee({
   return (
     <div
       className={cn(
-        'relative h-9 w-full overflow-hidden border-b border-[#242424] bg-[#0A0A0A]',
+        'relative h-9 w-full overflow-hidden border-b border-line bg-canvas',
         className
       )}
+      style={{
+        maskImage: 'linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent)',
+        WebkitMaskImage: 'linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent)',
+      }}
     >
       <div
-        className="flex h-full w-max items-center gap-8 whitespace-nowrap px-4 will-change-transform"
-        style={{ animation: `marquee ${durationSec}s linear infinite` }}
+        className="animate-marquee flex h-full w-max items-center gap-8 whitespace-nowrap px-4 will-change-transform hover:[animation-play-state:paused]"
+        style={{ animationDuration: `${durationSec}s` }}
       >
         {loop.map((t, i) => (
           <div
             key={`${t.symbol}-${i}`}
-            className="mono flex flex-none items-center gap-1.5 text-xs"
+            className="mono flex flex-none items-center gap-2 text-[12px]"
           >
-            <span className="text-[#A1A1A1]">{t.symbol}</span>
-            <span className="text-[#F5F5F5]">{t.price}</span>
-            <span className={t.up ? 'text-[#22C55E]' : 'text-[#EF4444]'}>{t.change}</span>
+            <span className="text-ink-2">{t.symbol}</span>
+            <span className="text-ink">{t.price}</span>
+            <span className={t.up ? 'text-up' : 'text-down'}>{t.change}</span>
           </div>
         ))}
       </div>
-      {/* P1 edge fade — horizontal only; vertical fade omitted to keep ticker density */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            'linear-gradient(90deg, #0A0A0A 0%, transparent 12%, transparent 88%, #0A0A0A 100%)',
-        }}
-      />
     </div>
   );
 }

@@ -60,7 +60,7 @@ const WatchlistButton = ({
         disabled={isPending}
       >
         {isPending ? (
-          <Loader2 className="watchlist-star animate-spin text-[#FACC15]" />
+          <Loader2 className="watchlist-star animate-spin text-signal" />
         ) : (
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -82,8 +82,8 @@ const WatchlistButton = ({
   }
 
   const outlineClass = added
-    ? "inline-flex h-9 w-auto items-center gap-1.5 rounded-lg border border-[#EF4444] bg-transparent px-3.5 text-[13px] font-medium text-[#EF4444] hover:bg-[rgba(239,68,68,0.08)]"
-    : "inline-flex h-9 w-auto items-center gap-1.5 rounded-lg border border-[#FDD458] bg-transparent px-3.5 text-[13px] font-medium text-[#FDD458] hover:bg-[rgba(253,212,88,0.08)]";
+    ? "inline-flex h-9 w-auto items-center gap-1.5 rounded-lg border border-down bg-transparent px-3.5 text-[13px] font-medium text-down hover:bg-down/8"
+    : "inline-flex h-9 w-auto items-center gap-1.5 rounded-lg border border-signal bg-transparent px-3.5 text-[13px] font-medium text-signal hover:bg-signal/8";
 
   return (
     <button

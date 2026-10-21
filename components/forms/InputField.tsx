@@ -45,13 +45,13 @@ const InputField = ({
             type="button"
             aria-label={showPassword ? 'Hide password' : 'Show password'}
             onClick={() => setShowPassword((s) => !s)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 text-[#6E6E6E] hover:text-[#A1A1A1]"
+            className="absolute right-2 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-md text-ink-3 hover:text-ink"
           >
             {showPassword ? <EyeOff className="h-[18px] w-[18px]" strokeWidth={1.5} /> : <Eye className="h-[18px] w-[18px]" strokeWidth={1.5} />}
           </button>
         )}
       </div>
-      {error && <p className="text-sm text-red-500">{error.message}</p>}
+      {error && <p className="text-[13px] text-down">{error.message || 'Check this field'}</p>}
     </div>
   );
 };

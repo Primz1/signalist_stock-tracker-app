@@ -1,4 +1,4 @@
-import { fetchQuote } from '@/lib/market/ohlcv';
+import { fetchOhlcv, fetchQuote, type Candle } from '@/lib/market/ohlcv';
 
 export type MarketingQuote = {
   symbol: string;
@@ -29,7 +29,11 @@ export type MarketingLiveData = {
     symbol: string;
     summary: string;
     confidence: number;
+    /** true when no stored report exists and the text is the built-in example */
+    isSample?: boolean;
   } | null;
+  /** Real daily candles for the hero symbol (empty if every provider failed). */
+  heroCandles: Candle[];
   stats: {
     watchlistCount: number;
     alertCount: number;
@@ -159,17 +163,20 @@ const FALLBACK: MarketingLiveData = {
     symbol: 'NVDA',
     summary: 'Trend above SMA50 with RSI cooling from overbought…',
     confidence: 72,
+    isSample: true,
   },
+  heroCandles: [],
   stats: { watchlistCount: 5, alertCount: 3, researchLabel: '72%' },
 };
 
 export async function getMarketingLiveData(): Promise<MarketingLiveData> {
   try {
-    const [marketQuotes, watchQuotes, tapeQuotes, nvda] = await Promise.all([
+    const [marketQuotes, watchQuotes, tapeQuotes, nvda, heroCandles] = await Promise.all([
       Promise.all(MARKET_APIS.map((m) => quoteOf(m.display, m.api))),
       Promise.all(WATCH_APIS.map((s) => quoteOf(s, s))),
       Promise.all(TAPE_APIS.map((s) => quoteOf(s, s))),
       quoteOf('NVDA', 'NVDA'),
+      fetchOhlcv('NVDA', { range: '6M', resolution: 'D', days: 180 }).catch(() => [] as Candle[]),
     ]);
 
     const markets = marketQuotes.filter(Boolean) as MarketingQuote[];
@@ -207,6 +214,7 @@ export async function getMarketingLiveData(): Promise<MarketingLiveData> {
           confidence: Math.round(
             (r.confidence ?? 0.72) * (r.confidence && r.confidence <= 1 ? 100 : 1)
           ),
+          isSample: false,
         };
       }
     } catch {
@@ -225,7 +233,12 @@ export async function getMarketingLiveData(): Promise<MarketingLiveData> {
     };
 
     if (!markets.length && !watchlist.length) {
-      return { ...FALLBACK, hero: { ...FALLBACK.hero, aiScore: aiScore ?? 78 }, research };
+      return {
+        ...FALLBACK,
+        hero: { ...FALLBACK.hero, aiScore: aiScore ?? 78 },
+        research,
+        heroCandles,
+      };
     }
 
     return {
@@ -235,6 +248,7 @@ export async function getMarketingLiveData(): Promise<MarketingLiveData> {
       movers: movers.length ? movers : FALLBACK.watchlist.slice(0, 4),
       hero,
       research,
+      heroCandles,
       stats: {
         watchlistCount: watchlist.length || FALLBACK.stats.watchlistCount,
         alertCount: movers.length || FALLBACK.stats.alertCount,

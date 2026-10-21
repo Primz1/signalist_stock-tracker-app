@@ -59,7 +59,7 @@ const SignUp = () => {
         Create your account
       </h1>
       <p
-        className="mb-7 animate-el text-sm text-[#A1A1A1]"
+        className="mb-8 animate-el text-[15px] leading-6 text-ink-2"
         style={{ animationDelay: '160ms' }}
       >
         Signalist personalizes signals based on your goals.
@@ -67,7 +67,7 @@ const SignUp = () => {
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div
-          className="animate-el text-[12px] font-medium uppercase tracking-wide text-[#6E6E6E]"
+          className="animate-el text-[13px] font-medium text-ink"
           style={{ animationDelay: '200ms' }}
         >
           Account
@@ -104,8 +104,8 @@ const SignUp = () => {
           validation={{ required: 'Password is required', minLength: 8 }}
         />
 
-        <div className="animate-el space-y-4 border-t border-[#242424] pt-4" style={{ animationDelay: '360ms' }}>
-          <div className="text-[12px] font-medium uppercase tracking-wide text-[#6E6E6E]">
+        <div className="animate-el space-y-4 border-t border-line pt-6" style={{ animationDelay: '360ms' }}>
+          <div className="text-[13px] font-medium text-ink">
             Market
           </div>
           <CountrySelectField
@@ -117,8 +117,8 @@ const SignUp = () => {
           />
         </div>
 
-        <div className="animate-el space-y-4 border-t border-[#242424] pt-4" style={{ animationDelay: '420ms' }}>
-          <div className="text-[12px] font-medium uppercase tracking-wide text-[#6E6E6E]">
+        <div className="animate-el space-y-4 border-t border-line pt-6" style={{ animationDelay: '420ms' }}>
+          <div className="text-[13px] font-medium text-ink">
             Preferences
           </div>
           <SelectField
@@ -154,7 +154,7 @@ const SignUp = () => {
           type="submit"
           disabled={isSubmitting}
           aria-busy={isSubmitting}
-          className="yellow-btn mt-2 w-full animate-el"
+          className="yellow-btn mt-3 w-full animate-el"
           style={{ animationDelay: '500ms' }}
         >
           {isSubmitting ? (

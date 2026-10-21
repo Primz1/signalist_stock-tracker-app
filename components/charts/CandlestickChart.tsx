@@ -12,6 +12,7 @@ import {
 } from 'lightweight-charts';
 import type { Candle } from '@/lib/market/ohlcv';
 import { cn } from '@/lib/utils';
+import { PALETTE } from '@/lib/theme';
 
 export type IndicatorToggleKey = 'SMA20' | 'SMA50' | 'RSI' | 'MACD' | 'BB';
 
@@ -80,31 +81,31 @@ export default function CandlestickChart({
     const chart = createChart(containerRef.current, {
       height,
       layout: {
-        background: { type: ColorType.Solid, color: '#141414' },
-        textColor: '#6E6E6E',
+        background: { type: ColorType.Solid, color: PALETTE.surface },
+        textColor: PALETTE.ink3,
         fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
         fontSize: 11,
         panes: {
-          separatorColor: '#242424',
-          separatorHoverColor: '#2E2E2E',
+          separatorColor: PALETTE.line,
+          separatorHoverColor: PALETTE.lineStrong,
         },
       },
       grid: {
-        vertLines: { color: '#1C1C1C' },
-        horzLines: { color: '#1C1C1C' },
+        vertLines: { color: PALETTE.surface2 },
+        horzLines: { color: PALETTE.surface2 },
       },
-      rightPriceScale: { borderColor: '#2E2E2E' },
-      timeScale: { borderColor: '#2E2E2E' },
+      rightPriceScale: { borderColor: PALETTE.lineStrong },
+      timeScale: { borderColor: PALETTE.lineStrong },
     });
 
     chartRef.current = chart;
 
     const candleSeries = chart.addSeries(CandlestickSeries, {
-      upColor: '#22C55E',
-      downColor: '#EF4444',
+      upColor: PALETTE.up,
+      downColor: PALETTE.down,
       borderVisible: false,
-      wickUpColor: '#22C55E',
-      wickDownColor: '#EF4444',
+      wickUpColor: PALETTE.up,
+      wickDownColor: PALETTE.down,
     });
 
     candleSeries.setData(
@@ -118,7 +119,7 @@ export default function CandlestickChart({
     );
 
     const volumeSeries = chart.addSeries(HistogramSeries, {
-      color: '#6E6E6E',
+      color: PALETTE.ink3,
       priceFormat: { type: 'volume' },
       priceScaleId: 'volume',
     });
@@ -130,7 +131,7 @@ export default function CandlestickChart({
       data.candles.map((c) => ({
         time: c.time as unknown as Time,
         value: c.volume ?? 0,
-        color: c.close >= c.open ? 'rgba(34,197,94,0.35)' : 'rgba(239,68,68,0.35)',
+        color: c.close >= c.open ? 'rgba(71,207,121,0.32)' : 'rgba(247,93,89,0.32)',
       }))
     );
 
@@ -138,7 +139,7 @@ export default function CandlestickChart({
 
     if (showSma20 && series?.sma20) {
       const s = chart.addSeries(LineSeries, {
-        color: '#FDD458',
+        color: PALETTE.signal,
         lineWidth: 2,
         priceLineVisible: false,
         lastValueVisible: false,
@@ -148,7 +149,7 @@ export default function CandlestickChart({
 
     if (showSma50 && series?.sma50) {
       const s = chart.addSeries(LineSeries, {
-        color: '#A1A1A1',
+        color: PALETTE.ink2,
         lineWidth: 1,
         priceLineVisible: false,
         lastValueVisible: false,
@@ -158,21 +159,21 @@ export default function CandlestickChart({
 
     if (showBb && series?.bollinger) {
       const upper = chart.addSeries(LineSeries, {
-        color: 'rgba(253,212,88,0.45)',
+        color: 'rgba(252,213,95,0.45)',
         lineWidth: 1,
         lineStyle: 2,
         priceLineVisible: false,
         lastValueVisible: false,
       });
       const lower = chart.addSeries(LineSeries, {
-        color: 'rgba(253,212,88,0.45)',
+        color: 'rgba(252,213,95,0.45)',
         lineWidth: 1,
         lineStyle: 2,
         priceLineVisible: false,
         lastValueVisible: false,
       });
       const mid = chart.addSeries(LineSeries, {
-        color: 'rgba(161,161,161,0.5)',
+        color: 'rgba(189,186,181,0.5)',
         lineWidth: 1,
         priceLineVisible: false,
         lastValueVisible: false,
@@ -188,7 +189,7 @@ export default function CandlestickChart({
       const rsiSeries = chart.addSeries(
         LineSeries,
         {
-          color: '#F97316',
+          color: PALETTE.warm,
           lineWidth: 2,
           priceLineVisible: false,
           lastValueVisible: true,
@@ -223,7 +224,7 @@ export default function CandlestickChart({
             return {
               time: c.time as unknown as Time,
               value: v,
-              color: v >= 0 ? 'rgba(34,197,94,0.55)' : 'rgba(239,68,68,0.55)',
+              color: v >= 0 ? 'rgba(71,207,121,0.5)' : 'rgba(247,93,89,0.5)',
             };
           })
           .filter((p) => Number.isFinite(p.value))
@@ -232,7 +233,7 @@ export default function CandlestickChart({
       const macdLine = chart.addSeries(
         LineSeries,
         {
-          color: '#FDD458',
+          color: PALETTE.signal,
           lineWidth: 1,
           priceLineVisible: false,
           lastValueVisible: false,
@@ -244,7 +245,7 @@ export default function CandlestickChart({
       const signalLine = chart.addSeries(
         LineSeries,
         {
-          color: '#A1A1A1',
+          color: PALETTE.ink2,
           lineWidth: 1,
           priceLineVisible: false,
           lastValueVisible: false,
@@ -300,7 +301,7 @@ export default function CandlestickChart({
     return (
       <div
         className={cn(
-          'flex h-[280px] w-full items-center justify-center text-sm text-[#6E6E6E] md:h-[360px]',
+          'flex h-[280px] w-full items-center justify-center text-sm text-ink-3 md:h-[360px]',
           className
         )}
       >

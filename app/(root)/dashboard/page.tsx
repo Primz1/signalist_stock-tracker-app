@@ -11,9 +11,7 @@ import { formatPrice } from '@/lib/utils';
 import TickerTape from '@/components/dashboard/TickerTape';
 import { SearchCommand } from '@/components/search/SearchCommand';
 import TradingViewWidget from '@/components/market/TradingViewWidget';
-import { AmbientGlow } from '@/components/ui/ambient';
 import { PageEnter } from '@/components/ui/motion';
-import { DrawlineSpark } from '@/components/ui/drawline-spark';
 import { getEconomicCalendarEvents } from '@/lib/actions/economic.actions';
 import { EconomicCalendar } from '@/components/ui/economic-calendar';
 import {
@@ -34,13 +32,6 @@ const greeting = () => {
   if (h < 12) return 'Good morning';
   if (h < 18) return 'Good afternoon';
   return 'Good evening';
-};
-
-const scoreStyle = (score?: number) => {
-  if (score == null) return { bg: 'rgba(110,110,110,0.12)', color: '#6E6E6E', label: '—' };
-  if (score >= 65) return { bg: 'rgba(34,197,94,0.12)', color: '#22C55E', label: `${score}/100` };
-  if (score >= 45) return { bg: 'rgba(253,212,88,0.12)', color: '#FDD458', label: `${score}/100` };
-  return { bg: 'rgba(239,68,68,0.12)', color: '#EF4444', label: `${score}/100` };
 };
 
 const scriptUrl = 'https://s3.tradingview.com/external-embedding/embed-widget-';
@@ -109,93 +100,234 @@ export default async function Home() {
       up: (q.change ?? 0) >= 0,
     }));
 
-  const totalValue = Number(portfolio?.totalValue ?? 0);
+  const cash = Number(portfolio?.cash ?? 10000);
+  const totalValue = Number(portfolio?.totalValue ?? 0) || cash;
   const plTotal = Number(portfolio?.plTotal ?? 0);
   const plPercent = Number(portfolio?.plPercent ?? 0);
-  const plUp = plTotal >= 0;
+  const dayPl = Number((portfolio as { dayPl?: number } | null)?.dayPl ?? 0);
+  const dayPlPercent = Number((portfolio as { dayPlPercent?: number } | null)?.dayPlPercent ?? 0);
+  const holdingsCount = (portfolio?.holdings as unknown[] | undefined)?.length ?? 0;
 
   const heroHolding = (portfolio?.holdings as { symbol: string; price?: number }[] | undefined)?.[0];
-  const heroSym = heroHolding?.symbol || watchlist[0]?.symbol || 'NVDA';
+  const heroSym = (heroHolding?.symbol || watchlist[0]?.symbol || 'NVDA').toUpperCase();
+
+  const typedReports = reports as {
+    _id?: { toString(): string };
+    symbol: string;
+    query?: string;
+    summary?: string;
+    confidence?: number;
+    createdAt?: string | Date;
+  }[];
 
   return (
     <PageEnter className="flex flex-col">
       <TickerTape items={tapeItems} />
 
-      <div className="flex flex-col gap-8">
-        {/* Hero */}
-        <div className="relative flex flex-col gap-6 overflow-hidden rounded-2xl border border-[rgba(253,212,88,0.3)] bg-[#141414] p-5 shadow-[0_0_60px_-25px_rgba(249,115,22,0.35)] md:flex-row md:p-8">
-          <AmbientGlow className="-left-[10%] -top-[30%]" />
-          <div className="relative flex flex-1 flex-col justify-center gap-3">
-            <div className="text-xl font-semibold text-[#F5F5F5]">
+      <div className="flex flex-col gap-12">
+        {/* Account: the one number that matters, then what moved it */}
+        <section
+          aria-labelledby="account-heading"
+          className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:gap-12"
+        >
+          <div className="flex flex-col">
+            <p className="text-[15px] text-ink-2">
               {greeting()}, {firstName}
+            </p>
+            <h1 id="account-heading" className="mt-5 label-sm">
+              Paper portfolio value
+            </h1>
+            <div className="figure mt-1 text-[44px] leading-none text-ink md:text-[56px]">
+              {formatPrice(totalValue)}
             </div>
-            <div className="mono text-[32px] font-medium text-[#F5F5F5]">
-              {formatPrice(totalValue || Number(portfolio?.cash ?? 10000))}
+            <div className="mono mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-1 text-[14px]">
+              <span className={dayPl > 0 ? 'text-up' : dayPl < 0 ? 'text-down' : 'text-ink-2'}>
+                {signed(dayPl)} ({signedPct(dayPlPercent)}) today
+              </span>
+              <span className={plTotal > 0 ? 'text-up' : plTotal < 0 ? 'text-down' : 'text-ink-2'}>
+                {signed(plTotal)} ({signedPct(plPercent)}) all time
+              </span>
             </div>
-            <div
-              className={`mono w-fit rounded-full px-2.5 py-0.5 text-[13px] ${
-                plUp
-                  ? 'bg-[rgba(34,197,94,0.12)] text-[#22C55E]'
-                  : 'bg-[rgba(239,68,68,0.12)] text-[#EF4444]'
-              }`}
-            >
-              {plUp ? '+' : ''}
-              {formatPrice(plTotal)} ({plUp ? '+' : ''}
-              {plPercent.toFixed(2)}%) today
-            </div>
-            <div className="mt-1 flex max-w-md items-start gap-1.5 text-[13px] text-[#A1A1A1]">
-              <Sparkles className="mt-0.5 h-3.5 w-3.5 flex-none text-[#FDD458]" strokeWidth={1.5} />
-              Paper portfolio snapshot. Add symbols, set alerts, or run AI research to sharpen your edge.
-            </div>
-            <div className="mt-2 flex flex-wrap gap-2">
+
+            <dl className="mt-8 grid grid-cols-3 gap-px overflow-hidden rounded-lg border border-line bg-line">
+              {[
+                { k: 'Cash', v: formatPrice(cash) },
+                { k: 'Invested', v: formatPrice(Math.max(0, totalValue - cash)) },
+                { k: 'Positions', v: String(holdingsCount) },
+              ].map((s) => (
+                <div key={s.k} className="bg-canvas px-4 py-3">
+                  <dt className="label-sm">{s.k}</dt>
+                  <dd className="mono mt-1 truncate text-[15px] text-ink">{s.v}</dd>
+                </div>
+              ))}
+            </dl>
+
+            <div className="mt-6 flex flex-wrap gap-2">
               <SearchCommand
                 renderAs="button"
-                label="+ Add symbol"
+                label="Add symbol"
                 initialStocks={initialStocks}
                 quickAddEnabled
                 pill
-                className="!h-auto !w-auto rounded-full border border-[#2E2E2E] bg-transparent px-3 py-1.5 text-xs font-normal text-[#F5F5F5] hover:border-[#FDD458] hover:bg-transparent hover:text-[#FDD458]"
+                className="!w-auto !max-w-none !justify-center !border-transparent !bg-signal !px-4 !font-semibold !text-signal-ink hover:!bg-signal-hover"
               />
-              <Link
-                href="/watchlist"
-                className="rounded-full border border-[#2E2E2E] px-3 py-1.5 text-xs text-[#F5F5F5] hover:border-[#FDD458] hover:text-[#FDD458]"
-              >
-                + New alert
+              <Link href="/watchlist" className="ghost-btn">
+                New alert
               </Link>
-              <Link
-                href="/research"
-                className="rounded-full border border-[#2E2E2E] px-3 py-1.5 text-xs text-[#F5F5F5] hover:border-[#FDD458] hover:text-[#FDD458]"
-              >
+              <Link href="/research" className="ghost-btn">
                 Run research
               </Link>
             </div>
           </div>
-          <div className="relative min-h-[240px] flex-1 overflow-hidden rounded-xl bg-[#0A0A0A]">
-            <div className="flex items-center justify-between px-3 pt-2.5">
-              <span className="mono text-xs text-[#A1A1A1]">{heroSym.toUpperCase()}</span>
+
+          <div className="surface-card flex min-h-[280px] flex-col">
+            <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
+              <div className="flex min-w-0 items-baseline gap-2">
+                <span className="mono text-[14px] font-medium text-ink">{heroSym}</span>
+                <span className="truncate text-[13px] text-ink-3">
+                  {heroHolding ? 'Largest position' : 'From your watchlist'} · 1 month
+                </span>
+              </div>
               <Link
-                href={`/stocks/${heroSym.toUpperCase()}`}
-                className="text-[11px] text-[#FDD458] hover:underline"
+                href={`/stocks/${heroSym}`}
+                className="flex-none text-[13px] font-medium text-signal hover:underline"
               >
-                Open chart →
+                Open chart
               </Link>
             </div>
-            <DrawlineSpark className="pointer-events-none absolute inset-x-4 top-10 z-[1] h-14 w-auto opacity-80" />
-            <TradingViewWidget
-              scriptUrl={`${scriptUrl}mini-symbol-overview.js`}
-              config={MINI_CHART_WIDGET_CONFIG(heroSym)}
-              height={220}
-            />
+            <div className="flex-1 px-2 pb-2">
+              <TradingViewWidget
+                scriptUrl={`${scriptUrl}mini-symbol-overview.js`}
+                config={MINI_CHART_WIDGET_CONFIG(heroSym)}
+                height={230}
+              />
+            </div>
           </div>
-        </div>
+        </section>
 
-        {/* Markets — real TradingView widgets */}
+        {/* What to look at next: watchlist movers and the latest research */}
+        <section className="grid gap-8 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+          <div className="min-w-0">
+            <div className="mb-3 flex items-baseline justify-between">
+              <h2 className="section-title">Your watchlist</h2>
+              <Link href="/watchlist" className="text-[13px] text-ink-2 hover:text-ink">
+                Open watchlist
+              </Link>
+            </div>
+            <div className="surface-card overflow-x-auto">
+              <table className="w-full min-w-[480px] text-[14px]">
+                <thead>
+                  <tr className="border-b border-line text-left">
+                    {['Symbol', 'Price', 'Today', 'AI score'].map((h) => (
+                      <th
+                        key={h}
+                        scope="col"
+                        className={`px-4 py-2.5 text-[12px] font-medium text-ink-3 ${h !== 'Symbol' ? 'text-right' : ''}`}
+                      >
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {watchlist.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="px-4 py-8">
+                        <p className="text-[14px] text-ink">No symbols yet.</p>
+                        <p className="mt-1 text-[13px] text-ink-3">
+                          Add a ticker with Add symbol and its price, move and AI score show up
+                          here.
+                        </p>
+                      </td>
+                    </tr>
+                  ) : (
+                    watchlist.slice(0, 6).map((row) => {
+                      const sym = row.symbol.toUpperCase();
+                      const q = quoteMap.get(sym);
+                      const ch = q?.change ?? 0;
+                      return (
+                        <tr key={sym} className="border-b border-line last:border-0 hover:bg-surface-2">
+                          <td className="px-4 py-3">
+                            <Link href={`/stocks/${sym}`} className="flex min-w-0 items-baseline gap-2.5">
+                              <span className="mono font-medium text-ink">{sym}</span>
+                              <span className="truncate text-[13px] text-ink-3">{row.company}</span>
+                            </Link>
+                          </td>
+                          <td className="mono px-4 py-3 text-right text-ink">
+                            {q?.price != null ? formatPrice(q.price) : '—'}
+                          </td>
+                          <td className={`mono px-4 py-3 text-right ${ch >= 0 ? 'text-up' : 'text-down'}`}>
+                            {q?.change != null ? signedPct(ch) : '—'}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <ScoreCell score={scoreMap.get(sym)} />
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="min-w-0">
+            <div className="mb-3 flex items-baseline justify-between">
+              <h2 className="section-title">Latest research</h2>
+              <Link href="/research" className="text-[13px] text-ink-2 hover:text-ink">
+                New report
+              </Link>
+            </div>
+            <div className="surface-card divide-y divide-line">
+              {typedReports.length === 0 ? (
+                <Link href="/research" className="block px-4 py-5 hover:bg-surface-2">
+                  <div className="flex items-center gap-2 text-[14px] text-ink">
+                    <Sparkles className="size-4 text-signal" strokeWidth={1.5} />
+                    No reports yet
+                  </div>
+                  <p className="mt-1 text-[13px] leading-5 text-ink-3">
+                    Pick a symbol: Signalist computes the factors first, then writes a narrative
+                    that only cites those numbers.
+                  </p>
+                </Link>
+              ) : (
+                typedReports.map((r, i) => {
+                  const conf = Math.round((r.confidence ?? 0.7) * 100);
+                  const key =
+                    (r._id && String(r._id)) ||
+                    `${r.symbol}-${r.createdAt ? new Date(r.createdAt).getTime() : i}-${i}`;
+                  return (
+                    <Link
+                      key={key}
+                      href={`/research?symbol=${r.symbol}`}
+                      className="block px-4 py-3.5 hover:bg-surface-2"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="mono text-[13px] font-medium text-ink">{r.symbol}</span>
+                        <span className="mono text-[12px] text-ink-3">{conf}% confidence</span>
+                      </div>
+                      <p className="mt-1 line-clamp-2 text-[13px] leading-5 text-ink-2">
+                        {r.query || r.summary || 'Research report'}
+                      </p>
+                    </Link>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </section>
+
         <section>
-          <div className="mb-4 flex items-baseline gap-2.5">
-            <h2 className="section-title">Markets</h2>
-            <span className="text-xs font-medium uppercase tracking-wide text-[#6E6E6E]">
-              Live snapshot
-            </span>
+          <EconomicCalendar events={ecoEvents} title="Economic calendar" seeAllHref="/research" />
+        </section>
+
+        {/* Markets: TradingView embeds */}
+        <section aria-labelledby="markets-heading">
+          <div className="mb-3 flex items-baseline justify-between">
+            <h2 id="markets-heading" className="section-title">
+              Markets
+            </h2>
+            <span className="text-[13px] text-ink-3">Delayed data via TradingView</span>
           </div>
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
             <div className="surface-card min-h-[420px] p-2 xl:col-span-1">
@@ -203,7 +335,6 @@ export default async function Home() {
                 scriptUrl={`${scriptUrl}market-overview.js`}
                 config={MARKET_OVERVIEW_WIDGET_CONFIG}
                 height={400}
-                className="custom-chart"
               />
             </div>
             <div className="surface-card min-h-[420px] p-2 xl:col-span-2">
@@ -218,7 +349,6 @@ export default async function Home() {
                 scriptUrl={`${scriptUrl}timeline.js`}
                 config={TOP_STORIES_WIDGET_CONFIG}
                 height={400}
-                className="custom-chart"
               />
             </div>
             <div className="surface-card min-h-[420px] p-2 xl:col-span-2">
@@ -230,142 +360,28 @@ export default async function Home() {
             </div>
           </div>
         </section>
-
-        {/* Watchlist preview */}
-        <section>
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="section-title">Your watchlist</h2>
-            <Link href="/watchlist" className="text-[13px] text-[#A1A1A1] hover:text-[#FDD458]">
-              View all
-            </Link>
-          </div>
-          <div className="surface-card overflow-x-auto">
-            <div className="min-w-[520px]">
-              <div className="grid grid-cols-[1fr_100px_100px_100px] border-b border-[#242424] px-4 py-2.5">
-                {['Symbol', 'Price', 'Change', 'AI Score'].map((h) => (
-                  <div
-                    key={h}
-                    className={`text-xs uppercase tracking-wide text-[#6E6E6E] ${h !== 'Symbol' ? 'text-right' : ''}`}
-                  >
-                    {h}
-                  </div>
-                ))}
-              </div>
-              {watchlist.length === 0 ? (
-                <div className="px-4 py-8 text-center text-[13px] text-[#6E6E6E]">
-                  No symbols yet.{' '}
-                  <Link href="/watchlist" className="text-[#FDD458]">
-                    Add to watchlist
-                  </Link>
-                </div>
-              ) : (
-                watchlist.slice(0, 5).map((row) => {
-                  const sym = row.symbol.toUpperCase();
-                  const q = quoteMap.get(sym);
-                  const up = (q?.change ?? 0) >= 0;
-                  const sc = scoreStyle(scoreMap.get(sym));
-                  const initials = sym.slice(0, 2);
-                  return (
-                    <Link
-                      key={sym}
-                      href={`/stocks/${sym}`}
-                      className="grid grid-cols-[1fr_100px_100px_100px] items-center border-b border-[#1C1C1C] px-4 py-3 last:border-0 hover:bg-[#1C1C1C]/40"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <div className="mono flex h-[26px] w-[26px] items-center justify-center rounded-full bg-[rgba(253,212,88,0.12)] text-[10px] font-semibold text-[#F5F5F5]">
-                          {initials}
-                        </div>
-                        <span className="mono text-[13px] text-[#F5F5F5]">{sym}</span>
-                      </div>
-                      <div className="mono text-right text-[13px] text-[#F5F5F5]">
-                        {q?.price != null ? formatPrice(q.price) : '—'}
-                      </div>
-                      <div
-                        className={`mono text-right text-[13px] ${up ? 'text-[#22C55E]' : 'text-[#EF4444]'}`}
-                      >
-                        {(q?.change ?? 0) >= 0 ? '+' : ''}
-                        {(q?.change ?? 0).toFixed(2)}%
-                      </div>
-                      <div className="text-right">
-                        <span
-                          className="mono rounded-full px-2 py-0.5 text-xs"
-                          style={{ background: sc.bg, color: sc.color }}
-                        >
-                          {sc.label}
-                        </span>
-                      </div>
-                    </Link>
-                  );
-                })
-              )}
-            </div>
-          </div>
-        </section>
-
-        {/* Economic calendar — P2 prompt */}
-        <section>
-          <EconomicCalendar events={ecoEvents} title="Economic calendar" seeAllHref="/research" />
-        </section>
-
-        {/* Research */}
-        <section className="pb-10">
-          <h2 className="section-title mb-4">Latest research</h2>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            {(reports as { symbol: string; query?: string; summary?: string; confidence?: number }[])
-              .length === 0 ? (
-              <Link
-                href="/research"
-                className="rounded-xl border border-[#242424] border-l-2 border-l-[#FDD458] bg-[#141414] p-4 md:col-span-3"
-              >
-                <div className="mb-2 flex items-center gap-1.5">
-                  <Sparkles className="h-3.5 w-3.5 text-[#FDD458]" strokeWidth={1.5} />
-                  <span className="text-[11px] uppercase tracking-wide text-[#6E6E6E]">AI</span>
-                </div>
-                <p className="text-[13px] text-[#F5F5F5]">
-                  No research yet. Run your first AI report on any symbol.
-                </p>
-              </Link>
-            ) : (
-              (
-                reports as {
-                  _id?: { toString(): string };
-                  symbol: string;
-                  query?: string;
-                  summary?: string;
-                  confidence?: number;
-                  createdAt?: string | Date;
-                }[]
-              ).map((r, i) => {
-                const conf = Math.round((r.confidence ?? 0.7) * 100);
-                const key =
-                  (r._id && String(r._id)) ||
-                  `${r.symbol}-${r.createdAt ? new Date(r.createdAt).getTime() : i}-${i}`;
-                return (
-                  <Link
-                    key={key}
-                    href={`/research?symbol=${r.symbol}`}
-                    className="rounded-xl border border-[#242424] border-l-2 border-l-[#FDD458] bg-[#141414] p-4"
-                  >
-                    <div className="mb-2.5 flex items-center gap-1.5">
-                      <Sparkles className="h-3.5 w-3.5 text-[#FDD458]" strokeWidth={1.5} />
-                      <span className="text-[11px] uppercase tracking-wide text-[#6E6E6E]">
-                        {r.symbol}
-                      </span>
-                    </div>
-                    <p className="mb-2.5 line-clamp-2 text-[13px] text-[#F5F5F5]">
-                      {r.query || r.summary || 'Research report'}
-                    </p>
-                    <div className="mb-2 h-1 overflow-hidden rounded-sm bg-[#1C1C1C]">
-                      <div className="h-full bg-[#FDD458]" style={{ width: `${conf}%` }} />
-                    </div>
-                    <div className="text-xs text-[#6E6E6E]">{conf}% confidence</div>
-                  </Link>
-                );
-              })
-            )}
-          </div>
-        </section>
       </div>
     </PageEnter>
+  );
+}
+
+function signed(n: number) {
+  return `${n >= 0 ? '+' : '−'}${formatPrice(Math.abs(n))}`;
+}
+
+function signedPct(n: number) {
+  return `${n >= 0 ? '+' : '−'}${Math.abs(n).toFixed(2)}%`;
+}
+
+function ScoreCell({ score }: { score?: number }) {
+  if (score == null) return <span className="mono text-ink-3">—</span>;
+  const tone = score >= 65 ? 'text-up' : score >= 45 ? 'text-ink' : 'text-down';
+  return (
+    <span className="inline-flex items-center justify-end gap-2">
+      <span className="hidden h-1 w-12 overflow-hidden rounded-full bg-surface-3 sm:block" aria-hidden>
+        <span className="block h-full rounded-full bg-signal" style={{ width: `${score}%` }} />
+      </span>
+      <span className={`mono ${tone}`}>{Math.round(score)}</span>
+    </span>
   );
 }

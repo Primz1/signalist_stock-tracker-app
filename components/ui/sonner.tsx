@@ -2,7 +2,7 @@
 
 /**
  * P1 Toast Notification (Ark-UI demo) adapted to Sonner + Signalist dark surfaces.
- * Typed toasts: success / error / warning / info with left accent rail + icons.
+ * Typed toasts: success / error / warning / info, toned border + icon.
  */
 import {
   CircleCheck,
@@ -28,36 +28,34 @@ const Toaster = ({ ...props }: ToasterProps) => {
         duration: 4000,
         classNames: {
           toast:
-            'group toast animate-toast !flex !items-start !gap-3 !min-w-[320px] !rounded-lg !border !border-[#2E2E2E] !border-l-4 !bg-[#141414] !p-4 !text-[#F5F5F5] !shadow-[0_8px_24px_rgba(0,0,0,0.45)]',
-          title: '!text-[13px] !font-semibold !text-[#F5F5F5]',
-          description: '!mt-0.5 !text-[12px] !text-[#A1A1A1] !opacity-90',
+            'group toast !flex !items-start !gap-3 !min-w-[320px] !rounded-lg !border !border-line-strong !bg-surface !p-4 !text-ink !shadow-[0_12px_32px_rgba(0,0,0,0.5)]',
+          title: '!text-[13px] !font-semibold !text-ink',
+          description: '!mt-0.5 !text-[12px] !text-ink-2 !opacity-90',
           actionButton:
-            '!bg-[#FDD458] !text-[#0A0A0A] !text-xs !font-semibold',
-          cancelButton: '!bg-[#1C1C1C] !text-[#A1A1A1] !text-xs',
+            '!bg-signal !text-signal-ink !text-xs !font-semibold',
+          cancelButton: '!bg-surface-2 !text-ink-2 !text-xs',
           closeButton:
-            '!border-[#2E2E2E] !bg-[#1C1C1C] !text-[#6E6E6E] hover:!bg-[#242424] hover:!text-[#F5F5F5]',
-          success: '!border-l-[#22C55E]',
-          error: '!border-l-[#EF4444]',
-          warning: '!border-l-[#FDD458]',
-          info: '!border-l-[#FDD458]',
-          loading: '!border-l-[#FDD458]',
+            '!border-line-strong !bg-surface-2 !text-ink-3 hover:!bg-line hover:!text-ink',
+          success: '!border-up/40',
+          error: '!border-down/50',
+          warning: '!border-signal/40',
         },
       }}
       icons={{
-        success: <CircleCheck className="mt-0.5 size-4 shrink-0 text-[#22C55E]" strokeWidth={2} />,
-        error: <OctagonX className="mt-0.5 size-4 shrink-0 text-[#EF4444]" strokeWidth={2} />,
-        warning: <TriangleAlert className="mt-0.5 size-4 shrink-0 text-[#FDD458]" strokeWidth={2} />,
-        info: <Info className="mt-0.5 size-4 shrink-0 text-[#FDD458]" strokeWidth={2} />,
-        loading: <Loader2 className="mt-0.5 size-4 shrink-0 animate-spin text-[#FDD458]" strokeWidth={2} />,
+        success: <CircleCheck className="mt-0.5 size-4 shrink-0 text-up" strokeWidth={2} />,
+        error: <OctagonX className="mt-0.5 size-4 shrink-0 text-down" strokeWidth={2} />,
+        warning: <TriangleAlert className="mt-0.5 size-4 shrink-0 text-signal" strokeWidth={2} />,
+        info: <Info className="mt-0.5 size-4 shrink-0 text-signal" strokeWidth={2} />,
+        loading: <Loader2 className="mt-0.5 size-4 shrink-0 animate-spin text-signal" strokeWidth={2} />,
         close: <X className="size-3" strokeWidth={2} />,
       }}
       style={
         {
-          '--normal-bg': '#141414',
-          '--normal-text': '#F5F5F5',
-          '--normal-border': '#2E2E2E',
-          '--success-bg': '#141414',
-          '--error-bg': '#141414',
+          '--normal-bg': 'var(--sg-surface)',
+          '--normal-text': 'var(--sg-ink)',
+          '--normal-border': 'var(--sg-line-strong)',
+          '--success-bg': 'var(--sg-surface)',
+          '--error-bg': 'var(--sg-surface)',
           '--border-radius': '8px',
         } as React.CSSProperties
       }

@@ -2,16 +2,16 @@ import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
-const alertVariants = cva('relative rounded-xl border', {
+const alertVariants = cva('relative rounded-lg border', {
   variants: {
     variant: {
-      default: 'border-[#242424] bg-[#141414] text-[#F5F5F5]',
+      default: 'border-line bg-surface text-ink',
       warning:
-        'border-[rgba(253,212,88,0.4)] bg-[rgba(253,212,88,0.1)] text-[#F5F5F5]',
-      error: 'border-[rgba(239,68,68,0.4)] bg-[rgba(239,68,68,0.1)] text-[#F5F5F5]',
+        'border-signal/40 bg-signal/10 text-ink',
+      error: 'border-down/40 bg-down/10 text-ink',
       success:
-        'border-[rgba(34,197,94,0.4)] bg-[rgba(34,197,94,0.1)] text-[#F5F5F5]',
-      info: 'border-[#2E2E2E] bg-[#1C1C1C] text-[#A1A1A1]',
+        'border-up/40 bg-up/10 text-ink',
+      info: 'border-line-strong bg-surface-2 text-ink-2',
     },
     size: {
       sm: 'px-3.5 py-3',

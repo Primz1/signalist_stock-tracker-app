@@ -204,7 +204,7 @@ export function SearchCommand({ renderAs = 'button', label = 'Add stock', initia
           disabled={!!addingSymbol}
           aria-busy={!!addingSymbol}
           className={clsx(
-            'search-btn inline-flex w-full max-w-[280px] cursor-pointer items-center gap-2 rounded-lg border border-[#2E2E2E] bg-[#0A0A0A] px-2.5 py-[7px] text-[13px] font-normal text-[#6E6E6E] hover:bg-[#0A0A0A]',
+            'search-btn',
             className
           )}
         >
@@ -214,6 +214,11 @@ export function SearchCommand({ renderAs = 'button', label = 'Add stock', initia
             !pill && <Search className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} />
           )}
           <span className="truncate">{label}</span>
+          {!pill && (
+            <kbd className="ml-auto hidden flex-none rounded border border-line-strong px-1.5 font-sans text-[12px] leading-[18px] text-ink-3 lg:inline">
+              ⌘K
+            </kbd>
+          )}
         </button>
       )}
       {renderAs === 'modal' && (
@@ -221,14 +226,14 @@ export function SearchCommand({ renderAs = 'button', label = 'Add stock', initia
           type="button"
           onClick={() => setOpen(true)}
           className={clsx(
-            'relative inline-flex size-9 cursor-pointer items-center justify-center rounded-lg border border-[#2E2E2E] bg-[#0A0A0A] p-0 text-[#A1A1A1]',
-            'hover:bg-[#1C1C1C] hover:text-[#F5F5F5]',
+            'relative inline-flex size-9 cursor-pointer items-center justify-center rounded-lg border border-line bg-surface p-0 text-ink-2',
+            'hover:bg-surface-2 hover:text-ink',
             'md:border xl:h-9 xl:w-60 xl:justify-start xl:gap-2 xl:px-3 xl:py-2',
             className
           )}
         >
           <Search className="size-4 shrink-0" strokeWidth={1.5} />
-          <span className="hidden truncate text-[13px] font-normal text-[#6E6E6E] xl:inline">
+          <span className="hidden truncate text-[13px] font-normal text-ink-3 xl:inline">
             {label || 'Search...'}
           </span>
           <span className="sr-only">Search</span>
@@ -239,7 +244,7 @@ export function SearchCommand({ renderAs = 'button', label = 'Add stock', initia
           type="button"
           aria-label={label}
           onClick={() => setOpen(true)}
-          className="p-1.5 text-[#A1A1A1] hover:text-[#FDD458]"
+          className="press flex size-9 items-center justify-center rounded-lg text-ink-2 hover:bg-surface-2 hover:text-ink"
         >
           <Search className="h-[18px] w-[18px]" strokeWidth={1.5} />
         </button>
@@ -269,10 +274,10 @@ export function SearchCommand({ renderAs = 'button', label = 'Add stock', initia
                 const isCrypto = /crypto/i.test(stock.type);
                 const isEtf = /etf|etn/i.test(stock.type);
                 const monoClass = isCrypto
-                  ? 'bg-[#FB923C]/20 text-[#FB923C]'
+                  ? 'bg-warm/20 text-warm'
                   : isEtf
-                    ? 'bg-[#FDD458]/20 text-[#FDD458]'
-                    : 'bg-[#F59E0B]/20 text-[#F59E0B]';
+                    ? 'bg-signal/20 text-signal'
+                    : 'bg-warm/20 text-warm';
                 return (
                 <li key={`${stock.symbol}-${stock.exchange}`} className="search-item">
                   {resolvedMode === "add" ? (
@@ -288,21 +293,21 @@ export function SearchCommand({ renderAs = 'button', label = 'Add stock', initia
                         <div className="search-item-name flex items-center gap-2">
                           {stock.name}
                           {(stock.isInWatchlist || watchlistSet.has(stock.symbol)) && (
-                            <span className="rounded border border-[#FDD458]/40 px-1.5 py-[1px] text-[10px] text-[#FDD458]">
+                            <span className="rounded border border-signal/40 px-1.5 py-[1px] text-[10px] text-signal">
                               In watchlist
                             </span>
                           )}
                         </div>
-                        <div className="mono text-[12px] text-[#6E6E6E]">
+                        <div className="mono text-[12px] text-ink-3">
                           {stock.symbol} · {stock.exchange}
                         </div>
                       </div>
-                      <span className="mr-1 rounded border border-[#2E2E2E] px-1.5 py-0.5 text-[10px] uppercase text-[#A1A1A1]">
+                      <span className="mr-1 rounded px-1.5 py-0.5 text-[12px] text-ink-3">
                         {isCrypto ? 'crypto' : isEtf ? 'etf' : 'stock'}
                       </span>
                       <span
                         className={clsx(
-                          "inline-flex h-8 w-8 items-center justify-center rounded-full border border-amber-400/40 bg-amber-400/10 text-amber-300 transition hover:bg-amber-400/20",
+                          "inline-flex h-8 w-8 items-center justify-center rounded-md border border-line-strong text-signal transition-colors hover:bg-surface-3",
                           addingSymbol === stock.symbol && "opacity-70"
                         )}
                         title="Add to watchlist"
@@ -324,22 +329,22 @@ export function SearchCommand({ renderAs = 'button', label = 'Add stock', initia
                           <div className="search-item-name flex items-center gap-2">
                             {stock.name}
                             {(stock.isInWatchlist || watchlistSet.has(stock.symbol)) && (
-                              <span className="rounded border border-[#FDD458]/40 px-1.5 py-[1px] text-[10px] text-[#FDD458]">
+                              <span className="rounded border border-signal/40 px-1.5 py-[1px] text-[10px] text-signal">
                                 In watchlist
                               </span>
                             )}
                           </div>
-                          <div className="mono text-[12px] text-[#6E6E6E]">
+                          <div className="mono text-[12px] text-ink-3">
                             {stock.symbol} · {stock.exchange}
                           </div>
                         </div>
                       </Link>
-                      <span className="mr-1 rounded border border-[#2E2E2E] px-1.5 py-0.5 text-[10px] uppercase text-[#A1A1A1]">
+                      <span className="mr-1 rounded px-1.5 py-0.5 text-[12px] text-ink-3">
                         {isCrypto ? 'crypto' : isEtf ? 'etf' : 'stock'}
                       </span>
                       {quickAddEnabled && (
                         <button
-                          className="ml-2 inline-flex h-8 w-8 items-center justify-center rounded-full border border-amber-400/40 bg-amber-400/10 text-amber-300 transition hover:bg-amber-400/20 disabled:opacity-60"
+                          className="ml-2 inline-flex h-8 w-8 items-center justify-center rounded-md border border-line-strong text-signal transition-colors hover:bg-surface-3 disabled:opacity-60"
                           onClick={(e) => handleQuickAdd(stock, e)}
                           disabled={addingSymbol === stock.symbol}
                           aria-busy={addingSymbol === stock.symbol}
@@ -353,7 +358,7 @@ export function SearchCommand({ renderAs = 'button', label = 'Add stock', initia
                         </button>
                       )}
                       {!quickAddEnabled && (
-                        <span className="text-xs font-medium text-amber-400">Open</span>
+                        <span className="text-xs font-medium text-signal">Open</span>
                       )}
                     </div>
                   )}

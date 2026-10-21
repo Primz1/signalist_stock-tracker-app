@@ -20,11 +20,11 @@ import { cn, formatPrice } from '@/lib/utils';
 type Stance = 'buy' | 'sell' | 'wait' | 'caution' | 'na';
 
 const STANCE_STYLE: Record<Stance, string> = {
-  buy: 'bg-[rgba(34,197,94,0.12)] text-[#22C55E]',
-  sell: 'bg-[rgba(239,68,68,0.12)] text-[#EF4444]',
-  wait: 'bg-[rgba(161,161,161,0.12)] text-[#A1A1A1]',
-  caution: 'bg-[rgba(253,212,88,0.12)] text-[#FDD458]',
-  na: 'bg-[#1C1C1C] text-[#6E6E6E]',
+  buy: 'bg-up/12 text-up',
+  sell: 'bg-down/12 text-down',
+  wait: 'bg-ink-2/12 text-ink-2',
+  caution: 'bg-signal/12 text-signal',
+  na: 'bg-surface-2 text-ink-3',
 };
 
 const STANCE_LABEL: Record<Stance, string> = {
@@ -50,9 +50,9 @@ function factorTone(score: number): {
   text: string;
   label: 'Strong' | 'Moderate' | 'Weak';
 } {
-  if (score >= 65) return { bar: '#22C55E', text: 'text-[#22C55E]', label: 'Strong' };
-  if (score >= 40) return { bar: '#FDD458', text: 'text-[#FDD458]', label: 'Moderate' };
-  return { bar: '#EF4444', text: 'text-[#EF4444]', label: 'Weak' };
+  if (score >= 65) return { bar: '#22C55E', text: 'text-up', label: 'Strong' };
+  if (score >= 40) return { bar: '#FDD458', text: 'text-signal', label: 'Moderate' };
+  return { bar: '#EF4444', text: 'text-down', label: 'Weak' };
 }
 
 function isCryptoSym(sym: string) {
@@ -438,16 +438,16 @@ export default function ResearchClient({ initialSymbols, initialSymbol }: Props)
   if (!symbols.length && !symbol) {
     return (
       <PageEnter className="mx-auto flex w-full max-w-[1400px] flex-col gap-4 px-1 md:px-0">
-        <div className="text-xs uppercase tracking-[0.02em] text-[#6E6E6E]">Research</div>
-        <div className="rounded-xl border border-[#242424] bg-[#141414] px-5 py-8">
-          <h1 className="text-lg font-semibold text-[#F5F5F5]">Your watchlist is empty</h1>
-          <p className="mt-2 max-w-md text-sm leading-6 text-[#A1A1A1]">
+        <h1 className="page-title">Research</h1>
+        <div className="rounded-lg border border-line bg-surface px-5 py-8">
+          <h2 className="text-[17px] font-semibold text-ink">Add a symbol to research</h2>
+          <p className="mt-2 max-w-md text-sm leading-6 text-ink-2">
             Research runs on symbols you follow. Add names on Watchlist, then come back to
             generate factor packs and AI briefs.
           </p>
           <Link
             href="/watchlist"
-            className="mt-5 inline-flex rounded-lg bg-[#FDD458] px-4 py-2 text-[13px] font-semibold text-[#0A0A0A] hover:bg-[#E8BA40]"
+            className="yellow-btn mt-5 h-9 px-4 text-[13px]"
           >
             Go to watchlist
           </Link>
@@ -458,23 +458,19 @@ export default function ResearchClient({ initialSymbols, initialSymbol }: Props)
 
   return (
     <PageEnter className="mx-auto flex w-full max-w-[1400px] flex-col gap-6 px-1 md:px-0">
-      <div className="text-xs uppercase tracking-[0.02em] text-[#6E6E6E]">
-        Research
-        <span className="mx-1.5 text-[#2E2E2E]">/</span>
-        <span className="mono text-[#A1A1A1]">{symbol || '—'}</span>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="mr-2 text-[13px] text-ink-3">From your watchlist</span>
         {pills.map((s) => (
           <button
             key={s}
             type="button"
             onClick={() => selectSymbol(s)}
+            aria-pressed={symbol === s}
             className={cn(
-              'rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors',
+              'press mono h-8 rounded-md px-3 text-[13px] font-medium',
               symbol === s
-                ? 'bg-[#FDD458] text-[#0A0A0A]'
-                : 'border border-[#2E2E2E] bg-transparent text-[#A1A1A1] hover:border-[#3A3A3A] hover:text-[#F5F5F5]'
+                ? 'bg-surface-3 text-ink'
+                : 'text-ink-2 hover:bg-surface-2 hover:text-ink'
             )}
           >
             {s}
@@ -482,7 +478,7 @@ export default function ResearchClient({ initialSymbols, initialSymbol }: Props)
         ))}
         <Link
           href="/watchlist"
-          className="rounded-full border border-dashed border-[#2E2E2E] px-3 py-1.5 text-[12px] text-[#6E6E6E] hover:border-[#FDD458] hover:text-[#FDD458]"
+          className="ml-1 text-[13px] text-ink-3 underline-offset-4 hover:text-ink hover:underline"
         >
           Manage watchlist
         </Link>
@@ -496,17 +492,17 @@ export default function ResearchClient({ initialSymbols, initialSymbol }: Props)
               <img
                 src={header.logo}
                 alt=""
-                className="size-10 rounded-full border border-[#242424] bg-[#1C1C1C] object-contain p-1"
+                className="size-10 rounded-lg bg-surface-2 object-contain p-1"
               />
             ) : (
-              <div className="mono flex size-10 items-center justify-center rounded-full bg-[rgba(253,212,88,0.12)] text-sm font-semibold text-[#F5F5F5]">
+              <div className="mono flex size-10 items-center justify-center rounded-lg bg-surface-3 text-sm font-semibold text-ink">
                 {initials(company, symbol)}
               </div>
             )}
-            <h1 className="text-2xl font-semibold leading-8 text-[#F5F5F5]">{company}</h1>
-            <span className="mono text-[13px] text-[#A1A1A1]">({symbol})</span>
+            <h1 className="page-title">{company}</h1>
+            <span className="mono text-[13px] text-ink-2">({symbol})</span>
             {header?.exchange ? (
-              <span className="rounded border border-[#2E2E2E] px-1.5 py-0.5 text-[11px] text-[#6E6E6E]">
+              <span className="rounded border border-line-strong px-1.5 py-0.5 text-[12px] text-ink-3">
                 {header.exchange.split(/[\s/-]/)[0]}
               </span>
             ) : null}
@@ -514,7 +510,7 @@ export default function ResearchClient({ initialSymbols, initialSymbol }: Props)
 
           <div className="flex flex-wrap items-baseline gap-3">
             {price != null ? (
-              <div className="mono text-[32px] font-medium leading-10 text-[#F5F5F5]">
+              <div className="figure text-[36px] leading-10 text-ink">
                 {formatPrice(Number(price))}
               </div>
             ) : (
@@ -523,8 +519,8 @@ export default function ResearchClient({ initialSymbols, initialSymbol }: Props)
             {changePct != null ? (
               <span
                 className={cn(
-                  'mono text-[13px]',
-                  up ? 'text-[#22C55E]' : 'text-[#EF4444]'
+                    'mono text-[14px]',
+                  up ? 'text-up' : 'text-down'
                 )}
               >
                 {change != null
@@ -538,54 +534,56 @@ export default function ResearchClient({ initialSymbols, initialSymbol }: Props)
         <div className="flex shrink-0 flex-col items-start gap-2.5 md:items-end">
           {aiScore != null ? (
             <span
-              className={cn(
-                'mono rounded-full px-2.5 py-1 text-[13px]',
-                aiScore >= 60
-                  ? 'bg-[rgba(34,197,94,0.12)] text-[#22C55E]'
-                  : aiScore >= 40
-                    ? 'bg-[rgba(253,212,88,0.12)] text-[#FDD458]'
-                    : 'bg-[rgba(239,68,68,0.12)] text-[#EF4444]'
-              )}
+              className="text-right"
             >
-              AI Score {Math.round(aiScore)}/100
+              <span className="label-sm block">AI score</span>
+              <span
+                className={cn(
+                  'figure text-[36px] leading-10',
+                  aiScore >= 60 ? 'text-up' : aiScore >= 40 ? 'text-ink' : 'text-down'
+                )}
+              >
+                {Math.round(aiScore)}
+              </span>
+              <span className="mono text-[14px] text-ink-3">/100</span>
             </span>
           ) : null}
         </div>
       </div>
 
       {/* Verdict strip */}
-      <div className="rounded-xl border border-[#242424] bg-[#141414] px-4 py-3.5 md:px-5">
+      <div className="rounded-lg border border-line bg-surface px-4 py-3.5 md:px-5">
         <div className="flex flex-wrap items-center gap-3">
           <span
             className={cn(
-              'rounded-full px-2.5 py-1 text-[12px] font-medium',
+              'rounded-md px-2.5 py-1 text-[12px] font-medium',
               STANCE_STYLE[stance]
             )}
           >
             {STANCE_LABEL[stance]}
           </span>
-          <p className="min-w-0 flex-1 text-[13px] leading-5 text-[#F5F5F5]">{stanceSentence}</p>
-          <span className="text-[11px] text-[#6E6E6E]">
+          <p className="min-w-0 flex-1 text-[13px] leading-5 text-ink">{stanceSentence}</p>
+          <span className="text-[12px] text-ink-3">
             Horizon: ~1 month (20d / 1M factors)
           </span>
         </div>
-        <p className="mt-2 text-[11px] leading-4 text-[#6E6E6E]">
+        <p className="mt-2 text-[12px] leading-4 text-ink-3">
           Educational lean only — not a personal buy/sell order. Pair with your own risk limits.
         </p>
       </div>
 
       <div>
-        <div className="mb-3 text-[11px] uppercase tracking-[0.02em] text-[#6E6E6E]">
-          Factor pack
-        </div>
+        <h2 className="section-title mb-3">Factor pack</h2>
         {isPending && !report ? (
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-line bg-line md:grid-cols-3 lg:grid-cols-6">
             {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-[128px] rounded-xl" />
+              <div key={i} className="bg-surface p-4">
+                <Skeleton className="h-[96px] w-full" />
+              </div>
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-line bg-line md:grid-cols-3 lg:grid-cols-6">
             {(factors.length
               ? factors
               : ['Trend', 'Momentum', 'Volatility', 'Quality', 'Value', 'Growth'].map((k) => ({
@@ -600,15 +598,15 @@ export default function ResearchClient({ initialSymbols, initialSymbol }: Props)
               return (
                 <div
                   key={f.key}
-                  className="rounded-xl border border-[#242424] bg-[#141414] p-3.5"
+                  className="bg-surface p-4"
                 >
                   <div className="mb-2 flex items-start justify-between gap-2">
-                    <span className="text-[13px] text-[#A1A1A1]">{f.key}</span>
-                    <span className="mono text-[13px] text-[#F5F5F5]">
+                    <span className="text-[13px] text-ink-2">{f.key}</span>
+                    <span className="mono text-[13px] text-ink">
                       {empty ? '—' : f.score}
                     </span>
                   </div>
-                  <div className="mb-2 h-1.5 overflow-hidden rounded-full bg-[#1C1C1C]">
+                  <div className="mb-2 h-1.5 overflow-hidden rounded-full bg-surface-2">
                     <div
                       className="h-full rounded-full transition-all"
                       style={{
@@ -621,19 +619,19 @@ export default function ResearchClient({ initialSymbols, initialSymbol }: Props)
                     <span
                       className={cn(
                         'text-[12px] font-medium',
-                        empty ? 'text-[#6E6E6E]' : tone.text
+                        empty ? 'text-ink-3' : tone.text
                       )}
                     >
                       {empty ? '—' : tone.label}
                     </span>
                     {!empty ? (
-                      <span className="mono text-[11px] text-[#6E6E6E]">
+                      <span className="mono text-[12px] text-ink-3">
                         vs bench {f.sector >= 0 ? '+' : ''}
                         {f.sector}
                       </span>
                     ) : null}
                   </div>
-                  <p className="text-[11px] leading-4 text-[#6E6E6E]">{f.why}</p>
+                  <p className="text-[12px] leading-4 text-ink-3">{f.why}</p>
                 </div>
               );
             })}
@@ -642,31 +640,31 @@ export default function ResearchClient({ initialSymbols, initialSymbol }: Props)
       </div>
 
       <div
-        className="rounded-xl border border-[#242424] border-l-2 border-l-[#FDD458] bg-[#141414] p-5 md:p-6"
+        className="rounded-lg border border-line bg-surface p-5 md:p-6"
         style={{ boxShadow: '0 0 40px -24px rgba(249,115,22,0.35)' }}
       >
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-1.5">
-            <Sparkles className="size-4 text-[#FDD458]" strokeWidth={1.5} />
-            <span className="text-xs uppercase tracking-[0.02em] text-[#6E6E6E]">
+            <Sparkles className="size-4 text-signal" strokeWidth={1.5} />
+            <span className="text-xs text-ink-3">
               AI research
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <div className="w-40">
               <ConfidenceMeter value={confidencePct} label="Data confidence" />
-              <p className="mt-1 text-[10px] leading-3 text-[#6E6E6E]">
+              <p className="mt-1 text-[12px] leading-3 text-ink-3">
                 Input completeness — not odds of a bear market
               </p>
             </div>
             {updatedLabel ? (
-              <span className="text-[12px] text-[#6E6E6E]">{updatedLabel}</span>
+              <span className="text-[12px] text-ink-3">{updatedLabel}</span>
             ) : null}
             <button
               type="button"
               disabled={isPending || !symbol}
               onClick={() => loadResearch(symbol, true)}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-[#2E2E2E] px-3 py-1.5 text-[12px] text-[#A1A1A1] hover:border-[#3A3A3A] hover:text-[#F5F5F5] disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-line-strong px-3 py-1.5 text-[12px] text-ink-2 hover:border-line-strong hover:text-ink disabled:opacity-50"
             >
               {isPending ? (
                 <Loader2 className="size-3.5 animate-spin" />
@@ -682,19 +680,19 @@ export default function ResearchClient({ initialSymbols, initialSymbol }: Props)
           <div className="space-y-4">
             <Skeleton className="h-16 w-full" />
             <div className="grid gap-4 md:grid-cols-3">
-              <Skeleton className="h-40 rounded-xl" />
-              <Skeleton className="h-40 rounded-xl" />
-              <Skeleton className="h-40 rounded-xl" />
+              <Skeleton className="h-40 rounded-lg" />
+              <Skeleton className="h-40 rounded-lg" />
+              <Skeleton className="h-40 rounded-lg" />
             </div>
           </div>
         ) : error && !report ? (
-          <div className="rounded-lg border border-[#EF4444]/30 bg-[rgba(239,68,68,0.06)] px-4 py-5">
-            <p className="text-sm font-medium text-[#EF4444]">Couldn’t load research</p>
-            <p className="mt-1.5 text-[13px] leading-5 text-[#A1A1A1]">{error}</p>
+          <div className="rounded-lg border border-down/30 bg-down/6 px-4 py-5">
+            <p className="text-sm font-medium text-down">Couldn’t load research</p>
+            <p className="mt-1.5 text-[13px] leading-5 text-ink-2">{error}</p>
             <button
               type="button"
               onClick={() => loadResearch(symbol, true)}
-              className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-[#2E2E2E] px-3 py-1.5 text-[12px] text-[#F5F5F5] hover:border-[#FDD458] hover:text-[#FDD458]"
+              className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-line-strong px-3 py-1.5 text-[12px] text-ink hover:border-signal hover:text-signal"
             >
               <RefreshCw className="size-3.5" strokeWidth={1.5} />
               Retry
@@ -702,7 +700,7 @@ export default function ResearchClient({ initialSymbols, initialSymbol }: Props)
           </div>
         ) : (
           <>
-            <p className="mb-6 max-w-4xl text-sm leading-6 text-[#F5F5F5]">
+            <p className="mb-6 max-w-4xl text-sm leading-6 text-ink">
               {report?.summary ||
                 narrative?.summary ||
                 'Select a symbol to generate a quant-backed research brief.'}
@@ -710,33 +708,33 @@ export default function ResearchClient({ initialSymbols, initialSymbol }: Props)
 
             <div className="mb-6 grid gap-6 md:grid-cols-3">
               <div>
-                <div className="mb-3 text-[11px] font-medium uppercase tracking-[0.02em] text-[#22C55E]">
+                <div className="mb-3 text-[11px] font-medium text-up">
                   Bull case
                 </div>
                 <ul className="space-y-2.5">
                   {bull.map((item, i) => (
-                    <li key={i} className="flex gap-2 text-[13px] leading-5 text-[#F5F5F5]">
-                      <Plus className="mt-0.5 size-3.5 shrink-0 text-[#22C55E]" strokeWidth={2} />
+                    <li key={i} className="flex gap-2 text-[13px] leading-5 text-ink">
+                      <Plus className="mt-0.5 size-3.5 shrink-0 text-up" strokeWidth={2} />
                       <span>{item}</span>
                     </li>
                   ))}
                 </ul>
               </div>
               <div>
-                <div className="mb-3 text-[11px] font-medium uppercase tracking-[0.02em] text-[#EF4444]">
+                <div className="mb-3 text-[11px] font-medium text-down">
                   Bear case
                 </div>
                 <ul className="space-y-2.5">
                   {bear.map((item, i) => (
-                    <li key={i} className="flex gap-2 text-[13px] leading-5 text-[#F5F5F5]">
-                      <Minus className="mt-0.5 size-3.5 shrink-0 text-[#EF4444]" strokeWidth={2} />
+                    <li key={i} className="flex gap-2 text-[13px] leading-5 text-ink">
+                      <Minus className="mt-0.5 size-3.5 shrink-0 text-down" strokeWidth={2} />
                       <span>{item}</span>
                     </li>
                   ))}
                 </ul>
               </div>
               <div>
-                <div className="mb-3 text-[11px] font-medium uppercase tracking-[0.02em] text-[#FDD458]">
+                <div className="mb-3 text-[11px] font-medium text-signal">
                   Catalysts
                 </div>
                 {catalysts.length ? (
@@ -746,13 +744,13 @@ export default function ResearchClient({ initialSymbols, initialSymbol }: Props)
                         key={i}
                         className="flex items-start justify-between gap-3 text-[13px] leading-5"
                       >
-                        <span className="mono shrink-0 text-[#6E6E6E]">{c.when}</span>
-                        <span className="text-right text-[#F5F5F5]">{c.label}</span>
+                        <span className="mono shrink-0 text-ink-3">{c.when}</span>
+                        <span className="text-right text-ink">{c.label}</span>
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-[13px] text-[#6E6E6E]">
+                  <p className="text-[13px] text-ink-3">
                     {isCryptoSym(symbol)
                       ? 'No earnings calendar for crypto pairs.'
                       : 'No near-term catalysts mapped.'}
@@ -761,7 +759,7 @@ export default function ResearchClient({ initialSymbols, initialSymbol }: Props)
               </div>
             </div>
 
-            <div className="flex flex-wrap items-end justify-between gap-3 border-t border-[#242424] pt-4">
+            <div className="flex flex-wrap items-end justify-between gap-3 border-t border-line pt-4">
               <div className="flex flex-wrap gap-2">
                 {!isCryptoSym(symbol)
                   ? [
@@ -783,7 +781,7 @@ export default function ResearchClient({ initialSymbols, initialSymbol }: Props)
                         href={b.href}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-[#2E2E2E] px-3 py-1.5 text-[12px] text-[#A1A1A1] hover:border-[#3A3A3A] hover:text-[#FDD458]"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-line-strong px-3 py-1.5 text-[12px] text-ink-2 hover:border-line-strong hover:text-signal"
                       >
                         {b.label}
                         <ExternalLink className="size-3" strokeWidth={1.5} />
@@ -794,7 +792,7 @@ export default function ResearchClient({ initialSymbols, initialSymbol }: Props)
                         href={`https://www.binance.com/en/trade/${symbol}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-[#2E2E2E] px-3 py-1.5 text-[12px] text-[#A1A1A1] hover:border-[#3A3A3A] hover:text-[#FDD458]"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-line-strong px-3 py-1.5 text-[12px] text-ink-2 hover:border-line-strong hover:text-signal"
                       >
                         Binance market
                         <ExternalLink className="size-3" strokeWidth={1.5} />
@@ -802,12 +800,12 @@ export default function ResearchClient({ initialSymbols, initialSymbol }: Props)
                     )}
                 <Link
                   href={`/stocks/${symbol}`}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-[#2E2E2E] px-3 py-1.5 text-[12px] text-[#A1A1A1] hover:border-[#3A3A3A] hover:text-[#FDD458]"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-line-strong px-3 py-1.5 text-[12px] text-ink-2 hover:border-line-strong hover:text-signal"
                 >
                   Open chart
                 </Link>
               </div>
-              <p className="text-[11px] text-[#6E6E6E]">
+              <p className="text-[12px] text-ink-3">
                 Not investment advice. Educational use only.
               </p>
             </div>

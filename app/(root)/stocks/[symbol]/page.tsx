@@ -38,13 +38,13 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
 
   return (
     <PageEnter className="mx-auto flex w-full max-w-[1400px] flex-col gap-6 px-1 md:px-0">
-      <div className="text-xs uppercase tracking-[0.02em] text-[#6E6E6E]">
-        <Link href="/watchlist" className="hover:text-[#FDD458]">
+      <nav aria-label="Breadcrumb" className="text-[13px] text-ink-3">
+        <Link href="/watchlist" className="hover:text-ink">
           Watchlist
         </Link>
-        <span className="mx-1.5 text-[#2E2E2E]">/</span>
-        <span className="mono text-[#A1A1A1]">{sym}</span>
-      </div>
+        <span className="mx-1.5 text-line-strong">/</span>
+        <span className="mono text-ink-2">{sym}</span>
+      </nav>
 
       <StockChartSection
         symbol={sym}

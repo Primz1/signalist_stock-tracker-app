@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import type { LucideIcon } from 'lucide-react';
-import { History, Inbox, KeyRound, Star } from 'lucide-react';
+import { History, Inbox } from 'lucide-react';
 
 type EmptyStateProps = {
   title: string;
@@ -17,7 +17,7 @@ type EmptyStateProps = {
   variant?: 'default' | 'dashed';
 };
 
-/** Signalist-themed empty state adapted from 21st Interactive Empty State (CSS motion, no demo CRM chrome). */
+/** Empty state that teaches the next step: what's missing, why, and one action. */
 export function EmptyState({
   title,
   description,
@@ -31,42 +31,26 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        'group relative flex flex-col items-center justify-center gap-3 overflow-hidden px-6 py-14 text-center',
-        variant === 'dashed' && 'rounded-xl border border-dashed border-[#2E2E2E]',
+        'flex flex-col items-start gap-4 px-6 py-10 sm:flex-row sm:items-center sm:gap-5',
+        variant === 'dashed' && 'rounded-lg border border-dashed border-line-strong',
         className
       )}
     >
-      <div
-        aria-hidden
-        className="absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-[0.03]"
-        style={{
-          backgroundImage: 'radial-gradient(circle at 2px 2px, #fff 1px, transparent 1px)',
-          backgroundSize: '24px 24px',
-        }}
-      />
-      <div className="relative flex isolate justify-center">
-        <div className="absolute left-1 top-1 z-10 flex size-11 -translate-x-3 rotate-[-6deg] items-center justify-center rounded-xl border border-[#2E2E2E] bg-[#1C1C1C] text-[#6E6E6E] transition-transform duration-200 group-hover:-translate-x-5 group-hover:-translate-y-1 group-hover:rotate-[-12deg]">
-          <Star className="size-4" strokeWidth={1.5} />
-        </div>
-        <div className="z-20 flex size-12 items-center justify-center rounded-xl border border-[#2E2E2E] bg-[#141414] text-[#FDD458] shadow-lg transition-transform duration-200 group-hover:-translate-y-2 group-hover:scale-110">
-          <Icon className="size-5" strokeWidth={1.5} />
-        </div>
-        <div className="absolute right-1 top-1 z-10 flex size-11 translate-x-3 rotate-[6deg] items-center justify-center rounded-xl border border-[#2E2E2E] bg-[#1C1C1C] text-[#6E6E6E] transition-transform duration-200 group-hover:translate-x-5 group-hover:-translate-y-1 group-hover:rotate-[12deg]">
-          <KeyRound className="size-4" strokeWidth={1.5} />
-        </div>
+      <div className="flex size-11 flex-none items-center justify-center rounded-lg bg-surface-2 text-signal">
+        <Icon className="size-5" strokeWidth={1.5} />
       </div>
-      <div className="relative mt-4 space-y-1.5">
-        <h3 className="text-[15px] font-semibold text-[#F5F5F5]">{title}</h3>
-        <p className="mx-auto max-w-sm text-[13px] leading-relaxed text-[#6E6E6E]">{description}</p>
+      <div className="min-w-0 flex-1">
+        <h3 className="text-[15px] font-semibold text-ink">{title}</h3>
+        <p className="mt-1 max-w-[52ch] text-[14px] leading-6 text-ink-2">{description}</p>
       </div>
       {(actionLabel && actionHref) || (actionLabel && onAction) ? (
-        <div className="relative mt-2">
+        <div className="flex-none">
           {actionHref ? (
-            <Button asChild className="yellow-btn h-auto px-4 py-2 text-xs">
+            <Button asChild size="sm">
               <Link href={actionHref}>{actionLabel}</Link>
             </Button>
           ) : (
-            <Button type="button" onClick={onAction} className="yellow-btn h-auto px-4 py-2 text-xs">
+            <Button type="button" size="sm" onClick={onAction}>
               {actionLabel}
             </Button>
           )}

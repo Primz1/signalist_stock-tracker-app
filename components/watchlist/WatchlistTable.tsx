@@ -6,7 +6,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { removeFromWatchlist } from "@/lib/actions/watchlist.actions";
 import { notify } from "@/lib/notify";
 import clsx from "clsx";
-import { Loader2, Star } from "lucide-react";
+import { BellPlus, Loader2, Star } from "lucide-react";
+import Link from "next/link";
 import { EmptyState as SignalistEmptyState } from "@/components/ui/empty-state";
 
 type WatchlistEntry = {
@@ -39,7 +40,7 @@ const formatDate = (value?: string | Date) => {
 const EmptyState = () => (
 	<SignalistEmptyState
 		title="No symbols yet"
-		description="Use Add Stock to populate your watchlist."
+		description="Search for a ticker above and add it. Price, daily move and AI score appear here, and you can set an alert from each row."
 	/>
 );
 
@@ -83,67 +84,75 @@ const WatchlistTable = ({ items, onAddAlert }: WatchlistTableProps) => {
 		if (!rows.length) return <EmptyState />;
 
 		return (
-			<div className="overflow-hidden rounded-xl border border-[#242424] bg-[#141414] shadow-md">
+			<div className="surface-card overflow-x-auto">
 				<Table>
-					<TableHeader className="bg-[#1C1C1C]/60">
-						<TableRow>
-							<TableHead></TableHead>
-							<TableHead>Assets</TableHead>
+					<TableHeader>
+						<TableRow className="border-b border-line">
+							<TableHead className="w-12"><span className="sr-only">Remove</span></TableHead>
 							<TableHead>Symbol</TableHead>
-							<TableHead>AI Score</TableHead>
-							<TableHead>Price</TableHead>
-							<TableHead>Change</TableHead>
-							<TableHead>Day High</TableHead>
-							<TableHead>Day Low</TableHead>
-							<TableHead className="text-right">Alert</TableHead>
+							<TableHead className="text-right">Price</TableHead>
+							<TableHead className="text-right">Today</TableHead>
+							<TableHead className="hidden text-right md:table-cell">Day range</TableHead>
+							<TableHead className="hidden text-right sm:table-cell">AI score</TableHead>
+							<TableHead className="hidden w-28 text-right sm:table-cell"><span className="sr-only">Alert</span></TableHead>
 						</TableRow>
 					</TableHeader>
 					<TableBody>
-						{rows.map((row) => (
-							<TableRow key={row.symbol}>
-								<TableCell className="text-left">
-									<button
-										onClick={() => handleRemove(row.symbol)}
-										disabled={isPending && pendingSymbol === row.symbol}
-										aria-busy={isPending && pendingSymbol === row.symbol}
-										className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#FDD458]/40 bg-[#FDD458]/10 text-[#FDD458] transition hover:bg-[#FDD458]/20 disabled:opacity-60"
-										title="Remove from watchlist"
-									>
-										{isPending && pendingSymbol === row.symbol ? (
-											<Loader2 className="h-4 w-4 animate-spin" />
-										) : (
-											<Star className="h-4 w-4" />
+						{rows.map((row) => {
+							const busy = isPending && pendingSymbol === row.symbol;
+							const ch = row.changePercent;
+							return (
+								<TableRow key={row.symbol} className="group hover:bg-surface-2">
+									<TableCell className="w-10 py-3 pl-2 pr-0 sm:pl-3">
+										<button
+											onClick={() => handleRemove(row.symbol)}
+											disabled={busy}
+											aria-busy={busy}
+											aria-label={`Remove ${row.symbol} from watchlist`}
+											className="press inline-flex size-8 items-center justify-center rounded-md text-signal hover:bg-surface-3 disabled:opacity-60"
+											title="Remove from watchlist"
+										>
+											{busy ? <Loader2 className="size-4 animate-spin" /> : <Star className="size-4 fill-current" />}
+										</button>
+									</TableCell>
+									<TableCell className="py-3">
+										<Link href={`/stocks/${row.symbol}`} className="block min-w-0">
+											<span className="mono block text-[14px] font-medium text-ink">{row.symbol}</span>
+											<span className="block max-w-[120px] truncate text-[13px] text-ink-3 sm:max-w-[220px]">{row.company}</span>
+										</Link>
+									</TableCell>
+									<TableCell className="mono py-3 text-right text-[14px] text-ink">{formatCurrency(row.price)}</TableCell>
+									<TableCell
+										className={clsx(
+											'mono py-3 text-right text-[14px]',
+											typeof ch === 'number' ? (ch >= 0 ? 'text-up' : 'text-down') : 'text-ink-3'
 										)}
-									</button>
-								</TableCell>
-								<TableCell className="font-medium text-[#F5F5F5]">{row.company}</TableCell>
-								<TableCell className="text-[#A1A1A1]">{row.symbol}</TableCell>
-								<TableCell className="mono text-[#FDD458]">{row.aiScore != null ? `${row.aiScore}/100` : '—'}</TableCell>
-								<TableCell className="text-[#F5F5F5]">{formatCurrency(row.price)}</TableCell>
-								<TableCell className={clsx(
-									'mono text-sm',
-									typeof row.changePercent === 'number'
-										? row.changePercent >= 0
-											? 'text-[#22C55E]'
-											: 'text-[#EF4444]'
-										: 'text-[#6E6E6E]'
-								)}>
-									{typeof row.changePercent === 'number' ? `${row.changePercent.toFixed(2)}%` : '-'}
-								</TableCell>
-								<TableCell className="text-[#A1A1A1]">{formatPrice(row.dayHigh)}</TableCell>
-								<TableCell className="text-[#A1A1A1]">{formatPrice(row.dayLow)}</TableCell>
-								<TableCell className="text-right">
-									<Button
-										variant="secondary"
-										size="sm"
-										className="bg-[#FDD458] text-[#0A0A0A] hover:bg-[#E8BA40]"
-										onClick={() => onAddAlert?.(row)}
 									>
-										Add Alert
-									</Button>
-								</TableCell>
-							</TableRow>
-						))}
+										{typeof ch === 'number' ? `${ch >= 0 ? '+' : '−'}${Math.abs(ch).toFixed(2)}%` : '—'}
+									</TableCell>
+									<TableCell className="mono hidden py-3 text-right text-[13px] text-ink-2 md:table-cell">
+										{row.dayLow != null && row.dayHigh != null
+											? `${formatPrice(row.dayLow)} – ${formatPrice(row.dayHigh)}`
+											: '—'}
+									</TableCell>
+									<TableCell className="mono hidden py-3 text-right text-[14px] sm:table-cell">
+										{row.aiScore != null ? (
+											<span className={row.aiScore >= 65 ? 'text-up' : row.aiScore >= 45 ? 'text-ink' : 'text-down'}>
+												{Math.round(row.aiScore)}
+											</span>
+										) : (
+											<span className="text-ink-3">—</span>
+										)}
+									</TableCell>
+									<TableCell className="hidden py-3 pr-3 text-right sm:table-cell">
+										<Button variant="outline" size="sm" aria-label={`New alert for ${row.symbol}`} className="px-2.5" onClick={() => onAddAlert?.(row)}>
+											<BellPlus className="size-3.5" />
+											<span className="hidden sm:inline">Alert</span>
+										</Button>
+									</TableCell>
+								</TableRow>
+							);
+						})}
 					</TableBody>
 				</Table>
 			</div>

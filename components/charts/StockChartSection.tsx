@@ -128,17 +128,17 @@ export default function StockChartSection({
               <img
                 src={logo}
                 alt=""
-                className="size-10 rounded-full border border-[#242424] bg-[#1C1C1C] object-contain p-1"
+                className="size-10 rounded-lg bg-surface-2 object-contain p-1"
               />
             ) : (
-              <div className="mono flex size-10 items-center justify-center rounded-full bg-[rgba(253,212,88,0.12)] text-sm font-semibold text-[#F5F5F5]">
+              <div className="mono flex size-10 items-center justify-center rounded-lg bg-surface-3 text-sm font-semibold text-ink">
                 {initials(company, symbol)}
               </div>
             )}
-            <h1 className="text-2xl font-semibold leading-8 text-[#F5F5F5]">{company}</h1>
-            <span className="mono text-[13px] text-[#A1A1A1]">({symbol})</span>
+            <h1 className="page-title">{company}</h1>
+            <span className="mono text-[13px] text-ink-2">({symbol})</span>
             {exchange ? (
-              <span className="rounded border border-[#2E2E2E] px-1.5 py-0.5 text-[11px] text-[#6E6E6E]">
+              <span className="rounded border border-line-strong px-1.5 py-0.5 text-[12px] text-ink-3">
                 {exchange.split(/[\s/-]/)[0] || exchange}
               </span>
             ) : null}
@@ -146,17 +146,15 @@ export default function StockChartSection({
 
           <div className="mb-1.5 flex flex-wrap items-baseline gap-3">
             {price != null ? (
-              <div className="mono text-[32px] font-medium leading-10 text-[#F5F5F5]">
+              <div className="figure text-[40px] leading-[44px] text-ink">
                 {formatPrice(price)}
               </div>
             ) : null}
             {changePct != null ? (
               <span
                 className={cn(
-                  'mono rounded-full px-2.5 py-0.5 text-[13px]',
-                  up
-                    ? 'bg-[rgba(34,197,94,0.12)] text-[#22C55E]'
-                    : 'bg-[rgba(239,68,68,0.12)] text-[#EF4444]'
+                  'mono text-[15px]',
+                  up ? 'text-up' : 'text-down'
                 )}
               >
                 {change != null
@@ -166,7 +164,7 @@ export default function StockChartSection({
             ) : null}
           </div>
 
-          <div className="mono text-xs text-[#A1A1A1]">
+          <div className="mono text-[13px] text-ink-3">
             O {open != null ? open.toFixed(2) : '—'} · H {high != null ? high.toFixed(2) : '—'} · L{' '}
             {low != null ? low.toFixed(2) : '—'} · C {close != null ? close.toFixed(2) : '—'} · Vol{' '}
             {formatVol(vol)}
@@ -176,16 +174,13 @@ export default function StockChartSection({
         <div className="flex shrink-0 flex-col items-start gap-2.5 md:items-end">
           {aiScore != null && Number.isFinite(aiScore) ? (
             <span
-              className={cn(
-                'mono rounded-full px-2.5 py-1 text-[13px]',
-                aiScore >= 60
-                  ? 'bg-[rgba(34,197,94,0.12)] text-[#22C55E]'
-                  : aiScore >= 40
-                    ? 'bg-[rgba(253,212,88,0.12)] text-[#FDD458]'
-                    : 'bg-[rgba(239,68,68,0.12)] text-[#EF4444]'
-              )}
+              className="mono text-[14px] text-ink-2"
             >
-              AI Score {Math.round(aiScore)}/100
+              AI score{' '}
+              <span className={aiScore >= 60 ? 'text-up' : aiScore >= 40 ? 'text-ink' : 'text-down'}>
+                {Math.round(aiScore)}
+              </span>
+              <span className="text-ink-3">/100</span>
             </span>
           ) : null}
           <WatchlistButton
@@ -201,19 +196,20 @@ export default function StockChartSection({
       <SignalBadges signals={chartData.signals} />
 
       {/* Chart */}
-      <div className="overflow-hidden rounded-xl border border-[#242424] bg-[#141414]">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#242424] px-4 py-3">
-          <div className="flex gap-0.5 rounded-lg bg-[#0A0A0A] p-0.5">
+      <div className="overflow-hidden rounded-lg border border-line bg-surface">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-3">
+          <div className="flex gap-0.5 rounded-lg border border-line bg-canvas p-0.5" role="group" aria-label="Chart range">
             {CHART_RANGES.map((r) => (
               <button
                 key={r}
                 type="button"
                 onClick={() => loadRange(r)}
+                aria-pressed={range === r}
                 className={cn(
-                  'rounded-md px-2.5 py-1.5 text-xs transition-colors',
+                  'mono h-7 rounded-md px-2.5 text-[12px] transition-colors duration-150',
                   range === r
-                    ? 'bg-[#1C1C1C] text-[#F5F5F5]'
-                    : 'bg-transparent text-[#A1A1A1] hover:text-[#F5F5F5]'
+                    ? 'bg-surface-2 text-ink'
+                    : 'bg-transparent text-ink-2 hover:text-ink'
                 )}
               >
                 {r}
@@ -229,11 +225,12 @@ export default function StockChartSection({
                   key={key}
                   type="button"
                   onClick={() => toggleOverlay(key)}
+                  aria-pressed={on}
                   className={cn(
-                    'rounded-full border px-2.5 py-0.5 text-[11px] transition-colors',
+                    'h-7 rounded-md border px-2.5 text-[12px] transition-colors duration-150',
                     on
-                      ? 'border-[#FDD458] text-[#FDD458]'
-                      : 'border-[#2E2E2E] text-[#6E6E6E] hover:border-[#3A3A3A] hover:text-[#A1A1A1]'
+                      ? 'border-signal/50 bg-signal/10 text-signal'
+                      : 'border-line-strong text-ink-3 hover:text-ink-2'
                   )}
                 >
                   {key}
@@ -245,8 +242,8 @@ export default function StockChartSection({
 
         <div className="relative p-4">
           {pending ? (
-            <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#141414]/70">
-              <Loader2 className="size-5 animate-spin text-[#FDD458]" />
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-surface/70">
+              <Loader2 className="size-5 animate-spin text-signal" />
             </div>
           ) : null}
           <CandlestickChart
@@ -267,14 +264,13 @@ export default function StockChartSection({
 
       {/* AI analysis */}
       <div
-        className="mb-6 rounded-xl border border-[#242424] border-l-2 border-l-[#FDD458] bg-[#141414] p-5"
-        style={{ boxShadow: '0 0 40px -24px rgba(249,115,22,0.4)' }}
+        className="mb-6 rounded-lg border border-line bg-surface p-5 md:p-6"
       >
-        <div className="mb-3 flex items-center gap-1.5">
-          <Sparkles className="size-4 text-[#FDD458]" strokeWidth={1.5} />
-          <span className="text-xs uppercase tracking-[0.02em] text-[#6E6E6E]">AI analysis</span>
-        </div>
-        <p className="mb-3.5 text-sm leading-5 text-[#F5F5F5]">
+        <h2 className="section-title mb-3 flex items-center gap-2">
+          <Sparkles className="size-4 text-signal" strokeWidth={1.5} />
+          AI analysis
+        </h2>
+        <p className="mb-4 max-w-[72ch] text-[15px] leading-6 text-ink">
           {aiSummary ||
             (chartData.indicators
               ? `${company} shows ${
@@ -288,7 +284,7 @@ export default function StockChartSection({
         </p>
         <Link
           href={`/research?symbol=${symbol}`}
-          className="inline-flex items-center gap-1.5 text-[13px] text-[#FDD458] hover:underline"
+          className="inline-flex items-center gap-1.5 text-[14px] font-medium text-signal underline-offset-4 hover:underline"
         >
           Run full AI research on {symbol}
           <ExternalLink className="size-3.5" strokeWidth={1.5} />

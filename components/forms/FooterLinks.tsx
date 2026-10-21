@@ -3,8 +3,8 @@ import Link from "next/link";
 
 const FooterLinks = ({ text, linkText, href }: FooterLinkProps) => {
     return (
-        <div className="text-center pt-4">
-            <p className="text-sm text-gray-500">
+        <div className="pt-4">
+            <p className="text-[14px] text-ink-3">
                 {text}{` `}
                 <Link href={href} className="footer-link">
                     {linkText}

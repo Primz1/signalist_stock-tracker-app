@@ -53,18 +53,18 @@ export function NewsCard({
 
   const body = (
     <>
-      <div className="text-[10px] text-[#6E6E6E]">{item.time}</div>
-      <p className="mt-2 text-[14.5px] font-semibold leading-snug text-[#F5F5F5]">
+      <div className="text-[12px] text-ink-3">{item.time}</div>
+      <p className="mt-2 text-[14.5px] font-semibold leading-snug text-ink">
         {item.headline}
       </p>
-      <div className="mt-3 text-[10px] text-[#6E6E6E]">{item.source}</div>
+      <div className="mt-3 text-[12px] text-ink-3">{item.source}</div>
     </>
   );
 
   return (
     <div className={cn('w-full', className)}>
-      <div className="text-[10px] uppercase tracking-[0.1em] text-[#6E6E6E]">{title}</div>
-      <div className="mt-3 rounded-xl border border-[#242424] bg-[#141414] px-5 py-5 shadow-[inset_0_1px_0_0_rgba(245,245,245,0.04)]">
+      <div className="text-[12px] text-ink-3">{title}</div>
+      <div className="mt-3 rounded-lg border border-line bg-surface px-5 py-5 shadow-[inset_0_1px_0_0_rgba(245,245,245,0.04)]">
         <div className="relative min-h-[108px]">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
@@ -79,7 +79,7 @@ export function NewsCard({
                   href={item.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block transition-colors hover:[&_p]:text-[#FDD458]"
+                  className="block transition-colors hover:[&_p]:text-signal"
                 >
                   {body}
                 </a>
@@ -102,7 +102,7 @@ export function NewsCard({
               onClick={() => jump(n)}
               className={cn(
                 'h-1.5 rounded-full transition-all duration-300',
-                n === i ? 'w-5 bg-[#FDD458]' : 'w-1.5 bg-[#2E2E2E] hover:bg-[#6E6E6E]'
+                n === i ? 'w-5 bg-signal' : 'w-1.5 bg-line-strong hover:bg-ink-3'
               )}
             />
           ))}

@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils';
 
-/** Route / inline skeleton with Claude Design pulse + shimmer */
+/** Route / inline skeleton shimmer */
 export function ShimmerBlock({ className }: { className?: string }) {
   return <div className={cn('skeleton-shimmer rounded-md', className)} />;
 }
@@ -17,7 +17,7 @@ export function PageEnter({
   delayMs?: number;
 }) {
   return (
-    <div className={cn('animate-el', className)} style={{ animationDelay: `${delayMs}ms` }}>
+    <div className={cn('page-enter', className)} style={{ animationDelay: `${delayMs}ms` }}>
       {children}
     </div>
   );

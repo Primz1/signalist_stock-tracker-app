@@ -6,7 +6,6 @@ import {
   AlertTriangle,
   ExternalLink,
   Loader2,
-  Pencil,
   RefreshCw,
   Shield,
   Sparkles,
@@ -16,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert } from '@/components/ui/alert';
 import { EmptyState } from '@/components/ui/empty-state';
+import { PALETTE } from '@/lib/theme';
 import { PageEnter } from '@/components/ui/motion';
 import { SectorsDonut } from '@/components/ui/sectors-donut';
 import { ConfidenceMeter } from '@/components/ui/confidence-meter';
@@ -90,6 +90,18 @@ function compactUsd(n: number) {
   if (!Number.isFinite(n)) return '—';
   if (Math.abs(n) >= 1000) return `$${(n / 1000).toFixed(1)}k`;
   return `$${n.toFixed(0)}`;
+}
+
+function toneOf(n: number) {
+  return n > 0 ? 'text-up' : n < 0 ? 'text-down' : 'text-ink-2';
+}
+
+function signedUsd(n: number) {
+  return `${n >= 0 ? '+' : '−'}${formatPrice(Math.abs(n))}`;
+}
+
+function signedPctText(n: number) {
+  return `${n >= 0 ? '+' : '−'}${Math.abs(n).toFixed(2)}%`;
 }
 
 function pad2(n: number) {
@@ -280,7 +292,7 @@ function PerformanceChart({
     });
   }, [start, end, rangeLabel, equitySeries]);
 
-  const stroke = up ? '#FDD458' : '#EF4444';
+  const stroke = up ? PALETTE.signal : PALETTE.down;
   const fillId = up ? 'pfFillUp' : 'pfFillDown';
   const tickInterval =
     rangeLabel === '1D' ? 2 : rangeLabel === '1W' ? 0 : rangeLabel === '1M' ? 2 : rangeLabel === '3M' ? 1 : 0;
@@ -290,37 +302,37 @@ function PerformanceChart({
       <AreaChart data={data} margin={{ top: 12, right: 12, left: 4, bottom: 4 }}>
         <defs>
           <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={stroke} stopOpacity={0.35} />
+            <stop offset="0%" stopColor={stroke} stopOpacity={0.18} />
             <stop offset="100%" stopColor={stroke} stopOpacity={0} />
           </linearGradient>
         </defs>
-        <CartesianGrid stroke="#242424" strokeDasharray="4 4" vertical={false} />
+        <CartesianGrid stroke={PALETTE.line} vertical={false} />
         <XAxis
           dataKey="label"
-          tick={{ fill: '#6E6E6E', fontSize: 11, fontFamily: 'ui-monospace, monospace' }}
-          axisLine={{ stroke: '#2E2E2E' }}
+          tick={{ fill: PALETTE.ink3, fontSize: 11, fontFamily: 'var(--font-geist-mono), ui-monospace, monospace' }}
+          axisLine={{ stroke: PALETTE.lineStrong }}
           tickLine={false}
           interval={tickInterval}
           minTickGap={20}
         />
         <YAxis
           tickFormatter={compactUsd}
-          tick={{ fill: '#6E6E6E', fontSize: 11, fontFamily: 'ui-monospace, monospace' }}
+          tick={{ fill: PALETTE.ink3, fontSize: 11, fontFamily: 'var(--font-geist-mono), ui-monospace, monospace' }}
           axisLine={false}
           tickLine={false}
           width={52}
           domain={['auto', 'auto']}
         />
         <Tooltip
-          cursor={{ stroke: '#2E2E2E', strokeWidth: 1 }}
+          cursor={{ stroke: PALETTE.lineStrong, strokeWidth: 1 }}
           contentStyle={{
-            background: '#141414',
-            border: '1px solid #2E2E2E',
+            background: PALETTE.surface,
+            border: `1px solid ${PALETTE.lineStrong}`,
             borderRadius: 8,
             fontSize: 12,
-            color: '#F5F5F5',
+            color: PALETTE.ink,
           }}
-          labelStyle={{ color: '#6E6E6E' }}
+          labelStyle={{ color: PALETTE.ink3 }}
           labelFormatter={(_, payload) => {
             const tip = payload?.[0]?.payload?.tip;
             return typeof tip === 'string' ? tip : '';
@@ -331,10 +343,11 @@ function PerformanceChart({
           type="monotone"
           dataKey="value"
           stroke={stroke}
-          strokeWidth={2.25}
+          strokeWidth={1.75}
           fill={`url(#${fillId})`}
           dot={false}
-          activeDot={{ r: 4, stroke: '#0A0A0A', strokeWidth: 2, fill: stroke }}
+          activeDot={{ r: 4, stroke: PALETTE.canvas, strokeWidth: 2, fill: stroke }}
+          isAnimationActive={false}
         />
       </AreaChart>
     </ResponsiveContainer>
@@ -540,169 +553,92 @@ export default function PortfolioClient({
       : selectedHolding?.quantity ?? 0;
 
   return (
-    <PageEnter className="mx-auto w-full max-w-[1400px] space-y-5 px-0">
+    <PageEnter className="mx-auto w-full max-w-[1400px] space-y-10 px-0">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold leading-8 text-[#F5F5F5]">Portfolio</h1>
-          <p className="mt-1 text-xs text-[#6E6E6E]">
-            Practice trading with a {formatPrice(portfolio.initialCash)} virtual balance.
+          <h1 className="page-title">Portfolio</h1>
+          <p className="page-lede">
+            Paper money, started with {formatPrice(portfolio.initialCash)}. Growth goal, moderate
+            risk.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2.5">
-          <span className="rounded-full border border-[rgba(253,212,88,0.4)] bg-[rgba(253,212,88,0.08)] px-2.5 py-1 text-[11px] text-[#FDD458]">
-            Paper trading
-          </span>
-          <button
-            type="button"
-            className="inline-flex items-center gap-1.5 rounded-full border border-[#242424] bg-[#141414] px-2.5 py-1 text-[11px] text-[#A1A1A1] hover:text-[#F5F5F5]"
-          >
-            Growth · Moderate risk
-            <Pencil className="size-2.5" />
-          </button>
-          <Tabs value={range} onValueChange={(v) => setRange(v as (typeof RANGES)[number])}>
-            <TabsList className="h-auto gap-0.5 rounded-lg border border-[#242424] bg-[#0A0A0A] p-[3px]">
-              {RANGES.map((r) => (
-                <TabsTrigger key={r} value={r} className="rounded-md px-2.5 py-1 text-[11px]">
-                  {r}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-        </div>
+        <Tabs value={range} onValueChange={(v) => setRange(v as (typeof RANGES)[number])}>
+          <TabsList aria-label="Chart range">
+            {RANGES.map((r) => (
+              <TabsTrigger key={r} value={r} className="mono px-2.5 text-[12px]">
+                {r}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
       </div>
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 gap-3 overflow-x-auto md:grid-cols-5">
-        {[
-          {
-            l: 'Cash',
-            v: formatPrice(portfolio.cash),
-            bar: Math.min(100, cashPct),
-            barColor: '#22C55E',
-            sub: null as string | null,
-            pill: false,
-          },
-          { l: 'Equity', v: formatPrice(equity), bar: null, barColor: '', sub: null, pill: false },
-          {
-            l: 'Buying power',
-            v: formatPrice(portfolio.cash),
-            bar: null,
-            barColor: '',
-            sub: '= Cash',
-            pill: false,
-          },
-          {
-            l: 'Day P/L',
-            v: `${dayUp ? '+' : ''}${formatPrice(dayPl)}`,
-            bar: null,
-            barColor: '',
-            sub: `${dayUp ? '+' : ''}${dayPlPercent.toFixed(2)}%`,
-            tone: dayUp ? 'up' : 'down',
-            pill: true,
-          },
-          {
-            l: 'Total P/L',
-            v: `${plUp ? '+' : ''}${formatPrice(portfolio.plTotal)}`,
-            bar: null,
-            barColor: '',
-            sub: `${plUp ? '+' : ''}${portfolio.plPercent.toFixed(2)}%`,
-            tone: plUp ? 'up' : 'down',
-            pill: true,
-          },
-        ].map((c) => (
-          <div
-            key={c.l}
-            className="min-w-[140px] rounded-xl border border-[#242424] bg-[#141414] p-3.5 md:min-w-0"
-          >
-            <div className="mb-2 flex items-center justify-between text-[11px] uppercase tracking-[0.02em] text-[#6E6E6E]">
-              {c.l}
-            </div>
-            <div
-              className={cn(
-                'mono mb-2 text-lg font-medium',
-                c.tone === 'up'
-                  ? 'text-[#22C55E]'
-                  : c.tone === 'down'
-                    ? 'text-[#EF4444]'
-                    : 'text-[#F5F5F5]'
-              )}
-            >
-              {c.v}
-            </div>
-            {c.pill && c.sub ? (
-              <span
-                className={cn(
-                  'mono rounded-full px-1.5 py-0.5 text-[11px]',
-                  c.tone === 'up'
-                    ? 'bg-[rgba(34,197,94,0.12)] text-[#22C55E]'
-                    : 'bg-[rgba(239,68,68,0.12)] text-[#EF4444]'
-                )}
-              >
-                {c.sub}
-              </span>
-            ) : c.sub ? (
-              <div className="text-[10px] text-[#6E6E6E]">{c.sub}</div>
-            ) : null}
-            {c.bar != null && (
-              <div className="mt-2 h-1 overflow-hidden rounded-sm bg-[#1C1C1C]">
-                <div
-                  className="h-full"
-                  style={{ width: `${c.bar}%`, background: c.barColor }}
-                />
-              </div>
-            )}
+      {/* Value + performance: one number, what moved it, then the curve */}
+      <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:gap-8">
+        <div className="flex flex-col">
+          <div className="label-sm">Total value</div>
+          <div className="figure mt-1 text-[44px] leading-none text-ink md:text-[52px]">
+            {formatPrice(portfolio.totalValue)}
           </div>
-        ))}
-      </div>
+          <div className="mono mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[14px]">
+            <span className={toneOf(dayPl)}>
+              {signedUsd(dayPl)} ({signedPctText(dayPlPercent)}) today
+            </span>
+            <span className={toneOf(portfolio.plTotal)}>
+              {signedUsd(portfolio.plTotal)} ({signedPctText(portfolio.plPercent)}) total
+            </span>
+          </div>
 
-      {/* Performance */}
-      <div className="flex flex-col gap-3">
-        {(tearsheet?.enough_history || (tearsheet?.equity_series?.length ?? 0) > 1) && (
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <dl className="mt-6 divide-y divide-line border-y border-line text-[14px]">
             {[
-              {
-                l: 'Sharpe',
-                v:
-                  tearsheet?.metrics?.sharpe != null
-                    ? Number(tearsheet.metrics.sharpe).toFixed(2)
-                    : '—',
-              },
-              {
-                l: 'Max DD',
-                v:
-                  tearsheet?.metrics?.max_drawdown != null
-                    ? `${(Number(tearsheet.metrics.max_drawdown) * 100).toFixed(1)}%`
-                    : '—',
-              },
-              {
-                l: 'Vol',
-                v:
-                  tearsheet?.metrics?.volatility != null
-                    ? `${(Number(tearsheet.metrics.volatility) * 100).toFixed(1)}%`
-                    : '—',
-              },
-              {
-                l: 'CAGR',
-                v:
-                  tearsheet?.metrics?.cagr != null
-                    ? `${(Number(tearsheet.metrics.cagr) * 100).toFixed(1)}%`
-                    : '—',
-              },
+              { k: 'Cash', v: formatPrice(portfolio.cash), note: `${Math.round(cashPct)}% of value` },
+              { k: 'Equity', v: formatPrice(equity) },
+              { k: 'Buying power', v: formatPrice(portfolio.cash) },
+              ...(tearsheet?.enough_history || (tearsheet?.equity_series?.length ?? 0) > 1
+                ? [
+                    {
+                      k: 'Sharpe',
+                      v: tearsheet?.metrics?.sharpe != null ? Number(tearsheet.metrics.sharpe).toFixed(2) : '—',
+                    },
+                    {
+                      k: 'Max drawdown',
+                      v:
+                        tearsheet?.metrics?.max_drawdown != null
+                          ? `${(Number(tearsheet.metrics.max_drawdown) * 100).toFixed(1)}%`
+                          : '—',
+                    },
+                    {
+                      k: 'Volatility',
+                      v:
+                        tearsheet?.metrics?.volatility != null
+                          ? `${(Number(tearsheet.metrics.volatility) * 100).toFixed(1)}%`
+                          : '—',
+                    },
+                  ]
+                : []),
             ].map((m) => (
-              <div
-                key={m.l}
-                className="rounded-xl border border-[#242424] bg-[#141414] px-3 py-2.5"
-              >
-                <div className="text-[10px] uppercase tracking-[0.02em] text-[#6E6E6E]">{m.l}</div>
-                <div className="mono mt-0.5 text-[15px] text-[#F5F5F5]">{m.v}</div>
+              <div key={m.k} className="flex items-baseline justify-between gap-4 py-2.5">
+                <dt className="text-ink-2">{m.k}</dt>
+                <dd className="mono text-ink">
+                  {m.v}
+                  {'note' in m && m.note ? <span className="ml-2 text-[12px] text-ink-3">{m.note}</span> : null}
+                </dd>
               </div>
             ))}
-          </div>
-        )}
+          </dl>
+        </div>
 
-        <div className="flex flex-col gap-4 overflow-hidden rounded-xl border border-[#242424] bg-[#141414] p-4 md:h-[260px] md:flex-row md:items-stretch">
-          <div className="relative min-h-[200px] min-w-0 flex-[3] md:min-h-0">
+        <div className="surface-card flex min-h-[300px] flex-col p-4">
+          <div className="flex items-baseline justify-between gap-3 px-1 pb-3">
+            <span className="mono text-[13px] text-ink-2">
+              {formatPrice(portfolio.initialCash)} → {formatPrice(portfolio.totalValue)}
+            </span>
+            <span className={cn('mono text-[13px]', plUp ? 'text-up' : 'text-down')}>
+              {signedPctText(portfolio.plPercent)} · {range}
+            </span>
+          </div>
+          <div className="relative min-h-[220px] flex-1">
             <PerformanceChart
               start={portfolio.initialCash}
               end={portfolio.totalValue}
@@ -711,36 +647,21 @@ export default function PortfolioClient({
               equitySeries={tearsheet?.equity_series}
             />
           </div>
-          <div className="flex flex-col justify-center gap-1.5 border-[#242424] md:flex-1 md:border-l md:pl-4">
-            <div className={cn('mono text-xl', plUp ? 'text-[#22C55E]' : 'text-[#EF4444]')}>
-              {plUp ? '+' : ''}
-              {formatPrice(portfolio.plTotal)}
-            </div>
-            <div className={cn('mono text-[13px]', plUp ? 'text-[#22C55E]' : 'text-[#EF4444]')}>
-              {plUp ? '+' : ''}
-              {portfolio.plPercent.toFixed(2)}% · {range}
-            </div>
-            <div className="mono text-[12px] text-[#A1A1A1]">
-              {formatPrice(portfolio.initialCash)}
-              <span className="font-sans text-[#6E6E6E]"> → </span>
-              {formatPrice(portfolio.totalValue)}
-            </div>
-            <p className="mt-2 text-[10px] leading-4 text-[#6E6E6E]">
-              {tearsheet?.enough_history
-                ? 'Risk metrics from paper trade history (QuantStats estimate).'
-                : tearsheet?.message ||
-                  'Chart is an estimate until you have enough paper trade history.'}
-            </p>
-          </div>
+          <p className="px-1 pt-3 text-[12px] leading-4 text-ink-3">
+            {tearsheet?.enough_history
+              ? 'Risk metrics are QuantStats estimates from your paper trade history.'
+              : tearsheet?.message ||
+                'The curve is an estimate until you have enough paper trade history.'}
+          </p>
         </div>
-      </div>
+      </section>
 
       {/* Main grid */}
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
         <div className="min-w-0 space-y-5">
           {/* Allocation */}
-          <div className="rounded-xl border border-[#242424] bg-[#141414] p-5 md:p-6">
-            <h2 className="mb-5 text-[12px] uppercase tracking-[0.02em] text-[#6E6E6E]">
+          <div className="rounded-lg border border-line bg-surface p-5 md:p-6">
+            <h2 className="section-title mb-5">
               Allocation
             </h2>
             {donutSectors.length ? (
@@ -760,9 +681,9 @@ export default function PortfolioClient({
           </div>
 
           {/* Holdings */}
-          <div className="overflow-hidden rounded-xl border border-[#242424] bg-[#141414]">
-            <div className="border-b border-[#242424] px-4 py-3.5">
-              <h2 className="text-[12px] uppercase tracking-[0.02em] text-[#6E6E6E]">
+          <div className="overflow-hidden rounded-lg border border-line bg-surface">
+            <div className="border-b border-line px-4 py-3.5">
+              <h2 className="section-title">
                 Holdings
               </h2>
             </div>
@@ -780,7 +701,7 @@ export default function PortfolioClient({
                 value={expanded ?? undefined}
                 onValueChange={(v) => setExpanded(v || null)}
               >
-                <div className="hidden grid-cols-[1.6fr_0.7fr_0.9fr_0.9fr_1fr_1fr_1fr_1fr] gap-2 border-b border-[#1C1C1C] px-4 py-2 text-[10px] uppercase tracking-wide text-[#6E6E6E] md:grid">
+                <div className="hidden grid-cols-[1.6fr_0.7fr_0.9fr_0.9fr_1fr_1fr_1fr_1fr] gap-2 border-b border-surface-2 px-4 py-2 text-[12px] text-ink-3 md:grid">
                   <span>Symbol</span>
                   <span className="text-right">Qty</span>
                   <span className="text-right">Avg</span>
@@ -805,46 +726,46 @@ export default function PortfolioClient({
                       key={h.symbol}
                       value={h.symbol}
                       className={cn(
-                        'border-[#1C1C1C]',
-                        over && 'border-l-2 border-l-[#FDD458]'
+                        'border-surface-2',
+                        over && 'border-l border-l-signal'
                       )}
                     >
-                      <AccordionTrigger className="h-14 px-4 py-0 hover:no-underline hover:bg-[#1C1C1C]/40">
+                      <AccordionTrigger className="h-14 px-4 py-0 hover:no-underline hover:bg-surface-2/40">
                         <div className="grid w-full grid-cols-[1fr_auto] items-center gap-2 text-left md:grid-cols-[1.6fr_0.7fr_0.9fr_0.9fr_1fr_1fr_1fr_1fr]">
                           <div className="flex min-w-0 items-center gap-2">
-                            <div className="mono flex size-7 flex-none items-center justify-center rounded-full bg-[rgba(253,212,88,0.12)] text-[10px] font-semibold text-[#F5F5F5]">
+                            <div className="mono flex size-7 flex-none items-center justify-center rounded-full bg-signal/12 text-[10px] font-semibold text-ink">
                               {h.symbol.slice(0, 2)}
                             </div>
                             <div className="min-w-0">
                               <div className="flex items-center gap-1.5">
-                                <span className="mono text-xs text-[#F5F5F5]">
+                                <span className="mono text-xs text-ink">
                                   {h.symbol}
                                 </span>
                                 {over && (
-                                  <AlertTriangle className="size-2.5 text-[#FDD458]" />
+                                  <AlertTriangle className="size-2.5 text-signal" />
                                 )}
                               </div>
-                              <div className="truncate text-[10px] text-[#6E6E6E]">
+                              <div className="truncate text-[12px] text-ink-3">
                                 {h.company}
                               </div>
                             </div>
                           </div>
-                          <span className="mono hidden text-right text-xs text-[#F5F5F5] md:block">
+                          <span className="mono hidden text-right text-xs text-ink md:block">
                             {h.quantity}
                           </span>
-                          <span className="mono hidden text-right text-xs text-[#A1A1A1] md:block">
+                          <span className="mono hidden text-right text-xs text-ink-2 md:block">
                             {formatPrice(h.avgCost)}
                           </span>
-                          <span className="mono hidden text-right text-xs text-[#F5F5F5] md:block">
+                          <span className="mono hidden text-right text-xs text-ink md:block">
                             {formatPrice(price)}
                           </span>
-                          <span className="mono text-right text-xs text-[#F5F5F5]">
+                          <span className="mono text-right text-xs text-ink">
                             {formatPrice(h.value ?? 0)}
                           </span>
                           <span
                             className={cn(
                               'mono hidden text-right text-xs md:block',
-                              dayPct >= 0 ? 'text-[#22C55E]' : 'text-[#EF4444]'
+                              dayPct >= 0 ? 'text-up' : 'text-down'
                             )}
                           >
                             {dayPct >= 0 ? '+' : ''}
@@ -853,7 +774,7 @@ export default function PortfolioClient({
                           <span
                             className={cn(
                               'mono hidden text-right text-xs md:block',
-                              plPct >= 0 ? 'text-[#22C55E]' : 'text-[#EF4444]'
+                              plPct >= 0 ? 'text-up' : 'text-down'
                             )}
                           >
                             {plPct >= 0 ? '+' : ''}
@@ -863,16 +784,16 @@ export default function PortfolioClient({
                             <span
                               className={cn(
                                 'mono text-[11px]',
-                                over ? 'text-[#FDD458]' : 'text-[#22C55E]'
+                                over ? 'text-signal' : 'text-up'
                               )}
                             >
                               {weight.toFixed(0)}%
                             </span>
-                            <div className="h-[3px] w-[50px] overflow-hidden rounded-sm bg-[#1C1C1C]">
+                            <div className="h-[3px] w-[50px] overflow-hidden rounded-sm bg-surface-2">
                               <div
                                 className={cn(
                                   'h-full',
-                                  over ? 'bg-[#FDD458]' : 'bg-[#22C55E]'
+                                  over ? 'bg-signal' : 'bg-up'
                                 )}
                                 style={{
                                   width: `${Math.min(100, (weight / 50) * 100)}%`,
@@ -882,12 +803,12 @@ export default function PortfolioClient({
                           </div>
                         </div>
                       </AccordionTrigger>
-                      <AccordionContent className="border-b border-[#1C1C1C] bg-[#0A0A0A] px-4 pb-3.5 pl-[52px]">
-                        <div className="mb-2 text-[11px] text-[#6E6E6E]">Since purchase</div>
+                      <AccordionContent className="border-b border-surface-2 bg-canvas px-4 pb-3.5 pl-[52px]">
+                        <div className="mb-2 text-[12px] text-ink-3">Since purchase</div>
                         <div
                           className={cn(
                             'mono mb-2 text-xs',
-                            plPct >= 0 ? 'text-[#22C55E]' : 'text-[#EF4444]'
+                            plPct >= 0 ? 'text-up' : 'text-down'
                           )}
                         >
                           {plPct >= 0 ? '+' : ''}
@@ -912,7 +833,7 @@ export default function PortfolioClient({
                             type="button"
                             size="sm"
                             variant="outline"
-                            className="h-8 border-[#2E2E2E] text-xs"
+                            className="h-8 border-line-strong text-xs"
                             onClick={() => {
                               setSymbol(h.symbol);
                               setSide('sell');
@@ -923,7 +844,7 @@ export default function PortfolioClient({
                           </Button>
                           <Link
                             href={`/stocks/${h.symbol}`}
-                            className="inline-flex h-8 items-center gap-1 rounded-lg border border-[#2E2E2E] px-3 text-xs text-[#A1A1A1] hover:text-[#FDD458]"
+                            className="inline-flex h-8 items-center gap-1 rounded-lg border border-line-strong px-3 text-xs text-ink-2 hover:text-signal"
                           >
                             Chart <ExternalLink className="size-3" />
                           </Link>
@@ -937,16 +858,16 @@ export default function PortfolioClient({
           </div>
 
           {/* Recent trades */}
-          <div className="overflow-hidden rounded-xl border border-[#242424] bg-[#141414]">
-            <div className="flex items-center justify-between border-b border-[#242424] px-4 py-3.5">
-              <h2 className="text-[12px] uppercase tracking-[0.02em] text-[#6E6E6E]">
+          <div className="overflow-hidden rounded-lg border border-line bg-surface">
+            <div className="flex items-center justify-between border-b border-line px-4 py-3.5">
+              <h2 className="section-title">
                 Recent trades
               </h2>
               <Link
                 href="/portfolio/history"
-                className="text-xs text-[#FDD458] hover:underline"
+                className="text-[13px] text-ink-2 hover:text-ink"
               >
-                See full history →
+                Full history
               </Link>
             </div>
             {recent.length === 0 ? (
@@ -962,26 +883,24 @@ export default function PortfolioClient({
                 {recent.slice(0, 5).map((t) => (
                   <li
                     key={t.id}
-                    className="grid grid-cols-[60px_1fr_1fr_1fr_1fr] items-center gap-2 border-b border-[#1C1C1C] px-4 py-2.5 last:border-b-0"
+                    className="grid grid-cols-[60px_1fr_1fr_1fr_1fr] items-center gap-2 border-b border-surface-2 px-4 py-2.5 last:border-b-0"
                   >
                     <span
                       className={cn(
-                        'rounded-full px-1.5 py-0.5 text-center text-[10px] font-semibold uppercase',
-                        t.side === 'buy'
-                          ? 'bg-[#FDD458] text-[#0A0A0A]'
-                          : 'border border-[#EF4444] bg-transparent text-[#EF4444]'
+                        'mono text-[12px] font-medium capitalize',
+                        t.side === 'buy' ? 'text-signal' : 'text-ink-2'
                       )}
                     >
                       {t.side}
                     </span>
-                    <span className="mono text-xs text-[#F5F5F5]">{t.symbol}</span>
-                    <span className="mono text-xs text-[#A1A1A1]">
+                    <span className="mono text-xs text-ink">{t.symbol}</span>
+                    <span className="mono text-xs text-ink-2">
                       {t.quantity} @ {formatPrice(t.price)}
                     </span>
-                    <span className="mono text-xs text-[#F5F5F5]">
+                    <span className="mono text-xs text-ink">
                       {formatPrice(t.total)}
                     </span>
-                    <span className="mono text-right text-[11px] text-[#6E6E6E]">
+                    <span className="mono text-right text-[12px] text-ink-3">
                       {timeAgo(t.timestamp)}
                     </span>
                   </li>
@@ -994,20 +913,20 @@ export default function PortfolioClient({
         {/* Right rail */}
         <div className="sticky top-6 space-y-4 self-start">
           {/* Trade ticket — screenshot text + UI */}
-          <div className="flex flex-col gap-3 rounded-xl border border-[#242424] bg-[#141414] p-4">
-            <h2 className="text-[12px] uppercase tracking-[0.02em] text-[#6E6E6E]">
+          <div className="flex flex-col gap-3 rounded-lg border border-line bg-surface p-4">
+            <h2 className="section-title">
               Trade ticket
             </h2>
 
-            <div className="flex rounded-lg bg-[#0A0A0A] p-1">
+            <div className="flex rounded-lg bg-canvas p-1">
               <button
                 type="button"
                 onClick={() => setSide('buy')}
                 className={cn(
                   'flex-1 rounded-md py-2 text-[13px] font-semibold transition',
                   side === 'buy'
-                    ? 'bg-[#FDD458] text-[#0A0A0A]'
-                    : 'text-[#A1A1A1] hover:text-[#F5F5F5]'
+                    ? 'bg-signal text-signal-ink'
+                    : 'text-ink-2 hover:text-ink'
                 )}
               >
                 Buy
@@ -1018,28 +937,28 @@ export default function PortfolioClient({
                 className={cn(
                   'flex-1 rounded-md py-2 text-[13px] font-semibold transition',
                   side === 'sell'
-                    ? 'bg-[#EF4444] text-white'
-                    : 'text-[#A1A1A1] hover:text-[#F5F5F5]'
+                    ? 'bg-down text-white'
+                    : 'text-ink-2 hover:text-ink'
                 )}
               >
                 Sell
               </button>
             </div>
 
-            <div className="flex items-center gap-2.5 rounded-lg border border-[#242424] bg-[#0A0A0A] px-3 py-2.5">
-              <div className="mono flex size-8 flex-none items-center justify-center rounded-full bg-[rgba(253,212,88,0.12)] text-[11px] font-semibold text-[#F5F5F5]">
+            <div className="flex items-center gap-2.5 rounded-lg border border-line bg-canvas px-3 py-2.5">
+              <div className="mono flex size-8 flex-none items-center justify-center rounded-md bg-surface-3 text-[11px] font-semibold text-ink">
                 {(symbol || '—').slice(0, 2)}
               </div>
               <div className="min-w-0 flex-1">
                 <Input
                   value={symbol}
                   onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-                  className="form-input h-7 border-0 bg-transparent px-0 mono text-[14px] font-semibold text-[#F5F5F5] shadow-none focus-visible:ring-0"
+                  className="form-input h-7 border-0 bg-transparent px-0 mono text-[14px] font-semibold text-ink shadow-none focus-visible:ring-0"
                   placeholder="AAPL"
                 />
-                <div className="truncate text-[12px] text-[#6E6E6E]">
+                <div className="truncate text-[12px] text-ink-3">
                   {selectedHolding?.company ||
-                    (symbol ? `${symbol.toUpperCase()} Inc.` : 'Select a symbol')}
+                    (symbol ? 'Market order at the live quote' : 'Type a ticker')}
                 </div>
               </div>
             </div>
@@ -1050,35 +969,35 @@ export default function PortfolioClient({
                 min={1}
                 value={quantity}
                 onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
-                className="form-input mono h-12 border-[#242424] bg-[#0A0A0A] text-right text-2xl font-medium text-[#F5F5F5]"
+                className="form-input mono h-12 border-line bg-canvas text-right text-2xl font-medium text-ink"
               />
-              <div className="mt-1.5 text-[11px] text-[#6E6E6E]">
+              <div className="mt-1.5 text-[12px] text-ink-3">
                 Max: {maxShares} shares
                 {estPrice > 0 ? ` at ${formatPrice(estPrice)}` : ''}
               </div>
             </div>
 
             {estPrice > 0 && (
-              <div className="rounded-lg bg-[#0A0A0A] px-3 py-2.5 text-[12px] leading-relaxed text-[#A1A1A1]">
+              <div className="rounded-lg bg-canvas px-3 py-2.5 text-[12px] leading-relaxed text-ink-2">
                 {side === 'buy' ? 'Buying' : 'Selling'}{' '}
-                <span className="mono font-medium text-[#F5F5F5]">{quantity}</span>{' '}
+                <span className="mono font-medium text-ink">{quantity}</span>{' '}
                 {symbol.toUpperCase()} @{' '}
-                <span className="mono font-medium text-[#F5F5F5]">{formatPrice(estPrice)}</span>
+                <span className="mono font-medium text-ink">{formatPrice(estPrice)}</span>
                 {' = '}
-                <span className="mono font-medium text-[#F5F5F5]">{formatPrice(estTotal)}</span>
+                <span className="mono font-medium text-ink">{formatPrice(estTotal)}</span>
                 {' · '}
                 Cash after:{' '}
-                <span className="mono font-medium text-[#F5F5F5]">
+                <span className="mono font-medium text-ink">
                   {formatPrice(Math.max(0, cashAfter))}
                 </span>
               </div>
             )}
 
             {(guardHit || tradeTooLarge) && (
-              <div className="rounded-lg border border-[rgba(253,212,88,0.45)] bg-[rgba(253,212,88,0.08)] p-3">
+              <div className="rounded-lg border border-signal/45 bg-signal/8 p-3">
                 <div className="flex gap-2">
-                  <AlertTriangle className="mt-0.5 size-4 shrink-0 text-[#FDD458]" />
-                  <div className="min-w-0 text-[12px] leading-relaxed text-[#F5F5F5]">
+                  <AlertTriangle className="mt-0.5 size-4 shrink-0 text-signal" />
+                  <div className="min-w-0 text-[12px] leading-relaxed text-ink">
                     {tradeTooLarge
                       ? `Trade size ${formatPrice(estTotal)} exceeds your ${formatPrice(CAPITAL_GUARD.maxTradeSize)} max trade limit.`
                       : `This would put ${projectedWeight.toFixed(0)}% of your portfolio in ${symbol.toUpperCase()}. Your Capital Guard limit is ${(CAPITAL_GUARD.maxSingleWeight * 100).toFixed(0)}%.`}
@@ -1087,7 +1006,7 @@ export default function PortfolioClient({
                 <div className="mt-2.5 flex items-center gap-3 pl-6">
                   <button
                     type="button"
-                    className="rounded-md border border-[#2E2E2E] bg-[#0A0A0A] px-2.5 py-1 text-[11px] font-medium text-[#F5F5F5] hover:border-[#FDD458]/40"
+                    className="rounded-md border border-line-strong bg-canvas px-2.5 py-1 text-[11px] font-medium text-ink hover:border-signal/40"
                     onClick={() =>
                       setQuantity(
                         Math.max(
@@ -1105,7 +1024,7 @@ export default function PortfolioClient({
                   </button>
                   <button
                     type="button"
-                    className="text-[11px] text-[#6E6E6E] hover:text-[#A1A1A1]"
+                    className="text-[12px] text-ink-3 hover:text-ink-2"
                     onClick={() => {
                       setOverrideGuard(true);
                       runTrade(true);
@@ -1119,7 +1038,7 @@ export default function PortfolioClient({
 
             <button
               type="button"
-              className="text-left text-[12px] text-[#A1A1A1] hover:text-[#FDD458]"
+              className="text-left text-[12px] text-ink-2 hover:text-signal"
               onClick={() => setJournalOpen((o) => !o)}
             >
               {journalOpen ? '− Hide journal note' : '+ Add journal note (optional)'}
@@ -1131,7 +1050,7 @@ export default function PortfolioClient({
                 placeholder="Why are you making this trade?"
                 maxLength={240}
                 rows={3}
-                className="w-full resize-y rounded-lg border border-[#242424] bg-[#0A0A0A] px-2.5 py-2.5 text-xs text-[#F5F5F5] placeholder:text-[#6E6E6E] focus:border-[#FDD458]/50 focus:outline-none"
+                className="w-full resize-y rounded-lg border border-line bg-canvas px-2.5 py-2.5 text-xs text-ink placeholder:text-ink-3 focus:border-signal/50 focus:outline-none"
               />
             )}
 
@@ -1140,7 +1059,7 @@ export default function PortfolioClient({
               disabled={!!pendingKind}
               aria-busy={pendingKind === 'trade'}
               onClick={() => runTrade()}
-              className="h-11 w-full rounded-lg bg-[#FDD458] text-[13px] font-semibold text-[#0A0A0A] hover:bg-[#E8BA40]"
+              className="h-11 w-full rounded-lg bg-signal text-[13px] font-semibold text-canvas hover:bg-signal-hover"
             >
               {pendingKind === 'trade' ? (
                 <Loader2 className="mr-2 size-3.5 animate-spin" />
@@ -1152,8 +1071,8 @@ export default function PortfolioClient({
           </div>
 
           {/* Risk overview */}
-          <div className="flex flex-col gap-3 rounded-xl border border-[#242424] bg-[#141414] p-4">
-            <h2 className="text-[12px] uppercase tracking-[0.02em] text-[#6E6E6E]">
+          <div className="flex flex-col gap-3 rounded-lg border border-line bg-surface p-4">
+            <h2 className="section-title">
               Risk overview
             </h2>
             {[
@@ -1161,13 +1080,13 @@ export default function PortfolioClient({
                 label: 'Concentration',
                 value: `${largestWeight.toFixed(0)}%`,
                 bar: Math.min(100, largestWeight * 2),
-                barColor: largestWeight > 25 ? '#EF4444' : '#22C55E',
+                barColor: largestWeight > 25 ? PALETTE.down : PALETTE.up,
               },
               {
                 label: 'Cash buffer',
                 value: `${cashPct.toFixed(0)}%`,
                 bar: Math.min(100, cashPct * 2),
-                barColor: '#FDD458',
+                barColor: PALETTE.signal,
               },
               {
                 label: 'Largest position',
@@ -1183,11 +1102,11 @@ export default function PortfolioClient({
               },
             ].map((r) => (
               <div key={r.label} className="flex items-center justify-between">
-                <span className="text-xs text-[#A1A1A1]">{r.label}</span>
+                <span className="text-xs text-ink-2">{r.label}</span>
                 <div className="flex items-center gap-2">
-                  <span className="mono text-xs text-[#F5F5F5]">{r.value}</span>
+                  <span className="mono text-xs text-ink">{r.value}</span>
                   {r.bar != null && (
-                    <div className="h-1 w-[50px] overflow-hidden rounded-sm bg-[#1C1C1C]">
+                    <div className="h-1 w-[50px] overflow-hidden rounded-sm bg-surface-2">
                       <div
                         className="h-full"
                         style={{ width: `${r.bar}%`, background: r.barColor }}
@@ -1200,9 +1119,9 @@ export default function PortfolioClient({
           </div>
 
           {/* Capital guard */}
-          <div className="flex flex-col gap-3 rounded-xl border border-[#242424] bg-[#141414] p-4">
-            <h2 className="inline-flex items-center gap-1.5 text-[12px] uppercase tracking-[0.02em] text-[#6E6E6E]">
-              <Shield className="size-3.5 text-[#FDD458]" />
+          <div className="flex flex-col gap-3 rounded-lg border border-line bg-surface p-4">
+            <h2 className="section-title inline-flex items-center gap-2">
+              <Shield className="size-3.5 text-signal" />
               Capital guard
             </h2>
             <ul className="space-y-2">
@@ -1211,12 +1130,12 @@ export default function PortfolioClient({
                   className={cn(
                     'size-2 flex-none rounded-full',
                     largestWeight > CAPITAL_GUARD.maxSingleWeight * 100
-                      ? 'bg-[#EF4444]'
-                      : 'bg-[#22C55E]'
+                      ? 'bg-down'
+                      : 'bg-up'
                   )}
                 />
-                <span className="flex-1 text-xs text-[#F5F5F5]">Max % in one name</span>
-                <span className="mono text-xs text-[#A1A1A1]">
+                <span className="flex-1 text-xs text-ink">Max % in one name</span>
+                <span className="mono text-xs text-ink-2">
                   {(CAPITAL_GUARD.maxSingleWeight * 100).toFixed(0)}%
                 </span>
               </li>
@@ -1225,19 +1144,19 @@ export default function PortfolioClient({
                   className={cn(
                     'size-2 flex-none rounded-full',
                     cashPct < CAPITAL_GUARD.minCashReserve * 100
-                      ? 'bg-[#EF4444]'
-                      : 'bg-[#22C55E]'
+                      ? 'bg-down'
+                      : 'bg-up'
                   )}
                 />
-                <span className="flex-1 text-xs text-[#F5F5F5]">Min cash reserve</span>
-                <span className="mono text-xs text-[#A1A1A1]">
+                <span className="flex-1 text-xs text-ink">Min cash reserve</span>
+                <span className="mono text-xs text-ink-2">
                   {(CAPITAL_GUARD.minCashReserve * 100).toFixed(0)}%
                 </span>
               </li>
               <li className="flex items-center gap-2">
-                <span className="size-2 flex-none rounded-full bg-[#22C55E]" />
-                <span className="flex-1 text-xs text-[#F5F5F5]">Max trade size</span>
-                <span className="mono text-xs text-[#A1A1A1]">
+                <span className="size-2 flex-none rounded-full bg-up" />
+                <span className="flex-1 text-xs text-ink">Max trade size</span>
+                <span className="mono text-xs text-ink-2">
                   {formatPrice(CAPITAL_GUARD.maxTradeSize)}
                 </span>
               </li>
@@ -1247,10 +1166,10 @@ export default function PortfolioClient({
       </div>
 
       {/* AI Portfolio Review */}
-      <div className="rounded-xl border border-[#242424] border-l-2 border-l-[#FDD458] bg-[#141414] p-5 shadow-[0_0_40px_-26px_rgba(249,115,22,0.4)]">
+      <div className="rounded-lg border border-line border-l border-l-signal bg-surface p-5">
         <div className="mb-3.5 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="inline-flex items-center gap-1.5 text-[12px] uppercase tracking-[0.02em] text-[#6E6E6E]">
-            <Sparkles className="size-4 text-[#FDD458]" />
+          <h2 className="section-title inline-flex items-center gap-2">
+            <Sparkles className="size-4 text-signal" />
             AI portfolio review
           </h2>
           <Button
@@ -1258,7 +1177,7 @@ export default function PortfolioClient({
             size="sm"
             disabled={!!pendingKind}
             onClick={requestAiReview}
-            className="h-8 gap-1.5 border border-[#2E2E2E] bg-transparent px-2.5 text-xs text-[#F5F5F5] hover:bg-[#1C1C1C]"
+            className="h-8 gap-1.5 border border-line-strong bg-transparent px-2.5 text-xs text-ink hover:bg-surface-2"
           >
             {pendingKind === 'analyze' ? (
               <Loader2 className="size-3 animate-spin" />
@@ -1270,7 +1189,7 @@ export default function PortfolioClient({
         </div>
 
         {!aiReview ? (
-          <p className="text-sm text-[#6E6E6E]">
+          <p className="text-sm text-ink-3">
             Run Analyze for concentration, risk factors, P/L attribution, and Capital Guard
             callouts — grounded in your live paper holdings.
           </p>
@@ -1278,21 +1197,21 @@ export default function PortfolioClient({
           <div className="space-y-4">
             <div className="grid gap-4 md:grid-cols-3">
               <div>
-                <div className="text-[10px] uppercase tracking-wide text-[#6E6E6E]">
+                <div className="text-[12px] text-ink-3">
                   Health score
                 </div>
-                <div className="mono mt-1 text-3xl font-medium text-[#22C55E]">
+                <div className="mono mt-1 text-3xl font-medium text-up">
                   {healthScore != null ? `${healthScore}/100` : '—'}
                 </div>
                 {healthScore != null && (
                   <>
-                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#1C1C1C]">
+                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-2">
                       <div
-                        className="h-full rounded-full bg-[#22C55E]"
+                        className="h-full rounded-full bg-up"
                         style={{ width: `${healthScore}%` }}
                       />
                     </div>
-                    <span className="mt-2 inline-block rounded-full bg-[rgba(34,197,94,0.15)] px-2 py-0.5 text-[10px] font-medium text-[#22C55E]">
+                    <span className="mt-2 inline-block rounded-full bg-up/15 px-2 py-0.5 text-[10px] font-medium text-up">
                       {healthScore >= 70 ? 'Balanced' : healthScore >= 40 ? 'Watch' : 'Elevated'}
                     </span>
                   </>
@@ -1310,10 +1229,10 @@ export default function PortfolioClient({
                 )}
               </div>
               <div>
-                <div className="mb-2 text-[10px] uppercase tracking-wide text-[#6E6E6E]">
+                <div className="mb-2 text-[12px] text-ink-3">
                   Concentration & risk
                 </div>
-                <div className="mono space-y-1.5 text-xs text-[#F5F5F5]">
+                <div className="mono space-y-1.5 text-xs text-ink">
                   {(snap?.hhi != null || snap?.effective_n != null) && (
                     <div>
                       {snap?.hhi != null && <>HHI {String(snap.hhi)}</>}
@@ -1341,12 +1260,12 @@ export default function PortfolioClient({
                   )}
                   {snap?.avg_corr != null && <div>Avg corr {String(snap.avg_corr)}</div>}
                   {!snap && (
-                    <div className="text-[#6E6E6E]">Snapshot metrics unavailable</div>
+                    <div className="text-ink-3">Snapshot metrics unavailable</div>
                   )}
                 </div>
               </div>
               <div>
-                <div className="mb-2 text-[10px] uppercase tracking-wide text-[#6E6E6E]">
+                <div className="mb-2 text-[12px] text-ink-3">
                   P/L attribution
                 </div>
                 <div className="flex flex-wrap gap-1.5">
@@ -1359,10 +1278,10 @@ export default function PortfolioClient({
                       <span
                         key={h.symbol}
                         className={cn(
-                          'mono rounded-full px-2 py-0.5 text-[11px]',
+                          'mono rounded-md px-2 py-0.5 text-[11px]',
                           pct >= 0
-                            ? 'bg-[rgba(34,197,94,0.15)] text-[#22C55E]'
-                            : 'bg-[rgba(239,68,68,0.15)] text-[#EF4444]'
+                            ? 'bg-up/15 text-up'
+                            : 'bg-down/15 text-down'
                         )}
                       >
                         {h.symbol} {pct >= 0 ? '+' : ''}
@@ -1374,24 +1293,24 @@ export default function PortfolioClient({
               </div>
             </div>
 
-            <p className="text-[13px] leading-5 text-[#F5F5F5]">{aiReview.summary}</p>
+            <p className="text-[13px] leading-5 text-ink">{aiReview.summary}</p>
 
             {aiReview.rules_fired?.map((r) => (
               <div
                 key={r.id}
-                className="mb-2 flex items-start gap-2 border-l-2 border-[#FDD458] bg-[rgba(253,212,88,0.06)] px-2.5 py-2 text-xs text-[#F5F5F5]"
+                className="mb-2 flex items-start gap-2 border-l border-signal bg-signal/6 px-2.5 py-2 text-xs text-ink"
               >
                 Rule fired: {r.tag} — {r.message}
               </div>
             ))}
 
             {largest && largestWeight > 25 && (
-              <div className="text-xs text-[#A1A1A1]">
+              <div className="text-xs text-ink-2">
                 Suggested: trim {largest.symbol} toward 25% and rotate into uncorrelated
                 names.{' '}
                 <button
                   type="button"
-                  className="ml-1.5 rounded-md border border-[#2E2E2E] px-2 py-0.5 text-[11px] text-[#F5F5F5]"
+                  className="ml-1.5 rounded-md border border-line-strong px-2 py-0.5 text-[11px] text-ink"
                   onClick={() => {
                     setSymbol(largest.symbol);
                     setSide('sell');
@@ -1408,31 +1327,31 @@ export default function PortfolioClient({
 
       {/* This week */}
       {showWeek && (
-        <div className="mb-10 rounded-xl border border-[#242424] border-l-2 border-l-[rgba(253,212,88,0.5)] bg-[#141414] p-[18px]">
+        <div className="mb-10 rounded-lg border border-line border-l border-l-signal/50 bg-surface p-[18px]">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-[12px] uppercase tracking-[0.02em] text-[#6E6E6E]">
+            <h2 className="section-title">
               This week
             </h2>
             <button
               type="button"
               aria-label="Dismiss"
               onClick={() => setShowWeek(false)}
-              className="text-[#6E6E6E] hover:text-[#A1A1A1]"
+              className="text-ink-3 hover:text-ink-2"
             >
               <X className="size-3.5" />
             </button>
           </div>
           <div className="mb-3.5 flex flex-wrap gap-6">
             <div>
-              <span className="text-[11px] text-[#6E6E6E]">Trades made</span>
-              <div className="mono text-[15px] text-[#F5F5F5]">{weekStats.trades}</div>
+              <span className="text-[12px] text-ink-3">Trades made</span>
+              <div className="mono text-[15px] text-ink">{weekStats.trades}</div>
             </div>
             <div>
-              <span className="text-[11px] text-[#6E6E6E]">Return</span>
+              <span className="text-[12px] text-ink-3">Return</span>
               <div
                 className={cn(
                   'mono text-[15px]',
-                  dayUp ? 'text-[#22C55E]' : 'text-[#EF4444]'
+                  dayUp ? 'text-up' : 'text-down'
                 )}
               >
                 {dayUp ? '+' : ''}
@@ -1440,11 +1359,11 @@ export default function PortfolioClient({
               </div>
             </div>
             <div>
-              <span className="text-[11px] text-[#6E6E6E]">Realized</span>
+              <span className="text-[12px] text-ink-3">Realized</span>
               <div
                 className={cn(
                   'mono text-[15px]',
-                  weekStats.realized >= 0 ? 'text-[#22C55E]' : 'text-[#EF4444]'
+                  weekStats.realized >= 0 ? 'text-up' : 'text-down'
                 )}
               >
                 {weekStats.realized >= 0 ? '+' : ''}
@@ -1456,7 +1375,7 @@ export default function PortfolioClient({
             value={weekJournal}
             onChange={(e) => saveWeekJournal(e.target.value)}
             placeholder="What worked this week?"
-            className="mb-2.5 w-full rounded-lg border border-[#242424] bg-[#0A0A0A] px-3 py-2.5 text-[13px] text-[#F5F5F5] placeholder:text-[#6E6E6E] focus:border-[#FDD458]/50 focus:outline-none"
+            className="mb-2.5 w-full rounded-lg border border-line bg-canvas px-3 py-2.5 text-[13px] text-ink placeholder:text-ink-3 focus:border-signal/50 focus:outline-none"
           />
           <div className="flex flex-wrap gap-2">
             {recent
@@ -1465,7 +1384,7 @@ export default function PortfolioClient({
               .map((t) => (
                 <span
                   key={t.id}
-                  className="rounded-full border border-[#242424] bg-[#0A0A0A] px-2.5 py-1 text-[11px] text-[#A1A1A1]"
+                  className="rounded-full border border-line bg-canvas px-2.5 py-1 text-[11px] text-ink-2"
                 >
                   {t.side === 'buy' ? 'Bought' : 'Sold'} {t.symbol}
                   {t.note ? ` — "${t.note}"` : ''}

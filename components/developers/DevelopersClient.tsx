@@ -3,7 +3,6 @@
 import { useEffect, useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ShinyButton } from '@/components/ui/shiny-button';
 import { generateDeveloperApiKey, getDeveloperApiKeys } from '@/lib/actions/apiKey.actions';
 import { toast } from 'sonner';
 import { KeyRound, Loader2 } from 'lucide-react';
@@ -40,20 +39,30 @@ export default function DevelopersClient() {
   };
 
   return (
-    <PageEnter className="mx-auto max-w-2xl space-y-6">
+    <PageEnter className="max-w-3xl space-y-8">
       <div>
-        <h1 className="section-title">Developer API</h1>
-        <p className="text-sm text-[#6E6E6E]">Access stock data, scores, and AI reports programmatically.</p>
+        <h1 className="page-title">API keys</h1>
+        <p className="page-lede">
+          Pull price, AI score, factors and the latest report for any symbol into your own scripts.
+        </p>
       </div>
 
-      <div className="surface-card p-4 text-sm text-[#A1A1A1]">
-        <p className="font-medium text-[#F5F5F5]">Endpoints</p>
-        <code className="mono mt-2 block text-[#FDD458]">GET /api/v1/stocks/AAPL</code>
-        <code className="mono block text-[#FDD458]">GET /api/v1/stocks/AAPL/report</code>
-        <p className="mt-2">Header: <code className="text-[#F5F5F5]">X-API-Key: your_key</code></p>
-      </div>
+      <pre className="mono overflow-x-auto rounded-lg border border-line bg-surface p-4 text-[13px] leading-6 text-ink-2">
+        <code>
+          <span className="text-ink-3"># Quote, score, factors, indicators</span>
+          {'\n'}GET /api/v1/stocks/<span className="text-ink">AAPL</span>
+          {'\n\n'}
+          <span className="text-ink-3"># Latest AI report</span>
+          {'\n'}GET /api/v1/stocks/<span className="text-ink">AAPL</span>/report
+          {'\n\n'}
+          <span className="text-ink-3"># Send your key as a header</span>
+          {'\n'}x-api-key: <span className="text-signal">sk_…</span>
+        </code>
+      </pre>
 
-      <div className="flex gap-2">
+      <div>
+        <h2 className="section-title mb-3">Create a key</h2>
+        <div className="flex gap-2">
         <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Key name" className="form-input" />
         <Button
           onClick={createKey}
@@ -67,34 +76,21 @@ export default function DevelopersClient() {
               Creating…
             </>
           ) : (
-            'Create Key'
+            'Create key'
           )}
         </Button>
+        </div>
       </div>
 
       {newKey && (
-        <div className="rounded-xl border border-[rgba(253,212,88,0.4)] bg-[rgba(253,212,88,0.1)] p-3 text-sm text-[#F5F5F5] break-all">
-          New key: <strong className="text-[#FDD458]">{newKey}</strong>
+        <div className="rounded-lg border border-signal/40 bg-signal/10 p-4 text-[14px] text-ink">
+          <p className="font-medium">Copy this key now. It won’t be shown again.</p>
+          <code className="mono mt-2 block break-all text-signal">{newKey}</code>
         </div>
       )}
 
-      {/* Temporary — remove after UI MCP smoke test */}
-      <div className="surface-card space-y-3 border border-dashed border-[#2E2E2E] p-4">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-[#6E6E6E]">UI test</p>
-          <p className="mt-1 text-sm text-[#A1A1A1]">
-            21st.dev Shiny Button adapted to Signalist amber.
-          </p>
-        </div>
-        <ShinyButton
-          onClick={() => toast.success('UI test button works')}
-        >
-          Test Button
-        </ShinyButton>
-      </div>
-
-      <div className="surface-card p-4">
-        <h2 className="mb-3 text-sm font-semibold text-[#F5F5F5]">Your Keys</h2>
+      <div>
+        <h2 className="section-title mb-3">Your keys</h2>
         {!keysLoaded ? (
           <div className="space-y-2" aria-busy="true" aria-label="Loading keys">
             <Skeleton className="h-8 w-full" />
@@ -109,11 +105,13 @@ export default function DevelopersClient() {
             className="py-10"
           />
         ) : (
-          <ul className="space-y-2 text-sm">
+          <ul className="surface-card divide-y divide-line text-[14px]">
             {keys.map((k) => (
-              <li key={String(k._id)} className="flex justify-between border-b border-[#1C1C1C] py-2 text-[#A1A1A1] last:border-0">
-                <span className="text-[#F5F5F5]">{String(k.name)} ({String(k.keyPrefix)}...)</span>
-                <span className="text-[#6E6E6E]">{String(k.usageCount)} requests</span>
+              <li key={String(k._id)} className="flex items-baseline justify-between gap-4 px-4 py-3 text-ink-2">
+                <span className="text-ink">
+                  {String(k.name)} <span className="mono text-ink-3">{String(k.keyPrefix)}…</span>
+                </span>
+                <span className="mono text-ink-3">{String(k.usageCount)} requests</span>
               </li>
             ))}
           </ul>

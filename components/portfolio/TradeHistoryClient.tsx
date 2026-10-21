@@ -135,18 +135,18 @@ export default function TradeHistoryClient() {
   }, [summary]);
 
   return (
-    <PageEnter className="mx-auto max-w-6xl space-y-6">
+    <PageEnter className="mx-auto max-w-6xl space-y-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="section-title">Trade history</h1>
-          <p className="mt-1 text-sm text-[#6E6E6E]">{caption}</p>
+          <h1 className="page-title">Trade history</h1>
+          <p className="page-lede">{caption}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button
             type="button"
             variant="ghost"
             size="sm"
-            className="text-[#A1A1A1]"
+            className="text-ink-2"
             onClick={() => setShowFilters((v) => !v)}
           >
             <Filter className="mr-1.5 size-3.5" />
@@ -156,21 +156,21 @@ export default function TradeHistoryClient() {
             type="button"
             variant="ghost"
             size="sm"
-            className="text-[#A1A1A1]"
+            className="text-ink-2"
             onClick={exportCsv}
             disabled={!trades.length}
           >
             <Download className="mr-1.5 size-3.5" />
             Export CSV
           </Button>
-          <Button asChild size="sm" className="yellow-btn">
+          <Button asChild size="sm" variant="outline">
             <Link href="/portfolio">Back to portfolio</Link>
           </Button>
         </div>
       </div>
 
       {showFilters && (
-        <div className="space-y-3 rounded-xl border border-[#242424] bg-[#141414] p-4">
+        <div className="space-y-3 rounded-lg border border-line bg-surface p-4">
           <Tabs
             value={side}
             onValueChange={(v) => setSide(v as 'all' | 'buy' | 'sell')}
@@ -191,8 +191,8 @@ export default function TradeHistoryClient() {
                     className={cn(
                       'rounded-md border px-3 py-1.5 text-xs',
                       range === r.id
-                        ? 'border-[#FDD458] bg-[#FDD458]/10 text-[#FDD458]'
-                        : 'border-[#2E2E2E] text-[#A1A1A1]'
+                        ? 'border-signal bg-signal/10 text-signal'
+                        : 'border-line-strong text-ink-2'
                     )}
                   >
                     {r.label}
@@ -220,11 +220,11 @@ export default function TradeHistoryClient() {
       {isPending && !hasLoaded ? (
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4" aria-busy="true" aria-label="Loading summary">
           {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-[68px] rounded-xl" />
+            <Skeleton key={i} className="h-[68px] rounded-lg" />
           ))}
         </div>
       ) : summary ? (
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-line bg-line md:grid-cols-4">
           <Mini label="Trades" value={String(summary.tradeCount)} />
           <Mini
             label="Realized P/L"
@@ -240,7 +240,7 @@ export default function TradeHistoryClient() {
       ) : null}
 
       {isPending && !hasLoaded ? (
-        <div className="space-y-2 rounded-xl border border-[#242424] p-3" aria-busy="true" aria-label="Loading trades">
+        <div className="space-y-2 rounded-lg border border-line p-3" aria-busy="true" aria-label="Loading trades">
           {Array.from({ length: 6 }).map((_, i) => (
             <Skeleton key={i} className="h-10 w-full" />
           ))}
@@ -250,12 +250,12 @@ export default function TradeHistoryClient() {
       ) : (
         <div
           className={cn(
-            'overflow-x-auto rounded-xl border border-[#242424]',
+            'overflow-x-auto rounded-lg border border-line',
             isPending && 'opacity-60'
           )}
         >
           <table className="w-full min-w-[720px] text-left text-[13px]">
-            <thead className="border-b border-[#242424] bg-[#141414] text-[11px] uppercase tracking-wide text-[#6E6E6E]">
+            <thead className="border-b border-line bg-surface text-[12px] text-ink-3">
               <tr>
                 <th className="px-3 py-2.5 text-right font-medium">Date</th>
                 <th className="px-3 py-2.5 font-medium">Side</th>
@@ -270,17 +270,15 @@ export default function TradeHistoryClient() {
             </thead>
             <tbody>
               {trades.map((t) => (
-                <tr key={t.id} className="border-b border-[#1C1C1C] last:border-0">
-                  <td className="mono px-3 py-2.5 text-right text-[#A1A1A1]">
+                <tr key={t.id} className="border-b border-surface-2 last:border-0">
+                  <td className="mono px-3 py-2.5 text-right text-ink-2">
                     {new Date(t.timestamp).toLocaleString()}
                   </td>
                   <td className="px-3 py-2.5">
                     <span
                       className={cn(
-                        'inline-block w-[54px] rounded px-1.5 py-0.5 text-center text-[10px] font-semibold uppercase',
-                        t.side === 'buy'
-                          ? 'bg-[#FDD458] text-[#0A0A0A]'
-                          : 'border border-[#EF4444] text-[#EF4444]'
+                        'mono text-[13px] font-medium capitalize',
+                        t.side === 'buy' ? 'text-signal' : 'text-ink-2'
                       )}
                     >
                       {t.side}
@@ -289,29 +287,29 @@ export default function TradeHistoryClient() {
                   <td className="px-3 py-2.5">
                     <Link
                       href={`/stocks/${t.symbol}`}
-                      className="mono font-medium text-[#F5F5F5] hover:text-[#FDD458]"
+                      className="mono font-medium text-ink hover:text-signal"
                     >
                       {t.symbol}
                     </Link>
                   </td>
-                  <td className="mono px-3 py-2.5 text-right text-[#F5F5F5]">{t.quantity}</td>
-                  <td className="mono px-3 py-2.5 text-right text-[#F5F5F5]">
+                  <td className="mono px-3 py-2.5 text-right text-ink">{t.quantity}</td>
+                  <td className="mono px-3 py-2.5 text-right text-ink">
                     {formatPrice(t.price)}
                   </td>
-                  <td className="mono px-3 py-2.5 text-right text-[#F5F5F5]">
+                  <td className="mono px-3 py-2.5 text-right text-ink">
                     {formatPrice(t.total)}
                   </td>
-                  <td className="mono px-3 py-2.5 text-right text-[#6E6E6E]">
+                  <td className="mono px-3 py-2.5 text-right text-ink-3">
                     {formatPrice(t.fees)}
                   </td>
                   <td
                     className={cn(
                       'mono px-3 py-2.5 text-right',
                       t.realizedPl == null
-                        ? 'text-[#6E6E6E]'
+                        ? 'text-ink-3'
                         : t.realizedPl >= 0
-                          ? 'text-[#22C55E]'
-                          : 'text-[#EF4444]'
+                          ? 'text-up'
+                          : 'text-down'
                     )}
                   >
                     {t.realizedPl == null ? '—' : formatPrice(t.realizedPl)}
@@ -323,7 +321,7 @@ export default function TradeHistoryClient() {
                         disabled={isPending}
                         aria-busy={undoingId === t.id}
                         onClick={() => onUndo(t.id)}
-                        className="inline-flex items-center gap-1 text-[#6E6E6E] hover:text-[#FDD458] disabled:opacity-50"
+                        className="inline-flex items-center gap-1 text-ink-3 hover:text-signal disabled:opacity-50"
                         title="Undo within 5 min"
                       >
                         {undoingId === t.id ? (
@@ -354,13 +352,13 @@ function Mini({
   tone?: 'up' | 'down';
 }) {
   return (
-    <div className="rounded-xl border border-[#242424] bg-[#141414] p-3">
-      <div className="text-[10px] uppercase tracking-wide text-[#6E6E6E]">{label}</div>
+    <div className="bg-canvas px-4 py-3">
+      <div className="text-[12px] text-ink-3">{label}</div>
       <div
         className={cn(
-          'mono mt-1 text-[15px] text-[#F5F5F5]',
-          tone === 'up' && 'text-[#22C55E]',
-          tone === 'down' && 'text-[#EF4444]'
+          'mono mt-1 text-[17px] text-ink',
+          tone === 'up' && 'text-up',
+          tone === 'down' && 'text-down'
         )}
       >
         {value}

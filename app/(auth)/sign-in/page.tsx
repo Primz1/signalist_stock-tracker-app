@@ -54,7 +54,7 @@ const SignIn = () => {
         Welcome back
       </h1>
       <p
-        className="mb-7 animate-el text-sm text-[#A1A1A1]"
+        className="mb-8 animate-el text-[15px] leading-6 text-ink-2"
         style={{ animationDelay: '160ms' }}
       >
         Sign in to keep tracking your signals — charts, AI research, and price alerts.
@@ -70,7 +70,7 @@ const SignIn = () => {
               type="button"
               aria-label="Dismiss"
               onClick={() => setShowBanner(false)}
-              className="flex-none p-0.5 text-[#A1A1A1] hover:text-[#F5F5F5]"
+              className="flex-none p-0.5 text-ink-2 hover:text-ink"
             >
               <X className="h-3.5 w-3.5" strokeWidth={1.5} />
             </button>
@@ -110,7 +110,7 @@ const SignIn = () => {
           type="submit"
           disabled={isSubmitting}
           aria-busy={isSubmitting}
-          className="yellow-btn mt-2 w-full animate-el"
+          className="yellow-btn mt-3 w-full animate-el"
           style={{ animationDelay: '420ms' }}
         >
           {isSubmitting ? (

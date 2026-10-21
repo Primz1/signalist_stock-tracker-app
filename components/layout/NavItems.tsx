@@ -11,7 +11,7 @@ function NavPendingDot() {
   if (!pending) return null;
   return (
     <span
-      className="ml-1.5 inline-block size-1.5 animate-pulse-soft rounded-full bg-[#FDD458]"
+      className="ml-1.5 inline-block size-1.5 animate-pulse-soft rounded-full bg-signal"
       aria-hidden
     />
   );
@@ -32,24 +32,34 @@ const NavItems = ({
   };
 
   return (
-    <ul className={cn('flex h-14 items-center gap-5 lg:gap-6', className)}>
-      {NAV_ITEMS.map(({ href, label }) => (
-        <li key={href} className="flex h-14 items-center">
-          <Link
-            href={href}
-            className={cn(
-              'inline-flex h-14 items-center whitespace-nowrap text-[13px] transition-colors hover:text-[#FDD458]',
-              isActive(href)
-                ? 'border-b-2 border-[#FDD458] font-medium text-[#F5F5F5]'
-                : 'border-b-2 border-transparent text-[#A1A1A1]',
-              itemClassName
+    <ul className={cn('flex h-14 items-center gap-1', className)}>
+      {NAV_ITEMS.map(({ href, label }) => {
+        const active = isActive(href);
+        return (
+          <li key={href} className="relative flex h-full items-center">
+            <Link
+              href={href}
+              aria-current={active ? 'page' : undefined}
+              className={cn(
+                'inline-flex h-8 items-center whitespace-nowrap rounded-md px-3 text-[14px] transition-colors duration-150',
+                active
+                  ? 'font-medium text-ink'
+                  : 'text-ink-2 hover:bg-surface-2 hover:text-ink',
+                itemClassName
+              )}
+            >
+              {label}
+              <NavPendingDot />
+            </Link>
+            {active && (
+              <span
+                aria-hidden
+                className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-signal"
+              />
             )}
-          >
-            {label}
-            <NavPendingDot />
-          </Link>
-        </li>
-      ))}
+          </li>
+        );
+      })}
     </ul>
   );
 };

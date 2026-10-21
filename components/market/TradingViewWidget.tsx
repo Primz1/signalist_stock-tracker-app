@@ -20,7 +20,7 @@ const TradingViewWidget = ({title, scriptUrl, config, height = 600, className}: 
   return (
     <div className="w-full">
       {title && (
-        <h3 className="mb-3 text-sm font-medium uppercase tracking-wide text-[#6E6E6E]">
+        <h3 className="mb-3 text-sm font-medium text-ink-3">
           {title}
         </h3>
       )}

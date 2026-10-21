@@ -15,13 +15,13 @@ export function ConfidenceMeter({
   const pct = Math.max(0, Math.min(100, Math.round(value)));
   return (
     <div className={cn('space-y-1.5', className)}>
-      <div className="flex items-center justify-between text-[11px] uppercase tracking-wide text-[#6E6E6E]">
+      <div className="flex items-center justify-between text-[12px] text-ink-3">
         <span>{label}</span>
-        <span className="mono text-[#F5F5F5]">{pct}%</span>
+        <span className="mono text-ink">{pct}%</span>
       </div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-[#1C1C1C]">
+      <div className="h-1.5 overflow-hidden rounded-full bg-surface-2">
         <div
-          className="h-full rounded-full bg-[#FDD458] transition-[width] duration-500 ease-out"
+          className="h-full rounded-full bg-signal transition-[width] duration-500 ease-out"
           style={{ width: `${pct}%` }}
         />
       </div>

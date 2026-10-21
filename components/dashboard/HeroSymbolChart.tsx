@@ -13,7 +13,7 @@ export default function HeroSymbolChart({
 }) {
   if (!chartData.candles?.length) {
     return (
-      <div className="flex h-[220px] items-center justify-center text-[13px] text-[#6E6E6E]">
+      <div className="flex h-[220px] items-center justify-center text-[13px] text-ink-3">
         No chart data for {symbol}
       </div>
     );

@@ -15,21 +15,21 @@ Table.displayName = "Table";
 
 const TableHeader = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(
 	({ className, ...props }, ref) => (
-		<thead ref={ref} className={cn("text-xs uppercase text-[#6E6E6E]", className)} {...props} />
+		<thead ref={ref} className={cn("text-[12px] font-medium text-ink-3", className)} {...props} />
 	)
 );
 TableHeader.displayName = "TableHeader";
 
 const TableBody = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(
 	({ className, ...props }, ref) => (
-		<tbody ref={ref} className={cn("divide-y divide-[#1C1C1C]", className)} {...props} />
+		<tbody ref={ref} className={cn("divide-y divide-line", className)} {...props} />
 	)
 );
 TableBody.displayName = "TableBody";
 
 const TableFooter = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(
 	({ className, ...props }, ref) => (
-		<tfoot ref={ref} className={cn("bg-[#141414] font-medium text-[#F5F5F5]", className)} {...props} />
+		<tfoot ref={ref} className={cn("bg-surface font-medium text-ink", className)} {...props} />
 	)
 );
 TableFooter.displayName = "TableFooter";
@@ -39,7 +39,7 @@ const TableRow = React.forwardRef<HTMLTableRowElement, React.HTMLAttributes<HTML
 		<tr
 			ref={ref}
 			className={cn(
-				"transition-colors hover:bg-[#1C1C1C]/60",
+				"transition-colors hover:bg-surface-2/60",
 				className
 			)}
 			{...props}
@@ -52,7 +52,7 @@ const TableHead = React.forwardRef<HTMLTableCellElement, React.ThHTMLAttributes<
 	({ className, ...props }, ref) => (
 		<th
 			ref={ref}
-			className={cn("px-4 py-2 text-left font-medium", className)}
+			className={cn("px-2 py-2 text-left font-medium sm:px-4", className)}
 			{...props}
 		/>
 	)
@@ -63,7 +63,7 @@ const TableCell = React.forwardRef<HTMLTableCellElement, React.TdHTMLAttributes<
 	({ className, ...props }, ref) => (
 		<td
 			ref={ref}
-			className={cn("px-4 py-2 align-middle", className)}
+			className={cn("px-2 py-2 align-middle sm:px-4", className)}
 			{...props}
 		/>
 	)
@@ -74,7 +74,7 @@ const TableCaption = React.forwardRef<HTMLTableCaptionElement, React.HTMLAttribu
 	({ className, ...props }, ref) => (
 		<caption
 			ref={ref}
-			className={cn("mt-4 text-sm text-[#6E6E6E]", className)}
+			className={cn("mt-4 text-sm text-ink-3", className)}
 			{...props}
 		/>
 	)

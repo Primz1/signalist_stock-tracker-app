@@ -39,31 +39,26 @@ export default function AppHeader({
   };
 
   return (
-    <header className="sticky top-0 z-20 border-b border-[#242424] bg-[#141414]">
-      <div className="relative mx-auto flex h-14 max-w-[1400px] items-center px-4 md:px-6 lg:px-8">
-        {/* Left — brand */}
-        <div className="relative z-10 flex flex-none items-center">
-          <BrandLogo />
-        </div>
+    <header className="sticky top-0 z-30 border-b border-line bg-canvas">
+      <div className="mx-auto flex h-14 max-w-[1400px] items-center gap-6 px-4 md:px-6 lg:px-8">
+        <BrandLogo />
 
-        {/* Center — nav links + search (true center on desktop) */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 hidden h-14 items-center justify-center md:flex">
-          <div className="pointer-events-auto flex items-center gap-5 lg:gap-6">
-            <NavItems className="h-14 gap-5 lg:gap-6" />
+        <nav aria-label="Primary" className="hidden h-14 md:block">
+          <NavItems />
+        </nav>
+
+        <div className="ml-auto flex flex-none items-center gap-1.5 md:gap-2">
+          <div className="hidden w-[260px] lg:block xl:w-[300px]">
             <SearchCommand
               renderAs="button"
-              label="Search stocks..."
+              label="Search symbols"
               initialStocks={initialStocks}
               watchlistSymbols={watchlistSymbols}
               quickAddEnabled
-              className="!max-w-[240px] lg:!max-w-[280px]"
+              className="!max-w-none"
             />
           </div>
-        </div>
-
-        {/* Right — mobile search + alerts + account */}
-        <div className="relative z-10 ml-auto flex flex-none items-center gap-2 md:gap-3.5">
-          <div className="md:hidden">
+          <div className="lg:hidden">
             <SearchCommand
               renderAs="icon"
               label="Search"
@@ -73,76 +68,94 @@ export default function AppHeader({
             />
           </div>
 
-          <button
-            type="button"
-            aria-label="Notifications"
-            onClick={() => setNotifOpen((o) => !o)}
-            className="relative flex p-1.5 text-[#A1A1A1] transition-colors hover:text-[#FDD458]"
-          >
-            <Bell className="h-[18px] w-[18px]" strokeWidth={1.5} />
-            {unread > 0 && (
-              <span className="absolute right-0.5 top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#FDD458] text-[9px] font-bold text-[#0A0A0A]">
-                {unread > 9 ? '9+' : unread}
-              </span>
-            )}
-          </button>
+          <div className="relative">
+            <button
+              type="button"
+              aria-label={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
+              aria-expanded={notifOpen}
+              onClick={() => setNotifOpen((o) => !o)}
+              className="press relative flex size-9 items-center justify-center rounded-lg text-ink-2 hover:bg-surface-2 hover:text-ink"
+            >
+              <Bell className="size-[18px]" strokeWidth={1.5} />
+              {unread > 0 && (
+                <span className="mono absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-signal px-1 text-[10px] font-semibold text-signal-ink">
+                  {unread > 9 ? '9+' : unread}
+                </span>
+              )}
+            </button>
 
-          {notifOpen && (
-            <>
-              <button
-                type="button"
-                aria-label="Close notifications"
-                className="fixed inset-0 z-20 cursor-default"
-                onClick={() => setNotifOpen(false)}
-              />
-              <div className="animate-toast absolute right-9 top-10 z-30 w-80 overflow-hidden rounded-xl border border-[#2E2E2E] bg-[#141414] shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
-                <div className="flex items-center justify-between border-b border-[#242424] px-3.5 py-3">
-                  <div className="text-[13px] font-semibold text-[#F5F5F5]">Alerts</div>
-                  <button
-                    type="button"
-                    onClick={markAllRead}
-                    className="text-[12px] text-[#A1A1A1] hover:text-[#FDD458]"
-                  >
-                    Mark all read
-                  </button>
-                </div>
-                <div className="max-h-72 overflow-auto">
-                  {notifications.length === 0 ? (
-                    <div className="px-3.5 py-6 text-center text-[13px] text-[#6E6E6E]">
-                      No alerts yet.
-                    </div>
-                  ) : (
-                    notifications.slice(0, 8).map((n) => (
-                      <div
-                        key={n._id || `${n.symbol}-${n.triggeredAt}`}
-                        className={`border-b border-[#242424] px-3.5 py-2.5 last:border-0 ${
-                          !n.read ? 'border-l-2 border-l-[#FDD458] bg-[rgba(253,212,88,0.04)]' : ''
-                        }`}
-                      >
-                        <div className="text-[13px] text-[#F5F5F5]">
-                          {n.symbol}: {n.message}
-                        </div>
-                        <div className="mt-0.5 text-[12px] text-[#6E6E6E]">
-                          {new Date(n.triggeredAt).toLocaleString()}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-                <Link
-                  href="/watchlist"
+            {notifOpen && (
+              <>
+                <button
+                  type="button"
+                  aria-label="Close notifications"
+                  className="fixed inset-0 z-20 cursor-default"
                   onClick={() => setNotifOpen(false)}
-                  className="block border-t border-[#242424] px-3.5 py-2.5 text-center text-[12px] text-[#FDD458]"
-                >
-                  View watchlist
-                </Link>
-              </div>
-            </>
-          )}
+                />
+                <div className="animate-toast absolute right-0 top-11 z-30 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-lg border border-line-strong bg-surface shadow-[0_16px_40px_rgba(0,0,0,0.5)]">
+                  <div className="flex items-center justify-between border-b border-line px-4 py-3">
+                    <div className="text-[14px] font-semibold text-ink">Alerts fired</div>
+                    {unread > 0 && (
+                      <button
+                        type="button"
+                        onClick={markAllRead}
+                        className="text-[13px] text-ink-2 hover:text-ink"
+                      >
+                        Mark all read
+                      </button>
+                    )}
+                  </div>
+                  <div className="max-h-80 overflow-auto">
+                    {notifications.length === 0 ? (
+                      <div className="px-4 py-6">
+                        <p className="text-[14px] text-ink">Nothing has fired yet.</p>
+                        <p className="mt-1 text-[13px] leading-5 text-ink-3">
+                          Set an upper or lower price on any watchlist symbol and it lands here the
+                          moment it crosses.
+                        </p>
+                      </div>
+                    ) : (
+                      notifications.slice(0, 8).map((n) => (
+                        <div
+                          key={n._id || `${n.symbol}-${n.triggeredAt}`}
+                          className="flex gap-3 border-b border-line px-4 py-3 last:border-0"
+                        >
+                          <span
+                            aria-hidden
+                            className={`mt-1.5 size-1.5 flex-none rounded-full ${n.read ? 'bg-transparent' : 'bg-signal'}`}
+                          />
+                          <div className="min-w-0">
+                            <div className="text-[13px] leading-5 text-ink">
+                              <span className="mono font-medium">{n.symbol}</span> {n.message}
+                            </div>
+                            <div className="mono mt-0.5 text-[12px] text-ink-3">
+                              {new Date(n.triggeredAt).toLocaleString()}
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <Link
+                    href="/watchlist"
+                    onClick={() => setNotifOpen(false)}
+                    className="block border-t border-line px-4 py-2.5 text-[13px] font-medium text-signal hover:bg-surface-2"
+                  >
+                    Manage alerts
+                  </Link>
+                </div>
+              </>
+            )}
+          </div>
 
           <UserDropdown user={user} />
         </div>
       </div>
+
+      {/* Phone / small tablet: primary nav as a scrollable row under the bar */}
+      <nav aria-label="Primary mobile" className="scrollbar-hide overflow-x-auto border-t border-line md:hidden">
+        <NavItems className="h-11 px-2" />
+      </nav>
     </header>
   );
 }

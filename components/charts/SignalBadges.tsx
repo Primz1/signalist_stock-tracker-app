@@ -5,10 +5,10 @@ import { cn } from '@/lib/utils';
 type Signal = { label: string; type: 'bullish' | 'bearish' | 'neutral' | 'warning' };
 
 const badgeStyles: Record<Signal['type'], string> = {
-  bullish: 'bg-[rgba(34,197,94,0.12)] text-[#22C55E]',
-  bearish: 'bg-[rgba(239,68,68,0.12)] text-[#EF4444]',
-  neutral: 'bg-[rgba(161,161,161,0.12)] text-[#A1A1A1]',
-  warning: 'bg-[rgba(253,212,88,0.12)] text-[#FDD458]',
+  bullish: 'bg-up/12 text-up',
+  bearish: 'bg-down/12 text-down',
+  neutral: 'bg-ink-2/12 text-ink-2',
+  warning: 'bg-signal/12 text-signal',
 };
 
 export default function SignalBadges({ signals }: { signals: Signal[] }) {
@@ -26,7 +26,7 @@ export default function SignalBadges({ signals }: { signals: Signal[] }) {
       {ordered.map((s) => (
         <span
           key={s.label}
-          className={cn('rounded-full px-2.5 py-1 text-xs font-medium', badgeStyles[s.type])}
+          className={cn('rounded-md px-2.5 py-1 text-xs font-medium', badgeStyles[s.type])}
         >
           {s.label}
         </span>
@@ -66,12 +66,12 @@ export function IndicatorPanel({
       ].map((r) => (
         <div
           key={r.label}
-          className="rounded-xl border border-[#242424] bg-[#141414] px-3.5 py-3"
+          className="rounded-lg border border-line bg-surface px-3.5 py-3"
         >
-          <div className="mb-1.5 text-[11px] uppercase tracking-[0.02em] text-[#6E6E6E]">
+          <div className="mb-1.5 text-[12px] text-ink-3">
             {r.label}
           </div>
-          <div className="mono text-base text-[#F5F5F5]">{r.value}</div>
+          <div className="mono text-base text-ink">{r.value}</div>
         </div>
       ))}
     </div>

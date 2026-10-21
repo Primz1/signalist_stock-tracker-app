@@ -49,14 +49,19 @@ export default function SettingsForm({
 
   return (
     <PageEnter>
-    <form onSubmit={handleSubmit(onSubmit)} className="mx-auto max-w-lg space-y-5">
-      <h1 className="section-title">Profile Settings</h1>
-      <p className="text-sm text-[#6E6E6E]">Your investment preferences power AI personalization.</p>
+    <form onSubmit={handleSubmit(onSubmit)} className="max-w-xl space-y-6">
+      <div className="mb-2">
+        <h1 className="page-title">Settings</h1>
+        <p className="page-lede">
+          Your market and preferences. Research and AI scores use these to frame what they show
+          you.
+        </p>
+      </div>
 
       <CountrySelectField name="country" label="Country" control={control} error={errors.country} required />
       <SelectField
         name="investmentGoals"
-        label="Investment Goals"
+        label="Investment goal"
         placeholder="Select goals"
         options={INVESTMENT_GOALS}
         control={control}
@@ -65,7 +70,7 @@ export default function SettingsForm({
       />
       <SelectField
         name="riskTolerance"
-        label="Risk Tolerance"
+        label="Risk tolerance"
         placeholder="Select risk"
         options={RISK_TOLERANCE_OPTIONS}
         control={control}
@@ -74,7 +79,7 @@ export default function SettingsForm({
       />
       <SelectField
         name="preferredIndustry"
-        label="Preferred Industry"
+        label="Preferred industry"
         placeholder="Select industry"
         options={PREFERRED_INDUSTRIES}
         control={control}
@@ -86,15 +91,15 @@ export default function SettingsForm({
         type="submit"
         disabled={isSubmitting}
         aria-busy={isSubmitting}
-        className="yellow-btn w-full"
+        className="yellow-btn"
       >
         {isSubmitting ? (
           <>
             <Loader2 className="size-4 animate-spin" />
-            Saving...
+            Saving…
           </>
         ) : (
-          'Save Profile'
+          'Save changes'
         )}
       </Button>
     </form>
