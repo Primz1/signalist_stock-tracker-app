@@ -11,8 +11,9 @@ export async function middleware(request: NextRequest) {
     p === '/' ? pathname === '/' : pathname.startsWith(p)
   );
 
-  // Logged-in users skip marketing / auth → app dashboard
-  if (sessionCookie && (pathname === '/' || pathname.startsWith('/sign-in') || pathname.startsWith('/sign-up'))) {
+  // Logged-in users skip marketing → app dashboard. /sign-in and /sign-up are left to the
+  // (auth) layout, which checks the session itself: a stale cookie redirecting here loops.
+  if (sessionCookie && pathname === '/') {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
