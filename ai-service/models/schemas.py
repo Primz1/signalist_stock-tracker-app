@@ -25,3 +25,24 @@ class ResearchResponse(BaseModel):
     confidence: float
     signals: list[Signal]
     sources: list[Source]
+
+
+class SignalInput(BaseModel):
+    kind: str
+    direction: str
+    label: str
+    detail: str
+    price: float | None = None
+    timestamp: str | None = None
+
+
+class WhatsChangedRequest(BaseModel):
+    symbol: str
+    signals: list[SignalInput]
+
+
+class WhatsChangedResponse(BaseModel):
+    symbol: str
+    summary: str
+    confidence: float
+    signals: list[Signal]

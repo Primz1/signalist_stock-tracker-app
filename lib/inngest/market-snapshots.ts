@@ -3,6 +3,7 @@ import { connectToDatabase } from '@/database/mongoose';
 import { Watchlist } from '@/database/models/watchlist.model';
 import { saveMarketSnapshot } from '@/lib/actions/market.actions';
 import { computeStockScore } from '@/lib/scoring/computeScore';
+import { detectAndPublishSignals } from '@/lib/market/signal-runner';
 
 export const captureMarketSnapshots = inngest.createFunction(
   { id: 'capture-market-snapshots' },
@@ -23,6 +24,14 @@ export const captureMarketSnapshots = inngest.createFunction(
         await computeStockScore(symbol);
         processed += 1;
       });
+
+      const signals = await step.run(`signals-${symbol}`, () => detectAndPublishSignals(symbol));
+      if (signals.length) {
+        await step.sendEvent(`notify-signals-${symbol}`, {
+          name: 'app/signals.detected',
+          data: { symbol, signals },
+        });
+      }
     }
 
     return { success: true, processed };

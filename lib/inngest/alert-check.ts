@@ -5,6 +5,8 @@ import { addAlertNotification } from "@/database/models/alertNotification.model"
 import { sendPriceAlertEmail } from "@/lib/nodemailer";
 import { getUserEmailById } from "@/lib/actions/userLookup";
 import { logError } from "@/lib/logger";
+import { publishEvent } from "@/lib/events/publisher";
+import { EVENT_TYPES } from "@/lib/events/types";
 
 const FINNHUB_BASE_URL = "https://finnhub.io/api/v1";
 const getToken = () => process.env.FINNHUB_API_KEY ?? process.env.NEXT_PUBLIC_FINNHUB_API_KEY ?? "";
@@ -65,7 +67,7 @@ const fetchYahooQuote = async (symbol: string) => {
   }
 };
 
-const fetchPrice = async (symbol: string) => {
+export const fetchPrice = async (symbol: string) => {
   if (isCryptoSymbol(symbol)) {
     return fetchBinanceTicker(symbol);
   }
@@ -126,6 +128,24 @@ const evaluateAlerts = async (alerts: Awaited<ReturnType<typeof listActiveAlerts
       });
     } catch (err) {
       logError("alert notification insert failed", { alertId: String(alert._id) });
+    }
+
+    try {
+      await publishEvent({
+        type: EVENT_TYPES.ALERT_TRIGGERED,
+        userId: alert.userId,
+        payload: {
+          alertId: String(alert._id),
+          symbol: symUpper,
+          company: alert.company,
+          message: `${symUpper} is ${alert.condition === "gt" ? "above" : "below"} ${alert.threshold}`,
+          price: quote.price,
+          changePercent: quote.changePercent,
+          timestamp: now.toISOString(),
+        },
+      });
+    } catch (err) {
+      logError("alert event publish failed", { alertId: String(alert._id) });
     }
 
     try {

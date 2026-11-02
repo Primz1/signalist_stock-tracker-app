@@ -8,7 +8,7 @@ import FooterLinks from '@/components/forms/FooterLinks';
 import { Alert } from '@/components/ui/alert';
 import { signInWithEmail } from '@/lib/actions/auth.actions';
 import { toast } from 'sonner';
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { Loader2, X } from 'lucide-react';
 import OtpInput from '@/components/forms/OtpInput';
 
@@ -145,4 +145,10 @@ const SignIn = () => {
   );
 };
 
-export default SignIn;
+export default function SignInPage() {
+  return (
+    <Suspense>
+      <SignIn />
+    </Suspense>
+  );
+}

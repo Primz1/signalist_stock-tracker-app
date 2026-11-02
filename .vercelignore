@@ -1,0 +1,7 @@
+QuantAgent/
+QuantAgent*.zip
+.agents/
+.claude/
+.codex/
+.cursor/
+ai-service/

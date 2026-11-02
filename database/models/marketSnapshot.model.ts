@@ -21,6 +21,7 @@ export interface MarketSnapshot extends Document {
     bollinger?: { upper: number; middle: number; lower: number };
   };
   timestamp: Date;
+  expiresAt?: Date;
 }
 
 const MarketSnapshotSchema = new Schema<MarketSnapshot>(
@@ -32,11 +33,14 @@ const MarketSnapshotSchema = new Schema<MarketSnapshot>(
     ohlcv: { type: Schema.Types.Mixed },
     indicators: { type: Schema.Types.Mixed },
     timestamp: { type: Date, default: Date.now, index: true },
+    expiresAt: { type: Date },
   },
   { timestamps: true }
 );
 
 MarketSnapshotSchema.index({ symbol: 1, timestamp: -1 });
+// Each snapshot carries 60 candles, so a 15-minute job would fill Atlas M0 without this
+MarketSnapshotSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 export const MarketSnapshotModel: Model<MarketSnapshot> =
   (models?.MarketSnapshot as Model<MarketSnapshot>) ||

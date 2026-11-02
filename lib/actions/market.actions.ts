@@ -69,6 +69,8 @@ export const getChartData = cache(async (symbol: string, range: ChartRange = '3M
   return loadChartData(symbol, range);
 });
 
+const SNAPSHOT_RETENTION_MS = 3 * 24 * 60 * 60 * 1000;
+
 export async function saveMarketSnapshot(symbol: string) {
   const data = await loadChartData(symbol, '3M');
   if (!data.candles.length || !data.quote) return null;
@@ -90,5 +92,6 @@ export async function saveMarketSnapshot(symbol: string) {
         }
       : undefined,
     timestamp: new Date(),
+    expiresAt: new Date(Date.now() + SNAPSHOT_RETENTION_MS),
   } as Parameters<typeof upsertMarketSnapshot>[0]);
 }

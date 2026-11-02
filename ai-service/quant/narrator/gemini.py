@@ -7,6 +7,8 @@ from typing import Any
 
 from pydantic import BaseModel
 
+from models.schemas import SignalInput
+
 from quant.types import (
     PortfolioQuantSnapshot,
     ResearchNarrative,
@@ -21,6 +23,9 @@ try:
         genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 except ImportError:
     genai = None
+
+
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
 
 
 def extract_numbers_from_prose(text: str) -> list[str]:
@@ -282,7 +287,7 @@ SCHEMA:
 }}
 """
     try:
-        model = genai.GenerativeModel("gemini-2.0-flash")
+        model = genai.GenerativeModel(GEMINI_MODEL)
         response = model.generate_content(prompt)
         text = (response.text or "").strip()
         if text.startswith("```"):
@@ -307,6 +312,43 @@ SCHEMA:
         return narrative
     except Exception:
         return _fallback_research(snap, query)
+
+
+def _fallback_changes(symbol: str, signals: list[SignalInput]) -> str:
+    details = "; ".join(f"{s.label} ({s.detail})" for s in signals[:4])
+    return f"{symbol} recent signals: {details}."
+
+
+class _SignalEvidence(BaseModel):
+    signals: list[SignalInput]
+
+
+async def narrate_changes(symbol: str, signals: list[SignalInput]) -> tuple[str, float]:
+    """Returns (summary, confidence). Falls back to the raw signals if Gemini is off or cites a number it wasn't given."""
+    fallback = (_fallback_changes(symbol, signals), 0.5)
+    if not (genai and os.getenv("GEMINI_API_KEY")):
+        return fallback
+
+    evidence = _SignalEvidence(signals=signals)
+    prompt = f"""You are Signalist's market analyst. Explain in 2-3 plain sentences what changed for {symbol}.
+RULES:
+1. Every number you cite MUST appear in the SIGNALS JSON.
+2. Never invent prices, levels or causes. Say what the signals show, not why it happened.
+3. Never tell the user to buy, sell or hold.
+4. Respond with the summary text only.
+
+SIGNALS: {evidence.model_dump_json()}
+"""
+    try:
+        model = genai.GenerativeModel(GEMINI_MODEL)
+        response = model.generate_content(prompt)
+        summary = (response.text or "").strip()
+        ok, _ = verify_narration_against_snapshot(summary, evidence)
+        if not summary or not ok:
+            return fallback
+        return summary, 0.8
+    except Exception:
+        return fallback
 
 
 def _fallback_review(snap: PortfolioQuantSnapshot) -> ReviewNarrative:
@@ -365,7 +407,7 @@ SCHEMA:
 }}
 """
     try:
-        model = genai.GenerativeModel("gemini-2.0-flash")
+        model = genai.GenerativeModel(GEMINI_MODEL)
         response = model.generate_content(prompt)
         text = (response.text or "").strip()
         if text.startswith("```"):

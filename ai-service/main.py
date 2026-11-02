@@ -11,11 +11,18 @@ _ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(_ROOT / ".env")
 load_dotenv(Path(__file__).resolve().parent / ".env")
 
-from models.schemas import ResearchRequest, ResearchResponse, Signal, Source
+from models.schemas import (
+    ResearchRequest,
+    ResearchResponse,
+    Signal,
+    Source,
+    WhatsChangedRequest,
+    WhatsChangedResponse,
+)
 from tools.market_tools import fetch_company_news
 from quant.composites.portfolio_snapshot import build_portfolio_snapshot
 from quant.composites.symbol_snapshot import build_symbol_snapshot
-from quant.narrator.gemini import narrate_research, narrate_review
+from quant.narrator.gemini import narrate_changes, narrate_research, narrate_review
 from quant.ta_indicators import build_indicators_response
 from quant.tearsheet import build_tearsheet
 
@@ -169,6 +176,23 @@ async def research_full(req: ResearchRequest, x_internal_secret: str | None = He
             if n.get("headline")
         ],
     }
+
+
+@app.post("/agent/whats-changed", response_model=WhatsChangedResponse)
+async def whats_changed(req: WhatsChangedRequest, x_internal_secret: str | None = Header(default=None)):
+    """Explains recent signals for a symbol, citing only numbers from the signals."""
+    _verify_secret(x_internal_secret)
+    symbol = req.symbol.upper()
+    summary, confidence = await narrate_changes(symbol, req.signals)
+    bullish = sum(1 for s in req.signals if s.direction == "up")
+    bearish = len(req.signals) - bullish
+    tone = "bullish" if bullish > bearish else "bearish" if bearish > bullish else "neutral"
+    return WhatsChangedResponse(
+        symbol=symbol,
+        summary=summary,
+        confidence=confidence,
+        signals=[Signal(label=s.label, type=tone) for s in req.signals],
+    )
 
 
 @app.post("/agent/portfolio-review")

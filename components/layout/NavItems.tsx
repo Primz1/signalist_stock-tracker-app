@@ -4,13 +4,14 @@ import { NAV_ITEMS } from '@/lib/constants';
 import Link from 'next/link';
 import { useLinkStatus } from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Star, PieChart, Sparkles, type LucideIcon } from 'lucide-react';
+import { Activity, LayoutDashboard, Star, PieChart, Sparkles, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const TAB_ICONS: Record<string, LucideIcon> = {
   '/dashboard': LayoutDashboard,
   '/watchlist': Star,
   '/portfolio': PieChart,
+  '/signals': Activity,
   '/research': Sparkles,
 };
 
@@ -53,7 +54,7 @@ const NavItems = ({
         aria-label="Primary"
         className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-canvas pb-[env(safe-area-inset-bottom)] md:hidden"
       >
-        <ul className="grid h-16 grid-cols-4">
+        <ul className="grid h-16 grid-cols-5">
           {NAV_ITEMS.map(({ href, label }) => {
             const active = isActive(href);
             const Icon = TAB_ICONS[href];

@@ -1,6 +1,7 @@
 import os
 from models.schemas import ResearchRequest, ResearchResponse, Signal, Source
 from tools.market_tools import fetch_quote, fetch_company_news
+from quant.narrator.gemini import GEMINI_MODEL
 
 try:
     import google.generativeai as genai
@@ -50,7 +51,7 @@ def _fallback_report(symbol: str, query: str, quote: dict, news: list) -> Resear
 
 
 async def _gemini_report(symbol: str, query: str, quote: dict, news: list) -> ResearchResponse:
-    model = genai.GenerativeModel("gemini-2.0-flash")
+    model = genai.GenerativeModel(GEMINI_MODEL)
     headlines = "\n".join(f"- {n.get('headline')}" for n in news[:6] if n.get("headline"))
     prompt = f"""You are a financial research analyst. Answer the user query about {symbol}.
 Query: {query}

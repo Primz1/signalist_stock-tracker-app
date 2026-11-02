@@ -4,6 +4,8 @@ import { getCachedSession } from '@/lib/auth/session';
 import { connectToDatabase } from '@/database/mongoose';
 import { createAiReport, getLatestAiReport } from '@/database/models/aiReport.model';
 import { Watchlist } from '@/database/models/watchlist.model';
+import { publishEvent } from '@/lib/events/publisher';
+import { EVENT_TYPES } from '@/lib/events/types';
 
 export type ResearchFullResult = {
   symbol: string;
@@ -16,6 +18,19 @@ export type ResearchFullResult = {
   news?: { headline?: string; url?: string }[];
   fromCache?: boolean;
 };
+
+async function publishReportCreated(report: { _id: unknown; symbol: string; summary: string }, userId: string) {
+  await publishEvent({
+    type: EVENT_TYPES.AI_REPORT_CREATED,
+    userId,
+    payload: {
+      reportId: String(report._id),
+      symbol: report.symbol,
+      summary: report.summary,
+      timestamp: new Date().toISOString(),
+    },
+  });
+}
 
 function mapDbReport(doc: Record<string, unknown>): ResearchFullResult {
   return {
@@ -105,7 +120,7 @@ export async function runAiResearch(symbol: string, query: string) {
       const data = await legacy.json();
       try {
         await connectToDatabase();
-        await createAiReport({
+        const report = await createAiReport({
           userId: session.user.id,
           symbol: data.symbol,
           query,
@@ -114,6 +129,7 @@ export async function runAiResearch(symbol: string, query: string) {
           signals: data.signals,
           sources: data.sources,
         });
+        await publishReportCreated(report, session.user.id);
       } catch {
         /* persist is best-effort — don't fail the research response */
       }
@@ -124,7 +140,7 @@ export async function runAiResearch(symbol: string, query: string) {
 
     try {
       await connectToDatabase();
-      await createAiReport({
+      const report = await createAiReport({
         userId: session.user.id,
         symbol: data.symbol,
         query,
@@ -140,6 +156,7 @@ export async function runAiResearch(symbol: string, query: string) {
           type: (s.type as 'news' | 'filing' | 'market' | 'indicator') || 'news',
         })),
       });
+      await publishReportCreated(report, session.user.id);
     } catch {
       /* persist is best-effort */
     }
