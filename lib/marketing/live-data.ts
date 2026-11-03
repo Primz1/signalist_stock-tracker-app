@@ -121,7 +121,7 @@ function enrich(
 
 async function quoteOf(display: string, api: string): Promise<MarketingQuote | null> {
   const q = await fetchQuote(api);
-  if (!q || !q.price) return null;
+  if (!q || !q.price || q.changePercent == null) return null;
   const crypto = api.includes('BINANCE') || display === 'BTC' || display === 'ETH';
   return enrich(display, q.price, q.changePercent, crypto);
 }

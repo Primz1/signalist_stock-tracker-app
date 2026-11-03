@@ -4,7 +4,6 @@ import { getDateRange, validateArticle, formatArticle } from '@/lib/utils';
 import { POPULAR_CRYPTO_SYMBOLS, POPULAR_STOCK_SYMBOLS } from '@/lib/constants';
 
 const FINNHUB_BASE_URL = 'https://finnhub.io/api/v1';
-const NEXT_PUBLIC_FINNHUB_API_KEY = process.env.NEXT_PUBLIC_FINNHUB_API_KEY ?? '';
 
 async function fetchJSON<T>(url: string, revalidateSeconds?: number): Promise<T> {
   const options: RequestInit & { next?: { revalidate?: number } } = revalidateSeconds
@@ -24,7 +23,7 @@ export { fetchJSON };
 export async function getNews(symbols?: string[]): Promise<MarketNewsArticle[]> {
   try {
     const range = getDateRange(5);
-    const token = process.env.FINNHUB_API_KEY ?? NEXT_PUBLIC_FINNHUB_API_KEY;
+    const token = process.env.FINNHUB_API_KEY;
     if (!token) {
       throw new Error('FINNHUB API key is not configured');
     }
@@ -113,7 +112,7 @@ type FinnhubCryptoSymbol = {
 type FinnhubSearchResultWithExchange = FinnhubSearchResult & { __exchange?: string };
 
 async function fetchCryptoSymbols(exchange: string): Promise<FinnhubCryptoSymbol[]> {
-  const token = process.env.FINNHUB_API_KEY ?? NEXT_PUBLIC_FINNHUB_API_KEY;
+  const token = process.env.FINNHUB_API_KEY;
   if (!token) {
     console.error('Crypto symbols fetch failed: FINNHUB API key is not configured');
     return [];
@@ -155,7 +154,7 @@ export const searchStocks = async (
   opts?: { type?: SearchSymbolType; limit?: number }
 ): Promise<StockWithWatchlistStatus[]> => {
   try {
-    const token = process.env.FINNHUB_API_KEY ?? NEXT_PUBLIC_FINNHUB_API_KEY;
+    const token = process.env.FINNHUB_API_KEY;
     if (!token) {
       console.error('Error in stock search:', new Error('FINNHUB API key is not configured'));
       return [];
@@ -298,7 +297,7 @@ export type StockProfile = {
 
 export async function getStockProfile(symbol: string): Promise<StockProfile | null> {
   try {
-    const token = process.env.FINNHUB_API_KEY ?? NEXT_PUBLIC_FINNHUB_API_KEY;
+    const token = process.env.FINNHUB_API_KEY;
     if (!token) return null;
     const sym = symbol.toUpperCase();
     const url = `${FINNHUB_BASE_URL}/stock/profile2?symbol=${encodeURIComponent(sym)}&token=${token}`;

@@ -1,26 +1,22 @@
 # Signalist build status
 
-Living record of the product build. Last updated 2026-11-02 on branch `signalist-v4`.
+Living record of the product build. Last updated 2026-11-03 on branch `signalist-v4`.
 
 ## Current verdict
 
-**Production's intelligence pipeline has never run.** Pages render and auth works, but no background
-job executes, so nothing downstream of market polling has real data.
+Production's background pipeline now runs. Polling, alerts, snapshots and scores write real data,
+and the AI service stays up when Gemini misbehaves. Milestone 2 (normalized models and one market
+data service) is built and tested on `signalist-v4` but not deployed.
 
-Evidence gathered 2026-11-02 (read-only):
+Baseline audit, 2026-11-02 (read-only):
 
 | Check | Result |
 | --- | --- |
 | `GET signalist-blue.vercel.app/api/inngest` | 401. Vercel logs: `No signing key found in client options or INNGEST_SIGNING_KEY` |
-| Vercel production env | 11 vars. Missing `INNGEST_EVENT_KEY`, `INNGEST_SIGNING_KEY`, `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN`, `UPSTASH_*`, `NEXT_PUBLIC_POSTHOG_KEY` |
-| Atlas collection counts | `marketsnapshots` 0, `stockscores` 0, `appevents` 1, `alerts` 9, `watchlists` 14, `user` 3 |
-| `GET /api/auth/get-session` | 200 `null`, so auth and Mongo work in production |
-| Render `signalist-ai.onrender.com/health` | 200 after a cold start (first probe timed out at 15s) |
-| Render routes | No `/agent/whats-changed`: the service is deployed from `main`, 10 commits behind `signalist-v4` |
-| Railway CLI/MCP | Not authenticated |
-| `tsc --noEmit` | Pass |
-| `vitest` | 30 of 30 pass |
-| `eslint` | 59 errors, all in the untracked `.agents/` directory. 0 errors in app code |
+| Atlas collection counts | `marketsnapshots` 0, `stockscores` 0, `appevents` 1. No job had ever run |
+| `GET /api/auth/get-session` | 200 `null`, so auth and Mongo worked |
+| Render routes | No `/agent/whats-changed`: deployed from `main`, 10 commits behind |
+| `tsc`, `vitest`, `eslint` | Pass, 30 of 30, 59 errors all in untracked `.agents/` |
 
 ## What already works
 
@@ -31,74 +27,71 @@ Evidence gathered 2026-11-02 (read-only):
 - AI research through FastAPI: deterministic quant snapshot, Gemini narration, numeric check, fallback copy
 - Signals page: SSE stream with polling fallback, timeline, per-symbol filter, heatmap
 - Developer API keys: SHA-256 hashed, shown once
-- Cmd/Ctrl+K search, with Sentry and PostHog wired in code (both unset in production)
+- Cmd/Ctrl+K search
 
 ## Partially implemented
 
-- **Signals**: five single-reading detectors. Each fires its own card, nothing correlates them, and there is no strength, confidence or lifecycle.
-- **Snapshots**: every 15 minutes, watchlist symbols only, each embedding 60 candles. Daily candles are used, so "unusual move since last reading" compares readings of a mostly unchanged daily series.
+- **Signals**: five single-reading detectors. Each fires its own card, nothing correlates them, and there is no strength, confidence or lifecycle. Replaced in Milestone 3.
+- **Snapshots**: every 15 minutes, watchlist symbols only, each embedding 60 daily candles. Replaced in Milestone 3.
 - **Developer API**: two endpoints under `/api/v1/stocks`, no rate limit enforcement (`rateLimit` is stored and ignored), no revocation, keys accepted in the query string.
-- **Stock score**: `computeStockScore` hard-codes `earnings = 15` and scores news by article count. It needs replacing by deterministic signal scoring.
+- **Stock score**: `computeStockScore` hard-codes `earnings = 15` and scores news by article count. Replaced by deterministic signal scoring.
 
-## Broken
+## Broken or risky, with status
 
-1. Inngest cron and events in production (above). Welcome email, daily digest, alerts, polling, snapshots and signals all depend on it.
-2. Alert delivery duplicates: `check-price-alerts` (every 5 min) and the `evaluate-alerts` step in `poll-market-prices` (every minute) both evaluate alerts.
-3. `isCryptoSymbol` differs between `lib/inngest/alert-check.ts` and `lib/market/ohlcv.ts`, so `BTCUSD` is crypto in one and a stock in the other.
-4. `fetchYahooQuote` calls the v7 quote endpoint, which needs a crumb and fails for server clients.
-5. `fetchQuoteBinance` fallback is unreachable when no Finnhub token exists only for non-crypto. Stock quotes have no Yahoo fallback in `fetchQuote`.
-6. FastAPI calls have no timeout, so a Render cold start can hang a server action or Inngest step.
-7. `createWhatsChangedReport` throws when AI is down, leaving no explanation at all instead of deterministic copy.
-8. Sentry server DSN unset in production, so server errors are not reported.
-9. Fixed: `lib/better-auth/auth.ts` connected to Mongo at import time and `(root)` pages were prerendered, so `next build` failed when the database was unreachable.
-11. Open: every Gemini call in `ai-service` uses the blocking `generate_content` inside an async handler with no timeout. When Gemini is slow or returns 503, the SDK's retries block the event loop, `/health` stops answering and Render returns 502, 503 and 429 for all AI routes. Reproduced twice on 2026-11-03.
-10. Fixed: privacy leak. The dashboard listed the latest AI reports of all users, and the public landing page showed the first 120 characters of any user's latest report. Both now exclude other users' reports.
+| # | Issue | Status |
+| --- | --- | --- |
+| 1 | Inngest never ran in production | Fixed and verified 2026-11-03 |
+| 2 | Two Inngest functions evaluated every alert | Fixed, deployed |
+| 3 | `isCryptoSymbol` differed across files | Fixed in Milestone 2: one rule in `lib/market/symbols.ts` |
+| 4 | Yahoo v7 quote endpoint fails for servers | Fixed in Milestone 2: quotes read the v8 chart endpoint |
+| 5 | Stock quotes had no fallback provider | Fixed in Milestone 2: Finnhub then Yahoo, verified live during a Finnhub 502 |
+| 6 | FastAPI calls had no timeout | Fixed, deployed |
+| 7 | "What changed" threw when AI was down | Fixed, deployed: deterministic fallback |
+| 8 | No `SENTRY_DSN` in production | Open, needs the owner's Sentry DSN |
+| 9 | Build needed a live database | Fixed, deployed |
+| 10 | Dashboard and landing page showed other users' AI reports | Fixed, deployed |
+| 11 | Blocking Gemini calls froze the AI service | Fixed, deployed `4c1a43a`. Render stayed healthy through 3 checks |
+| 12 | Gemini on Render falls back instantly (0.2s, confidence 0.5), while the same code locally returns a validated summary in 1.5s | Open. Points to Render's `GEMINI_API_KEY` or a `GEMINI_MODEL` override. Needs Render dashboard access |
+| 13 | Dashboard portfolio chart is drawn from `deterministicSeries`, a seeded fake series, not real history | Open, Milestone 6 |
+| 14 | Landing page shows hard-coded prices (`FALLBACK`) when providers fail, without saying so | Open, Milestone 8 |
+| 15 | Watchlist refresh called Finnhub from the browser with `NEXT_PUBLIC_FINNHUB_API_KEY` | Fixed in Milestone 2: `/api/quotes` server route. The public key can now be removed from Vercel |
+| 16 | Binance candles returned the oldest 1,000 bars for long ranges | Fixed in Milestone 2, found by the live smoke test |
 
 ## Duplicated systems
 
-- Quote fetching: `lib/inngest/alert-check.ts`, `lib/market/ohlcv.ts`, `lib/actions/finnhub.actions.ts`, `lib/marketing/live-data.ts`, watchlist and dashboard pages.
-- Signal derivation: `lib/market/signals.ts` (events), `deriveSignals` in `lib/market/indicators` (labels), `ai-service/quant/rules/engine.py` (rules), `lib/scoring/computeScore.ts` (score).
-- Indicators: TypeScript `lib/market/indicators` and Python `ai-service/quant`. The spec requires one source of truth for product signals.
-- Alert evaluation: two Inngest functions (above).
+- Quote fetching: resolved in Milestone 2. Everything goes through `MarketDataService`. News, search and company profile stay in `lib/actions/finnhub.actions.ts`, the one Finnhub reference-data module.
+- Signal derivation: `lib/market/signals.ts`, `deriveSignals` in `lib/market/indicators`, `ai-service/quant/rules/engine.py`, `lib/scoring/computeScore.ts`. Consolidated in Milestone 3.
+- Indicators: TypeScript `lib/market/indicators` and Python `ai-service/quant`. Product signals will use the TypeScript engine only. Python stays for the research tearsheet.
 
 ## Environment variables
 
-Missing in Vercel production:
-
-| Variable | Needed for | Source |
-| --- | --- | --- |
-| `INNGEST_EVENT_KEY` | Sending events | Inngest dashboard |
-| `INNGEST_SIGNING_KEY` | `/api/inngest` | Inngest dashboard |
-| `SENTRY_DSN` | Server error reporting | Sentry project (public client DSN already in `instrumentation-client.ts`) |
-| `NEXT_PUBLIC_POSTHOG_KEY` | Product analytics | PostHog project |
-| `CRON_SECRET` | Optional internal health/ops routes | Generate |
-
-`BETTER_AUTH_URL` in the local `.env` points to `signalist-test-vibe-wa44.vercel.app`, not `signalist-blue.vercel.app`. The production value must be checked.
+| Variable | Status |
+| --- | --- |
+| `INNGEST_EVENT_KEY`, `INNGEST_SIGNING_KEY` | Set in production 2026-11-02 |
+| `BETTER_AUTH_URL` | Correct in production (`signalist-blue.vercel.app`) |
+| `SENTRY_DSN` | Missing |
+| `NEXT_PUBLIC_POSTHOG_KEY` | Missing |
+| `NEXT_PUBLIC_FINNHUB_API_KEY` | No longer read by any code after Milestone 2 deploys. Remove it, and rotate the Finnhub key because it was public |
 
 ## Dead code and repo noise
 
 - `Stock trading app prototype*/`, `Signalist 21stdev ui prompts/`, `files/`, `family_playlist.py`, `people_birthdays.py`, `playlist.dat` are unrelated or superseded.
-- `.claude/skills` is tracked (831 files). `.agents/` and `QuantAgent*` are untracked and should stay out of lint.
-- `database/test-db-connection.js` is a manual script.
+- `.claude/skills` is tracked (831 files). `.agents/` and `QuantAgent*` are untracked and excluded from lint.
+- `ai-service/agents/research_agent.py` is not used by `main.py`. Only its test imports it.
 
 None of this was removed. Deleting it needs the owner's sign-off.
 
-## Architectural concerns
+## Architectural decisions
 
-- **No persistent worker on Vercel.** Provider WebSockets cannot be held open server-side. Live crypto can stream from Binance directly to the browser. Stock and server-side data stay on polling.
-- **Inngest quota.** A one-minute cron plus per-symbol steps can exceed the free tier. Batch steps per function, not per symbol.
-- **Finnhub free tier.** 60 calls per minute, and `stock/candle` is paid. Candles come from Yahoo for stocks and Binance for crypto.
-- **Atlas M0 storage.** Retain 1-minute data briefly and use TTL indexes.
-- **Render free tier sleeps** after 15 minutes idle. AI is enrichment, so calls need short timeouts and deterministic fallback.
-- **`NEXT_PUBLIC_FINNHUB_API_KEY`** is exposed to browsers. Server code should use `FINNHUB_API_KEY` only.
-
-## Spec conflict resolved
-
-Global and project `CLAUDE.md` ask for Liquid Glass, heavy motion and acid lime. The product spec (section 38) says avoid unnecessary glassmorphism and glow and preserve the working visual identity. The app's current identity is the v3 editorial system. **Decision: follow the product spec and extend the existing `--sg-*` editorial tokens.**
+- **No persistent worker on Vercel.** Provider WebSockets can't be held open server-side. Live crypto can stream from Binance to the browser. Server data stays on polling.
+- **Inngest quota.** Free plan is 50,000 executions a month and every step counts. Functions avoid per-symbol steps.
+- **Finnhub free tier.** 60 calls a minute and no candles (403). Stock candles come from Yahoo, crypto from Binance. A 401 or 403 makes the service skip that provider capability for an hour.
+- **Binance.** `api.binance.com` refuses US traffic. The service uses `data-api.binance.vision`.
+- **Atlas M0 storage.** TTL indexes on snapshots (3 days), market events (30 days) and telemetry events.
+- **Render free tier sleeps** after 15 minutes idle. AI calls have short timeouts and deterministic fallback.
+- **Design.** The product spec (section 38) overrides the global `CLAUDE.md` style: extend the existing v3 editorial `--sg-*` tokens, no new glass or glow.
 
 ## Inngest budget
-
-The free plan allows 50,000 executions a month, and each step counts as one. The original functions would have used well over 200,000 a month: `poll-market-prices` alone was 4 executions a minute (172,800).
 
 | Function | Schedule | Executions a month |
 | --- | --- | --- |
@@ -106,36 +99,40 @@ The free plan allows 50,000 executions a month, and each step counts as one. The
 | `capture-market-snapshots` | Every 15 minutes, one event send when signals fire | Up to 5,760 |
 | `check-price-alerts` | Removed, merged into the poller | 0 |
 
-## Milestone 1 progress
+## Milestone 1: Stabilize
 
-Done, not deployed:
-
-- Removed the duplicate alert cron (Broken item 2) and cut Inngest usage to about 27,000 executions a month, leaving room for summaries and email.
-- Added `lib/ai/service.ts` with timeouts (Broken item 6) and deterministic fallback for "what changed" (Broken item 7).
-- Research errors no longer show users developer instructions like `npm run ai:dev`.
-- Added `GET /api/health` and `ai_provider` to FastAPI `/health`.
-- ESLint now ignores `.agents/` and `QuantAgent/`: 0 errors.
-
-Gate, waiting on the owner:
-
-- [x] `INNGEST_SIGNING_KEY` and `INNGEST_EVENT_KEY` in Vercel production (confirmed 2026-11-02)
-- [x] Production deploy: `e2e686e` merged to `main` and live on `signalist-blue.vercel.app`, Inngest synced
-- [x] Render updated: `/agent/whats-changed` and `ai_provider` live
-- [x] Production price polling: 18 price events by 01:44 UTC on 2026-11-03
-- [x] Production alert processing: 2 alerts triggered at 01:34 UTC
-- [x] Production snapshots and scores: 9 each at 01:45 UTC
-- [ ] AI summaries in production, blocked by Broken item 11
-- [ ] Signal detection seen firing, needs more readings
-- [ ] Daily digest (owner approved the real digest to all 3 users). Runs by cron at 12:00 UTC
+- [x] Inngest keys in production, app synced through `signalist-blue.vercel.app`
+- [x] Deploy: `e2e686e` then `4c1a43a` on `main`
+- [x] Render running current code with `ai_provider`
+- [x] Price polling: 18 price events by 01:44 UTC
+- [x] Alert processing: 2 alerts triggered at 01:34 UTC
+- [x] Snapshots and scores: 9 each at 01:45 UTC, fresh again at 15:45 UTC
+- [x] AI service survives Gemini outages (issue 11)
+- [ ] Gemini summaries on Render (issue 12)
+- [ ] Signal detection seen firing
+- [ ] Daily digest: cron at 12:00 UTC. Confirm in Inngest Runs for `daily-news-summary`
 - [ ] Welcome email after a verified signup
-- [ ] `SENTRY_DSN` set and a test error received
+- [ ] Sentry receiving errors (issue 8)
+
+## Milestone 2: Normalize
+
+Built and tested on `signalist-v4`, not deployed.
+
+- `lib/market/symbols.ts`: one set of symbol rules, including input validation
+- `lib/market/providers/`: `FinnhubProvider`, `BinanceProvider`, `YahooProvider` behind one interface. Failures raise `ProviderError` with the HTTP status
+- `lib/market/service.ts`: `MarketDataService` with fallback order per asset class, entitlement and rate-limit backoff, Binance batch quotes, in-flight de-duplication, provider health, and source plus fallback on every result
+- All quote and candle callers moved onto it: alerts, poller, charts, portfolio, research header, watchlist, dashboard, landing page, API
+- Models: `Asset`, `MarketEvent` (unique `dedupeKey`, 30-day TTL), `Signal` (strength and confidence separate, lifecycle, evidence, components, provenance), and `MarketSnapshot` extended with analytics and provenance fields
+- `GET /api/quotes`: authenticated, validated, at most 50 symbols
+- Tests: 53 pass, including provider parsing, fallback, backoff, batching, de-duplication and key handling
+- Live smoke test against real vendors passed
 
 ## Milestones
 
 | # | Milestone | Status |
 | --- | --- | --- |
-| 1 | Stabilize | Code done, production verification blocked on Inngest keys |
-| 2 | Normalize | Not started |
+| 1 | Stabilize | Deployed. Open: Gemini on Render, digest, welcome email, Sentry |
+| 2 | Normalize | Built and tested, not deployed |
 | 3 | Intelligence engine | Not started |
 | 4 | AI | Not started |
 | 5 | Signals UX | Not started |

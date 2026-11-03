@@ -6,74 +6,8 @@ import { getUserEmailById } from "@/lib/actions/userLookup";
 import { logError } from "@/lib/logger";
 import { publishEvent } from "@/lib/events/publisher";
 import { EVENT_TYPES } from "@/lib/events/types";
-
-const FINNHUB_BASE_URL = "https://finnhub.io/api/v1";
-const getToken = () => process.env.FINNHUB_API_KEY ?? process.env.NEXT_PUBLIC_FINNHUB_API_KEY ?? "";
-const isCryptoSymbol = (symbol: string) => /USDT$|USDC$|BTC$|ETH$|BNB$/i.test(symbol);
-
-const fetchBinanceTicker = async (symbol: string) => {
-  const upper = symbol.toUpperCase();
-  const endpoints = [
-    `https://api.binance.com/api/v3/ticker/24hr?symbol=${encodeURIComponent(upper)}`,
-    `https://data-api.binance.vision/api/v3/ticker/24hr?symbol=${encodeURIComponent(upper)}`,
-  ];
-
-  for (const url of endpoints) {
-    try {
-      const res = await fetch(url, { cache: 'no-store' });
-      if (!res.ok) continue;
-      const data = await res.json();
-      const price = data?.lastPrice ? Number(data.lastPrice) : undefined;
-      const changePercent = data?.priceChangePercent ? Number(data.priceChangePercent) : undefined;
-      if (price !== undefined) return { price, changePercent } as const;
-    } catch {
-      continue;
-    }
-  }
-  return null;
-};
-
-const fetchFinnhubQuote = async (symbol: string) => {
-  const token = getToken();
-  if (!token) return null;
-  try {
-    const res = await fetch(`${FINNHUB_BASE_URL}/quote?symbol=${encodeURIComponent(symbol)}&token=${token}`, { cache: "no-store" });
-    if (!res.ok) return null;
-    const data = await res.json();
-    const price = typeof data?.c === "number" ? data.c : undefined;
-    const changePercent = typeof data?.dp === "number" ? data.dp : undefined;
-    if (price !== undefined) return { price, changePercent } as const;
-    return null;
-  } catch {
-    return null;
-  }
-};
-
-const fetchYahooQuote = async (symbol: string) => {
-  const upper = symbol.toUpperCase();
-  const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(upper)}`;
-  try {
-    const res = await fetch(url, { cache: 'no-store' });
-    if (!res.ok) return null;
-    const data = await res.json();
-    const quote = data?.quoteResponse?.result?.[0];
-    const price = typeof quote?.regularMarketPrice === 'number' ? quote.regularMarketPrice : undefined;
-    const changePercent = typeof quote?.regularMarketChangePercent === 'number' ? quote.regularMarketChangePercent : undefined;
-    if (price !== undefined) return { price, changePercent } as const;
-    return null;
-  } catch {
-    return null;
-  }
-};
-
-export const fetchPrice = async (symbol: string) => {
-  if (isCryptoSymbol(symbol)) {
-    return fetchBinanceTicker(symbol);
-  }
-  const finnhubQuote = await fetchFinnhubQuote(symbol);
-  if (finnhubQuote) return finnhubQuote;
-  return fetchYahooQuote(symbol);
-};
+import { marketData, type Quote } from "@/lib/market/service";
+import { normalizeMarketSymbol } from "@/lib/market/symbols";
 
 const shouldNotify = (frequency: 'once' | 'per_hour' | 'per_day', lastNotifiedAt?: Date) => {
   if (!lastNotifiedAt) return true;
@@ -86,28 +20,22 @@ const shouldNotify = (frequency: 'once' | 'per_hour' | 'per_day', lastNotifiedAt
   return true;
 };
 
-const evaluateAlerts = async (alerts: Awaited<ReturnType<typeof listActiveAlerts>>) => {
+const evaluateAlerts = async (
+  alerts: Awaited<ReturnType<typeof listActiveAlerts>>,
+  prefetched: Map<string, Quote> = new Map()
+) => {
   if (!alerts || alerts.length === 0) return { success: true, triggered: 0, message: "No active alerts" };
 
   const symbols = Array.from(new Set(alerts.map((a) => a.symbol?.toUpperCase()).filter(Boolean)));
-  const priceMap = new Map<string, { price?: number; changePercent?: number }>();
-
-  const results = await Promise.all(
-    symbols.map(async (sym) => {
-      const data = await fetchPrice(sym);
-      return { sym, data } as const;
-    })
-  );
-  results.forEach(({ sym, data }) => {
-    if (data) priceMap.set(sym, data);
-  });
+  const missing = symbols.filter((sym) => !prefetched.has(sym));
+  const priceMap = new Map([...prefetched, ...(await marketData.getQuotes(missing))]);
 
   const now = new Date();
   let triggered = 0;
 
   for (const alert of alerts) {
     const symUpper = (alert.symbol || "").toUpperCase();
-    const quote = priceMap.get(symUpper);
+    const quote = priceMap.get(normalizeMarketSymbol(symUpper));
     if (!quote?.price) continue;
 
     const hit = alert.condition === "gt" ? quote.price >= alert.threshold : quote.price <= alert.threshold;
@@ -186,9 +114,12 @@ const evaluateAlerts = async (alerts: Awaited<ReturnType<typeof listActiveAlerts
   return { success: true, triggered };
 };
 
-/** Runs from the price poller. A second cron here would evaluate every alert twice. */
-export const runAlertSweep = async () => {
+/**
+ * Runs from the price poller. A second cron here would evaluate every alert twice.
+ * Quotes the poller already fetched are reused, so each symbol costs one provider call.
+ */
+export const runAlertSweep = async (prefetched?: Map<string, Quote>) => {
   await connectToDatabase();
   const alerts = await listActiveAlerts();
-  return evaluateAlerts(alerts);
+  return evaluateAlerts(alerts, prefetched);
 };

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { isCryptoSymbol } from "@/lib/market/symbols";
 import { SearchCommand } from "@/components/search/SearchCommand";
 import WatchlistTable from "@/components/watchlist/WatchlistTable";
 import { Button } from "@/components/ui/button";
@@ -160,13 +161,6 @@ const WatchlistClient = ({ initialItems, initialStocks, initialSymbols, initialA
   const [refreshing, setRefreshing] = useState(false);
   const [alertModalOpen, setAlertModalOpen] = useState(false);
 
-  const token = process.env.NEXT_PUBLIC_FINNHUB_API_KEY;
-  const isCryptoSymbol = (sym: string) => /USDT$|USDC$|USD$|BTC$|ETH$|BNB$/i.test(sym);
-  const buildQuoteUrl = (sym: string) => {
-    const upper = sym.toUpperCase();
-    return `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(upper)}&token=${token}`;
-  };
-
   const [alertName, setAlertName] = useState("");
   const [alertSymbol, setAlertSymbol] = useState<string>(initialSymbols[0] ?? "");
   const [alertCondition, setAlertCondition] = useState<"gt" | "lt">("lt");
@@ -174,32 +168,13 @@ const WatchlistClient = ({ initialItems, initialStocks, initialSymbols, initialA
   const [alertFrequency, setAlertFrequency] = useState<"once" | "per_hour" | "per_day">("once");
   const [isCreatingAlert, startCreatingAlert] = useTransition();
 
-  const fetchBinanceTicker = async (sym: string) => {
-    const upper = sym.toUpperCase();
-    const endpoints = [
-      `https://api.binance.com/api/v3/ticker/24hr?symbol=${encodeURIComponent(upper)}`,
-      `https://data-api.binance.vision/api/v3/ticker/24hr?symbol=${encodeURIComponent(upper)}`,
-    ];
-
-    for (const url of endpoints) {
-      try {
-        const res = await fetch(url, { cache: 'no-store' });
-        if (!res.ok) continue;
-        const data = await res.json();
-        const price = data?.lastPrice ? Number(data.lastPrice) : undefined;
-        const changePercent = data?.priceChangePercent ? Number(data.priceChangePercent) : undefined;
-        const volume = data?.quoteVolume ? Number(data.quoteVolume) : data?.volume ? Number(data.volume) : undefined;
-        const dayHigh = data?.highPrice ? Number(data.highPrice) : undefined;
-        const dayLow = data?.lowPrice ? Number(data.lowPrice) : undefined;
-        if (price !== undefined || changePercent !== undefined || volume !== undefined || dayHigh !== undefined || dayLow !== undefined) {
-          return { price, changePercent, volume, dayHigh, dayLow } as const;
-        }
-      } catch {
-        continue;
-      }
-    }
-
-    return null;
+  type QuoteRow = {
+    symbol: string;
+    price: number;
+    changePercent: number | null;
+    volume: number | null;
+    high: number | null;
+    low: number | null;
   };
 
   const refreshQuotes = async (targetSymbols?: string[]) => {
@@ -208,39 +183,28 @@ const WatchlistClient = ({ initialItems, initialStocks, initialSymbols, initialA
 
     setRefreshing(true);
     try {
-      const results = await Promise.all(
-        list.map(async (sym) => {
-          if (isCryptoSymbol(sym)) {
-            const data = await fetchBinanceTicker(sym);
-            return { sym, data } as const;
-          }
-
-          if (!token) return { sym, data: null } as const;
-
-          try {
-            const res = await fetch(buildQuoteUrl(sym), { cache: 'no-store' });
-            if (!res.ok) return { sym, data: null } as const;
-            const data = await res.json();
-            return { sym, data } as const;
-          } catch {
-            return { sym, data: null } as const;
-          }
-        })
-      );
+      // Server route: the browser never holds a vendor key or calls a vendor directly
+      const res = await fetch(`/api/quotes?symbols=${encodeURIComponent(list.join(','))}`, { cache: 'no-store' });
+      if (!res.ok) return;
+      const { quotes } = (await res.json()) as { quotes: QuoteRow[] };
+      const bySymbol = new Map(quotes.map((quote) => [quote.symbol, quote]));
 
       setRows((prev) =>
         prev.map((row) => {
-          const symUpper = row.symbol.toUpperCase();
-          const hit = results.find((r) => r.sym === symUpper);
-          if (!hit?.data) return row;
-          const price = typeof hit.data.c === 'number' ? hit.data.c : typeof hit.data.price === 'number' ? hit.data.price : row.price;
-          const changePercent = typeof hit.data.dp === 'number' ? hit.data.dp : typeof hit.data.changePercent === 'number' ? hit.data.changePercent : row.changePercent;
-          const volume = typeof hit.data.v === 'number' ? hit.data.v : typeof hit.data.volume === 'number' ? hit.data.volume : row.volume;
-          const dayHigh = typeof hit.data.h === 'number' ? hit.data.h : typeof hit.data.dayHigh === 'number' ? hit.data.dayHigh : row.dayHigh;
-          const dayLow = typeof hit.data.l === 'number' ? hit.data.l : typeof hit.data.dayLow === 'number' ? hit.data.dayLow : row.dayLow;
-          return { ...row, price, changePercent, volume, dayHigh, dayLow };
+          const hit = bySymbol.get(row.symbol.toUpperCase());
+          if (!hit) return row;
+          return {
+            ...row,
+            price: hit.price,
+            changePercent: hit.changePercent ?? row.changePercent,
+            volume: hit.volume ?? row.volume,
+            dayHigh: hit.high ?? row.dayHigh,
+            dayLow: hit.low ?? row.dayLow,
+          };
         })
       );
+    } catch {
+      // Keep the last prices on screen; the next refresh tries again
     } finally {
       setRefreshing(false);
     }

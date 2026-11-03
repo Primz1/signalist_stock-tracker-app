@@ -4,7 +4,8 @@ import { listActiveAlerts } from '@/database/models/alert.model';
 import { PortfolioModel } from '@/database/models/portfolio.model';
 import { Watchlist } from '@/database/models/watchlist.model';
 import { getLatestPrices, publishPriceChanged } from '@/lib/events/publisher';
-import { fetchPrice, runAlertSweep } from '@/lib/inngest/alert-check';
+import { runAlertSweep } from '@/lib/inngest/alert-check';
+import { marketData } from '@/lib/market/service';
 import { selectPollSymbols } from '@/lib/market/poll-symbols';
 
 const POLL_MINUTES = 2;
@@ -27,22 +28,20 @@ export const pollMarketPrices = inngest.createFunction(
 
     if (!symbols.length) return { published: 0 };
 
-    const previous = await getLatestPrices(symbols);
-    const results = await Promise.all(
-      symbols.map(async (symbol) => {
-        const quote = await fetchPrice(symbol);
-        if (!quote || quote.price === previous.get(symbol)?.price) return 0;
-        await publishPriceChanged({
-          symbol,
+    const [previous, quotes] = await Promise.all([getLatestPrices(symbols), marketData.getQuotes(symbols)]);
+    const changed = [...quotes.values()].filter((quote) => quote.price !== previous.get(quote.symbol)?.price);
+    await Promise.all(
+      changed.map((quote) =>
+        publishPriceChanged({
+          symbol: quote.symbol,
           price: quote.price,
           changePercent: quote.changePercent,
           timestamp: new Date().toISOString(),
-        });
-        return 1;
-      })
+        })
+      )
     );
 
-    const { triggered } = await runAlertSweep();
-    return { published: results.reduce<number>((sum, n) => sum + n, 0), triggered };
+    const { triggered } = await runAlertSweep(quotes);
+    return { published: changed.length, quoted: quotes.size, requested: symbols.length, triggered };
   }
 );

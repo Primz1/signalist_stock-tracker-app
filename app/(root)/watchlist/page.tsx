@@ -1,154 +1,36 @@
 import WatchlistClient from '@/components/watchlist/WatchlistClient';
-import { getNews, searchStocks, fetchJSON } from '@/lib/actions/finnhub.actions';
+import { getNews, searchStocks } from '@/lib/actions/finnhub.actions';
 import { listWatchlist } from '@/lib/actions/watchlist.actions';
 import { listAlerts } from '@/lib/actions/alert.actions';
 import { getNotifications } from '@/lib/actions/alertNotification.actions';
 import { connectToDatabase } from '@/database/mongoose';
 import { StockScoreModel } from '@/database/models/stockScore.model';
 import type { WatchlistEntry } from '@/components/watchlist/WatchlistClient';
+import { marketData } from '@/lib/market/service';
+import { isCryptoSymbol } from '@/lib/market/symbols';
 
-const FINNHUB_BASE_URL = 'https://finnhub.io/api/v1';
-
-const getToken = () => process.env.FINNHUB_API_KEY ?? process.env.NEXT_PUBLIC_FINNHUB_API_KEY ?? '';
-
-type QuoteResponse = {
-  c?: number;
-  dp?: number;
-  v?: number;
-  h?: number;
-  l?: number;
-};
-
-type ProfileResponse = {
-  marketCapitalization?: number;
-  name?: string;
-  ticker?: string;
-};
-
-type MetricResponse = {
-  metric?: {
-    peNormalizedAnnual?: number;
-  };
-};
-
-type BinanceTicker = {
-  lastPrice?: string;
-  priceChangePercent?: string;
-  volume?: string;
-  quoteVolume?: string;
-  highPrice?: string;
-  lowPrice?: string;
-};
-
-const isCryptoSymbol = (symbol: string) => /USDT$|USDC$|BTC$|ETH$|BNB$/i.test(symbol);
-
-const fetchBinanceTicker = async (symbol: string) => {
-  const upper = symbol.toUpperCase();
-  const endpoints = [
-    `https://api.binance.com/api/v3/ticker/24hr?symbol=${encodeURIComponent(upper)}`,
-    `https://data-api.binance.vision/api/v3/ticker/24hr?symbol=${encodeURIComponent(upper)}`,
-  ];
-
-  for (const url of endpoints) {
-    try {
-      const res = await fetch(url, { cache: 'no-store' });
-      if (!res.ok) continue;
-      const data = (await res.json()) as BinanceTicker;
-      const price = data.lastPrice ? Number(data.lastPrice) : undefined;
-      const changePercent = data.priceChangePercent ? Number(data.priceChangePercent) : undefined;
-      const volume = data.quoteVolume
-        ? Number(data.quoteVolume)
-        : data.volume
-          ? Number(data.volume)
-          : undefined;
-      const dayHigh = data.highPrice ? Number(data.highPrice) : undefined;
-      const dayLow = data.lowPrice ? Number(data.lowPrice) : undefined;
-      if (
-        price !== undefined ||
-        changePercent !== undefined ||
-        volume !== undefined ||
-        dayHigh !== undefined ||
-        dayLow !== undefined
-      ) {
-        return { price, changePercent, volume, dayHigh, dayLow } as Partial<WatchlistEntry>;
-      }
-    } catch {
-      continue;
-    }
-  }
-
-  return {} as Partial<WatchlistEntry>;
-};
-
-const fetchMetricsForSymbol = async (symbol: string) => {
-  const token = getToken();
-  if (!token && !isCryptoSymbol(symbol)) return {} as Partial<WatchlistEntry>;
-
-  const isCrypto = isCryptoSymbol(symbol);
-  const symbolCandidates: string[] = [];
-
-  if (isCrypto) {
-    const upper = symbol.toUpperCase();
-    symbolCandidates.push(`BINANCE:${upper}`);
-    symbolCandidates.push(upper);
-  } else {
-    symbolCandidates.push(symbol);
-  }
-
-  try {
-    if (isCrypto) {
-      const fromBinance = await fetchBinanceTicker(symbol);
-      return { ...fromBinance, isCrypto, marketCap: undefined, peRatio: undefined } as Partial<WatchlistEntry>;
-    }
-
-    let quote: QuoteResponse | undefined;
-    let profile: ProfileResponse | undefined;
-    let metric: MetricResponse | undefined;
-
-    for (const candidate of symbolCandidates) {
-      if (!quote) {
-        try {
-          quote = await fetchJSON<QuoteResponse>(
-            `${FINNHUB_BASE_URL}/quote?symbol=${encodeURIComponent(candidate)}&token=${token}`,
-            120
-          );
-        } catch {}
-      }
-
-      if (!isCrypto && !profile) {
-        try {
-          profile = await fetchJSON<ProfileResponse>(
-            `${FINNHUB_BASE_URL}/stock/profile2?symbol=${encodeURIComponent(candidate)}&token=${token}`,
-            3600
-          );
-        } catch {}
-      }
-
-      if (!isCrypto && !metric) {
-        try {
-          metric = await fetchJSON<MetricResponse>(
-            `${FINNHUB_BASE_URL}/stock/metric?symbol=${encodeURIComponent(candidate)}&metric=all&token=${token}`,
-            3600
-          );
-        } catch {}
-      }
-    }
-
-    return {
-      price: quote?.c,
-      changePercent: quote?.dp,
-      volume: quote?.v,
-      dayHigh: quote?.h,
-      dayLow: quote?.l,
-      marketCap: isCrypto ? undefined : profile?.marketCapitalization,
-      peRatio: isCrypto ? undefined : metric?.metric?.peNormalizedAnnual,
-      isCrypto,
-    } as Partial<WatchlistEntry>;
-  } catch (err) {
-    console.error('fetchMetricsForSymbol error', symbol, err);
-    return {} as Partial<WatchlistEntry>;
-  }
-};
+async function loadMarketData(symbols: string[]) {
+  const [quotes, fundamentals] = await Promise.all([
+    marketData.getQuotes(symbols),
+    Promise.all(symbols.map((symbol) => marketData.getFundamentals(symbol))),
+  ]);
+  return new Map(
+    symbols.map((symbol, i) => {
+      const quote = quotes.get(symbol);
+      const entry: Partial<WatchlistEntry> = {
+        price: quote?.price,
+        changePercent: quote?.changePercent,
+        volume: quote?.volume,
+        dayHigh: quote?.high,
+        dayLow: quote?.low,
+        marketCap: fundamentals[i]?.marketCap,
+        peRatio: fundamentals[i]?.peRatio,
+        isCrypto: isCryptoSymbol(symbol),
+      };
+      return [symbol, entry];
+    })
+  );
+}
 
 const WatchlistPage = async () => {
   const [watchlistRes, alertsRes, notificationsRes] = await Promise.all([
@@ -164,9 +46,9 @@ const WatchlistPage = async () => {
   const metricsBySymbol: Record<string, Partial<WatchlistEntry>> = {};
   const scoresBySymbol: Record<string, number> = {};
   if (symbols.length > 0) {
-    const metrics = await Promise.all(symbols.map((sym) => fetchMetricsForSymbol(sym)));
-    symbols.forEach((sym, idx) => {
-      metricsBySymbol[sym] = metrics[idx] || {};
+    const metrics = await loadMarketData(symbols);
+    symbols.forEach((sym) => {
+      metricsBySymbol[sym] = metrics.get(sym) ?? {};
     });
     await connectToDatabase();
     const scores = await StockScoreModel.find({ symbol: { $in: symbols } })

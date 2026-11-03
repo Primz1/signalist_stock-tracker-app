@@ -10,13 +10,17 @@ import {
 import { computeIndicators, deriveSignals } from '@/lib/market/indicators';
 import { connectToDatabase } from '@/database/mongoose';
 import { upsertMarketSnapshot } from '@/database/models/marketSnapshot.model';
+import type { ProviderId, ProviderQuote } from '@/lib/market/providers/types';
+
+/** Source fields are absent only for demo data on /preview. */
+export type ChartQuote = ProviderQuote & { source?: ProviderId; fetchedAt?: string };
 
 async function loadChartData(symbol: string, range: ChartRange = '3M') {
   const sym = symbol.toUpperCase();
   const selected = (range || '3M') as ChartRange;
   const params = rangeToOhlcvParams(selected);
 
-  let [candles, quote] = await Promise.all([
+  let [candles, quote]: [Awaited<ReturnType<typeof fetchOhlcv>>, ChartQuote | null] = await Promise.all([
     fetchOhlcv(sym, { resolution: params.resolution, days: params.days, range: selected }),
     fetchQuote(sym),
   ]);

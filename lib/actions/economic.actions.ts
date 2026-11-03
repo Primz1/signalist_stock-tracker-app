@@ -13,7 +13,7 @@ export type EconomicEvent = {
 };
 
 const FINNHUB_BASE = 'https://finnhub.io/api/v1';
-const token = () => process.env.FINNHUB_API_KEY ?? process.env.NEXT_PUBLIC_FINNHUB_API_KEY ?? '';
+const token = () => process.env.FINNHUB_API_KEY ?? '';
 
 type FinnhubEcoEvent = {
   country?: string;

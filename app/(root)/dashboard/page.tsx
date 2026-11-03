@@ -2,7 +2,8 @@ import Link from 'next/link';
 import { getCachedSession } from '@/lib/auth/session';
 import { getPortfolio } from '@/lib/actions/portfolio.actions';
 import { listWatchlist } from '@/lib/actions/watchlist.actions';
-import { fetchJSON, searchStocks } from '@/lib/actions/finnhub.actions';
+import { searchStocks } from '@/lib/actions/finnhub.actions';
+import { marketData } from '@/lib/market/service';
 import { connectToDatabase } from '@/database/mongoose';
 import { AiReportModel } from '@/database/models/aiReport.model';
 import { formatPrice } from '@/lib/utils';
@@ -56,21 +57,12 @@ export default async function Home() {
 
   const symbols = watchlist.map((w) => w.symbol.toUpperCase());
 
-  const FINNHUB_BASE = 'https://finnhub.io/api/v1';
-  const token = process.env.FINNHUB_API_KEY ?? process.env.NEXT_PUBLIC_FINNHUB_API_KEY ?? '';
-
-  const quotes = await Promise.all(
-    symbols.map(async (sym) => {
-      try {
-        const q = await fetchJSON<{ c?: number; dp?: number }>(
-          `${FINNHUB_BASE}/quote?symbol=${encodeURIComponent(sym)}&token=${token}`
-        );
-        return { symbol: sym, price: q?.c, change: q?.dp };
-      } catch {
-        return { symbol: sym, price: undefined, change: undefined };
-      }
-    })
-  );
+  const marketQuotes = await marketData.getQuotes(symbols);
+  const quotes = symbols.map((sym) => ({
+    symbol: sym,
+    price: marketQuotes.get(sym)?.price,
+    change: marketQuotes.get(sym)?.changePercent,
+  }));
   const quoteMap = new Map(quotes.map((q) => [q.symbol, q]));
 
   const cash = Number(portfolio?.cash ?? 10000);
