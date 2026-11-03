@@ -147,6 +147,20 @@ Built and tested on `signalist-v4`, not deployed. Full rules in `docs/SIGNAL_ENG
 - New dev dependency `mongodb-memory-server` downloads a MongoDB binary from MongoDB's CDN on first test run
 - `StockScore` is no longer updated. Watchlist, research header and `/api/v1` still read it until Milestone 6 swaps in signals
 
+## Milestone 4: AI
+
+Built and tested on `signalist-v4`, not deployed. Covers spec Phases 8 and 9 and sections 16 and 17.
+
+- `NewsItem` model and `lib/intelligence/news.ts`: Finnhub company news (crypto matched by coin name), normalized, de-duplicated by URL hash, 14-day TTL, timed relative to the signal. Never described as a cause
+- `evidence.ts`: the spec's evidence package (price, volume, indicators, levels, market, events, news, provenance). Only computed numbers
+- `deterministicExplanation()`: What changed / Context / Watch next from evidence alone. Used whenever AI is off, slow or rejected. Passes its own validator, which a test checks
+- `validate.ts`: unit-aware numeric check (a percent must match a percent, $ a price, x a ratio, at the precision written). Rejects clock times and advice (buy, sell, stop-loss, take profits, price target, "you should", guaranteed). "Sell-off" is allowed
+- FastAPI `POST /agent/explain-signal`: the spec's contract prompt with Python-side validation; returns `validated: false` instead of unchecked text
+- `explain.ts` and the `explain-signal` Inngest function on `app/signal.changed`, debounced per signal: stores the explanation, its source (`ai` or `deterministic`) and the exact evidence it was written from
+- Research narratives that fail number checks now fall back to the deterministic narrative instead of adding a caveat
+- Removed the old `summarize-signals` function and `lib/ai/whats-changed.ts`. "Ask AI" explains the latest open signal and keeps the 10-a-day limit
+- Tests: 85 TypeScript (validator, evidence, news, and evidence → AI → validation on in-memory MongoDB) and 17 Python
+
 ## Milestones
 
 | # | Milestone | Status |
@@ -154,7 +168,7 @@ Built and tested on `signalist-v4`, not deployed. Full rules in `docs/SIGNAL_ENG
 | 1 | Stabilize | Deployed. Open: Gemini on Render, digest, welcome email, Sentry |
 | 2 | Normalize | Built and tested, not deployed |
 | 3 | Intelligence engine | Built and tested, not deployed |
-| 4 | AI | Not started |
+| 4 | AI | Built and tested, not deployed |
 | 5 | Signals UX | Not started |
 | 6 | Connect existing product | Not started |
 | 7 | Developer platform | Not started |

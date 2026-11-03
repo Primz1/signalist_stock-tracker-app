@@ -22,7 +22,7 @@ from models.schemas import (
 from tools.market_tools import fetch_company_news
 from quant.composites.portfolio_snapshot import build_portfolio_snapshot
 from quant.composites.symbol_snapshot import build_symbol_snapshot
-from quant.narrator.gemini import narrate_changes, narrate_research, narrate_review
+from quant.narrator.gemini import narrate_changes, narrate_research, narrate_review, narrate_signal
 from quant.ta_indicators import build_indicators_response
 from quant.tearsheet import build_tearsheet
 
@@ -52,6 +52,10 @@ class IndicatorsRequest(BaseModel):
     symbol: str
     indicators: list[str] | None = None
     lookback_days: int = 370
+
+
+class ExplainSignalRequest(BaseModel):
+    evidence: dict = Field(default_factory=dict)
 
 
 class TearsheetRequest(BaseModel):
@@ -194,6 +198,13 @@ async def whats_changed(req: WhatsChangedRequest, x_internal_secret: str | None 
         confidence=confidence,
         signals=[Signal(label=s.label, type=tone) for s in req.signals],
     )
+
+
+@app.post("/agent/explain-signal")
+async def explain_signal(req: ExplainSignalRequest, x_internal_secret: str | None = Header(default=None)):
+    """Explains one signal from the engine's evidence. Returns validated=False rather than unchecked text."""
+    _verify_secret(x_internal_secret)
+    return await narrate_signal(req.evidence)
 
 
 @app.post("/agent/portfolio-review")

@@ -15,6 +15,14 @@ import {
 
 export type SignalHistoryEntry = { status: SignalStatus; at: Date; note: string };
 
+export type SignalExplanation = {
+  whatChanged: string;
+  context: string;
+  watchNext: string;
+  /** 'ai' when Gemini wrote it and every number checked out, otherwise deterministic copy. */
+  source: 'ai' | 'deterministic';
+};
+
 export interface SignalDoc extends Document {
   signalId: string;
   symbol: string;
@@ -38,10 +46,12 @@ export interface SignalDoc extends Document {
   startedAt: Date;
   updatedAt: Date;
   endedAt?: Date;
-  aiExplanation?: string;
+  aiExplanation?: SignalExplanation;
   aiGeneratedAt?: Date;
   /** False when the explanation is deterministic fallback copy. */
   aiValidated?: boolean;
+  /** The evidence the explanation was written from, so users can check every number. */
+  aiEvidence?: Record<string, unknown>;
   /** Engine state, kept so the next run continues the same signal. */
   side: 'up' | 'down' | 'neutral';
   peakStrength: number;
@@ -71,9 +81,10 @@ const SignalSchema = new Schema<SignalDoc>(
     startedAt: { type: Date, required: true },
     updatedAt: { type: Date, required: true },
     endedAt: { type: Date },
-    aiExplanation: { type: String },
+    aiExplanation: { type: Schema.Types.Mixed },
     aiGeneratedAt: { type: Date },
     aiValidated: { type: Boolean },
+    aiEvidence: { type: Schema.Types.Mixed },
     side: { type: String, required: true, enum: ['up', 'down', 'neutral'] },
     peakStrength: { type: Number, required: true },
     lastSupportAt: { type: Date, required: true },

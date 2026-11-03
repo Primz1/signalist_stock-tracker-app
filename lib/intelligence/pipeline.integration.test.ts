@@ -56,6 +56,19 @@ vi.mock('@/lib/market/service', () => ({
   },
 }));
 
+const aiReply = vi.fn();
+vi.mock('@/lib/ai/service', () => ({ postToAiService: (...args: unknown[]) => aiReply(...args) }));
+vi.mock('@/lib/market/providers/finnhub', () => ({
+  FinnhubProvider: class {
+    async getCompanyNews() {
+      return [{ headline: 'NVIDIA unveils new chip', source: 'Reuters', url: 'https://example.com/nvda', datetime: breakoutTime - 45 * 60 }];
+    }
+    async getMarketNews() {
+      return [];
+    }
+  },
+}));
+
 let mongo: MongoMemoryServer;
 let pipeline: typeof import('./pipeline');
 let models: {
@@ -147,6 +160,54 @@ describe('intelligence pipeline', () => {
     const match = replayed.signals.find((s) => s.side === 'up');
     expect(match?.signalId).toBe(stored?.signalId);
     expect(match?.score.strength).toBe(stored?.strength);
+  });
+
+  describe('signal → evidence → AI → validation', () => {
+    const explain = async () => {
+      const { explainSignal } = await import('./explain');
+      const stored = await models.Signal.findOne({ symbol: 'NVDA', side: 'up' }).lean();
+      await explainSignal(stored!.signalId);
+      return models.Signal.findOne({ signalId: stored!.signalId }).lean();
+    };
+
+    it('builds evidence with the news timed before the move', async () => {
+      aiReply.mockRejectedValueOnce(new Error('AI service unreachable'));
+      const signal = await explain();
+      const evidence = signal?.aiEvidence as { news: { minutesBeforeStart: number }[]; levels: { kind: string } };
+      expect(evidence.levels.kind).toBe('resistance');
+      expect(evidence.news[0].minutesBeforeStart).toBeGreaterThan(0);
+    });
+
+    it('stores deterministic copy when the AI is down', async () => {
+      aiReply.mockRejectedValueOnce(new Error('AI service unreachable'));
+      const signal = await explain();
+      expect(signal?.aiValidated).toBe(false);
+      expect(signal?.aiExplanation?.source).toBe('deterministic');
+      expect(signal?.aiExplanation?.whatChanged).toMatch(/NVDA moved/);
+    });
+
+    it('never stores AI text that cites a number it was not given', async () => {
+      aiReply.mockResolvedValueOnce({ what_changed: 'NVDA jumped 9.9% and could reach $300.', context: '', watch_next: '', validated: true });
+      const signal = await explain();
+      expect(signal?.aiExplanation?.source).toBe('deterministic');
+      expect(JSON.stringify(signal?.aiExplanation)).not.toContain('9.9');
+    });
+
+    it('stores AI text whose every number checks out', async () => {
+      const evidence = (await models.Signal.findOne({ symbol: 'NVDA', side: 'up' }).lean())?.aiEvidence as {
+        price: { changePct: number };
+        levels: { keyLevel: number };
+      };
+      aiReply.mockResolvedValueOnce({
+        what_changed: `NVDA moved ${evidence.price.changePct}% through resistance at ${evidence.levels.keyLevel}.`,
+        context: 'SPY barely moved, so this looks specific to NVDA.',
+        watch_next: `Whether price holds above ${evidence.levels.keyLevel}.`,
+        validated: true,
+      });
+      const signal = await explain();
+      expect(signal?.aiValidated).toBe(true);
+      expect(signal?.aiExplanation?.source).toBe('ai');
+    });
   });
 
   it('stays quiet for stocks while the market is closed', async () => {

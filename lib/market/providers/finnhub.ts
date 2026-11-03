@@ -17,6 +17,18 @@ const RESOLUTIONS: Record<Timeframe, string> = { '1m': '1', '5m': '5', '15m': '1
 // Server-only key. NEXT_PUBLIC_ keys end up in browser bundles.
 const token = () => process.env.FINNHUB_API_KEY ?? '';
 
+export type FinnhubNewsItem = {
+  id?: number;
+  headline?: string;
+  summary?: string;
+  source?: string;
+  url?: string;
+  /** Unix seconds. */
+  datetime?: number;
+  related?: string;
+  category?: string;
+};
+
 type FinnhubQuote = { c?: number; d?: number; dp?: number; h?: number; l?: number; o?: number; pc?: number; t?: number };
 type FinnhubCandles = { s?: string; t?: number[]; o?: number[]; h?: number[]; l?: number[]; c?: number[]; v?: number[] };
 
@@ -63,6 +75,24 @@ export class FinnhubProvider implements MarketDataProvider {
     );
     if (!data?.name) return null;
     return { name: data.name, exchange: data.exchange, industry: data.finnhubIndustry, currency: data.currency };
+  }
+
+  /** Company news between two dates (YYYY-MM-DD), newest first. */
+  async getCompanyNews(symbol: string, from: string, to: string): Promise<FinnhubNewsItem[]> {
+    const data = await fetchProviderJson<FinnhubNewsItem[]>(
+      this.id,
+      this.url('/company-news', { symbol: normalizeMarketSymbol(symbol), from, to }),
+      { next: { revalidate: 300 } }
+    );
+    return Array.isArray(data) ? data : [];
+  }
+
+  /** General market news by category, e.g. 'general' or 'crypto'. */
+  async getMarketNews(category: 'general' | 'crypto'): Promise<FinnhubNewsItem[]> {
+    const data = await fetchProviderJson<FinnhubNewsItem[]>(this.id, this.url('/news', { category }), {
+      next: { revalidate: 300 },
+    });
+    return Array.isArray(data) ? data : [];
   }
 
   /** Market cap in USD millions and P/E. Stocks only, cached for an hour because it changes slowly. */

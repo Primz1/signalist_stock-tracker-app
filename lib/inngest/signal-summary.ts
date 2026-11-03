@@ -1,15 +1,14 @@
 import { inngest } from '@/lib/inngest/client';
-import { createWhatsChangedReport } from '@/lib/ai/whats-changed';
+import { connectToDatabase } from '@/database/mongoose';
+import { explainSignal } from '@/lib/intelligence/explain';
 
-export const summarizeSignals = inngest.createFunction(
-  // Waits for a quiet spell so a burst of signals produces one summary
-  { id: 'summarize-signals', debounce: { key: 'event.data.symbol', period: '30m' } },
-  { event: 'app/signals.detected' },
-  async ({ event, step }) => {
-    const symbol = String(event.data.symbol);
-    await step.run('create-report', async () => {
-      await createWhatsChangedReport(symbol);
-    });
-    return { symbol };
+export const explainSignals = inngest.createFunction(
+  // A signal can confirm and then weaken within minutes; explain the latest state once
+  { id: 'explain-signal', debounce: { key: 'event.data.signalId', period: '2m' } },
+  { event: 'app/signal.changed' },
+  async ({ event }) => {
+    await connectToDatabase();
+    const explanation = await explainSignal(String(event.data.signalId));
+    return { signalId: event.data.signalId, source: explanation?.source ?? null };
   }
 );

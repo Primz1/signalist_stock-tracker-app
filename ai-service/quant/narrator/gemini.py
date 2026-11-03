@@ -337,8 +337,9 @@ SCHEMA:
             ]
         )
         ok, _ = verify_narration_against_snapshot(blob, snap)
+        # An unverified figure is never shown: the deterministic narrative replaces it
         if not ok:
-            narrative.caveats = (narrative.caveats + " Some figures could not be fully verified against snapshot.").strip()
+            return _fallback_research(snap, query)
         return narrative
     except Exception:
         return _fallback_research(snap, query)
@@ -377,6 +378,61 @@ SIGNALS: {evidence.model_dump_json()}
         return summary, 0.8
     except Exception:
         return fallback
+
+
+_ADVICE = re.compile(
+    r"\b(?:buy|sell)\b(?!-?off)|\byou should\b|\bwe recommend\b|\bguarantee[ds]?\b|\bprice target\b|\bstop[- ]loss\b|\btak(?:e|ing) profits?\b",
+    re.IGNORECASE,
+)
+
+
+def verify_against_evidence(text: str, evidence: dict[str, Any]) -> tuple[bool, list[str]]:
+    """Every number must appear in the evidence JSON, and nothing may read as advice."""
+
+    class _Evidence(BaseModel):
+        data: dict[str, Any]
+
+    ok, uncited = verify_narration_against_snapshot(text, _Evidence(data=evidence))
+    advice = _ADVICE.findall(text or "")
+    return ok and not advice, uncited + advice
+
+
+SIGNAL_PROMPT = """You are Signalist's market analyst. Explain one market signal using ONLY the EVIDENCE JSON.
+
+Answer three questions, each in 1-3 plain sentences:
+- what_changed: What changed, and how large and unusual is it? Which signals agree?
+- context: Is this broader market, sector, or specific to this asset? Mention news only as timing
+  ("published N minutes before the move"), never as the cause.
+- watch_next: Which level or condition in the evidence is worth watching next?
+
+RULES:
+1. Every number you write MUST appear in the EVIDENCE. Do not compute new numbers. Do not write clock times.
+2. Never tell the user to buy, sell, hold, enter, exit or take profits. Describe, don't recommend.
+3. Never claim news caused a move.
+4. If evidence is weak or mixed, say so.
+5. Respond with JSON only: {{"what_changed": "...", "context": "...", "watch_next": "..."}}
+
+EVIDENCE: {evidence}
+"""
+
+
+async def narrate_signal(evidence: dict[str, Any]) -> dict[str, Any]:
+    """Returns the three sections and whether they passed validation. Unvalidated text is never returned."""
+    empty = {"what_changed": "", "context": "", "watch_next": "", "validated": False}
+    if not (genai and os.getenv("GEMINI_API_KEY")):
+        return empty
+    try:
+        text = await generate_text(SIGNAL_PROMPT.format(evidence=json.dumps(evidence)), SUMMARY_TIMEOUT_SECONDS * 2)
+        if text.startswith("```"):
+            text = text.strip("`").replace("json", "", 1).strip()
+        data = json.loads(text)
+        sections = {k: str(data.get(k, "")).strip() for k in ("what_changed", "context", "watch_next")}
+        ok, _ = verify_against_evidence(" ".join(sections.values()), evidence)
+        if not ok or not sections["what_changed"]:
+            return empty
+        return {**sections, "validated": True}
+    except Exception:
+        return empty
 
 
 def _fallback_review(snap: PortfolioQuantSnapshot) -> ReviewNarrative:
