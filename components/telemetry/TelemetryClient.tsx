@@ -24,7 +24,7 @@ type TypeFilter = 'all' | 'alerts' | 'signals' | 'ai';
 const TYPE_FILTERS: { value: TypeFilter; label: string; type?: TelemetryEvent['type'] }[] = [
   { value: 'all', label: 'All' },
   { value: 'alerts', label: 'Alerts', type: EVENT_TYPES.ALERT_TRIGGERED },
-  { value: 'signals', label: 'Signals', type: EVENT_TYPES.SIGNAL_DETECTED },
+  { value: 'signals', label: 'Signals', type: EVENT_TYPES.SIGNAL_UPDATED },
   { value: 'ai', label: 'AI notes', type: EVENT_TYPES.AI_REPORT_CREATED },
 ];
 
@@ -114,6 +114,17 @@ function describeEvent(event: TelemetryEvent): { icon: LucideIcon; title: string
   }
   if (event.type === EVENT_TYPES.AI_REPORT_CREATED) {
     return { icon: Sparkles, title: 'AI note', detail: payload.summary };
+  }
+  if (event.type === EVENT_TYPES.SIGNAL_UPDATED) {
+    const signal = event.payload as { title: string; direction: string; status: string; strength: number; confidence: number; note: string };
+    const up = signal.direction.includes('bullish');
+    const down = signal.direction.includes('bearish');
+    return {
+      icon: up ? TrendingUp : down ? TrendingDown : Activity,
+      title: signal.title,
+      detail: `${signal.note}. Strength ${signal.strength}, confidence ${signal.confidence}.`,
+      tone: up ? 'text-up' : down ? 'text-down' : undefined,
+    };
   }
   const up = payload.direction === 'up';
   return {
