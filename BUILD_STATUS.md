@@ -51,6 +51,7 @@ Evidence gathered 2026-11-02 (read-only):
 7. `createWhatsChangedReport` throws when AI is down, leaving no explanation at all instead of deterministic copy.
 8. Sentry server DSN unset in production, so server errors are not reported.
 9. Fixed: `lib/better-auth/auth.ts` connected to Mongo at import time and `(root)` pages were prerendered, so `next build` failed when the database was unreachable.
+11. Open: every Gemini call in `ai-service` uses the blocking `generate_content` inside an async handler with no timeout. When Gemini is slow or returns 503, the SDK's retries block the event loop, `/health` stops answering and Render returns 502, 503 and 429 for all AI routes. Reproduced twice on 2026-11-03.
 10. Fixed: privacy leak. The dashboard listed the latest AI reports of all users, and the public landing page showed the first 120 characters of any user's latest report. Both now exclude other users' reports.
 
 ## Duplicated systems
@@ -118,11 +119,15 @@ Done, not deployed:
 Gate, waiting on the owner:
 
 - [x] `INNGEST_SIGNING_KEY` and `INNGEST_EVENT_KEY` in Vercel production (confirmed 2026-11-02)
-- [ ] Inngest Custom Production Domain set to `signalist-blue.vercel.app`, because Vercel protection blocks per-deployment URLs
-- [ ] `signalist-test-vibe-yeg5` disabled in the Inngest Vercel integration
-- [ ] Production deploy of this branch (owner approves at the end)
-- [ ] Render updated, because it lacks `/agent/whats-changed`
-- [ ] Production job run: poll, alert, snapshot, signal, daily digest (owner approved the real digest to all 3 users)
+- [x] Production deploy: `e2e686e` merged to `main` and live on `signalist-blue.vercel.app`, Inngest synced
+- [x] Render updated: `/agent/whats-changed` and `ai_provider` live
+- [x] Production price polling: 18 price events by 01:44 UTC on 2026-11-03
+- [x] Production alert processing: 2 alerts triggered at 01:34 UTC
+- [x] Production snapshots and scores: 9 each at 01:45 UTC
+- [ ] AI summaries in production, blocked by Broken item 11
+- [ ] Signal detection seen firing, needs more readings
+- [ ] Daily digest (owner approved the real digest to all 3 users). Runs by cron at 12:00 UTC
+- [ ] Welcome email after a verified signup
 - [ ] `SENTRY_DSN` set and a test error received
 
 ## Milestones

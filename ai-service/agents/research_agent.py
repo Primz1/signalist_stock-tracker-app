@@ -1,7 +1,7 @@
 import os
 from models.schemas import ResearchRequest, ResearchResponse, Signal, Source
 from tools.market_tools import fetch_quote, fetch_company_news
-from quant.narrator.gemini import GEMINI_MODEL
+from quant.narrator.gemini import REPORT_TIMEOUT_SECONDS, generate_text
 
 try:
     import google.generativeai as genai
@@ -51,7 +51,6 @@ def _fallback_report(symbol: str, query: str, quote: dict, news: list) -> Resear
 
 
 async def _gemini_report(symbol: str, query: str, quote: dict, news: list) -> ResearchResponse:
-    model = genai.GenerativeModel(GEMINI_MODEL)
     headlines = "\n".join(f"- {n.get('headline')}" for n in news[:6] if n.get("headline"))
     prompt = f"""You are a financial research analyst. Answer the user query about {symbol}.
 Query: {query}
@@ -60,8 +59,7 @@ Recent news:
 {headlines}
 
 Respond in 3-4 sentences. Be specific. Mention risks."""
-    response = model.generate_content(prompt)
-    text = response.text or "Unable to generate analysis."
+    text = await generate_text(prompt, REPORT_TIMEOUT_SECONDS) or "Unable to generate analysis."
 
     return ResearchResponse(
         symbol=symbol,

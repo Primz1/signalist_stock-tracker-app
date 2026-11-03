@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import re
@@ -26,6 +27,37 @@ except ImportError:
 
 
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+GEMINI_FALLBACK_MODEL = os.getenv("GEMINI_FALLBACK_MODEL", "gemini-3.5-flash-lite")
+
+# Per model, so both tries fit inside the web app's 20s and 55s client timeouts
+SUMMARY_TIMEOUT_SECONDS = 8
+REPORT_TIMEOUT_SECONDS = 24
+# Lets the SDK's own timeout fire first, so its worker thread ends too
+TIMEOUT_GRACE_SECONDS = 1
+
+
+async def generate_text(prompt: str, timeout: float) -> str:
+    """Asks Gemini, then the fallback model. Raises if neither answers in time.
+
+    generate_content blocks, and its default retries can run for minutes. It has to
+    run off the event loop, or one slow reply stops /health and every other route.
+    """
+    last_error: Exception | None = None
+    for name in dict.fromkeys((GEMINI_MODEL, GEMINI_FALLBACK_MODEL)):
+        try:
+            model = genai.GenerativeModel(name)
+            response = await asyncio.wait_for(
+                asyncio.to_thread(
+                    model.generate_content,
+                    prompt,
+                    request_options={"timeout": timeout, "retry": None},
+                ),
+                timeout + TIMEOUT_GRACE_SECONDS,
+            )
+            return (response.text or "").strip()
+        except Exception as err:  # noqa: BLE001 - any failure moves on to the next model
+            last_error = err
+    raise last_error or RuntimeError("Gemini returned nothing")
 
 
 def extract_numbers_from_prose(text: str) -> list[str]:
@@ -287,9 +319,7 @@ SCHEMA:
 }}
 """
     try:
-        model = genai.GenerativeModel(GEMINI_MODEL)
-        response = model.generate_content(prompt)
-        text = (response.text or "").strip()
+        text = await generate_text(prompt, REPORT_TIMEOUT_SECONDS)
         if text.startswith("```"):
             text = text.strip("`")
             text = text.replace("json", "", 1).strip()
@@ -340,9 +370,7 @@ RULES:
 SIGNALS: {evidence.model_dump_json()}
 """
     try:
-        model = genai.GenerativeModel(GEMINI_MODEL)
-        response = model.generate_content(prompt)
-        summary = (response.text or "").strip()
+        summary = await generate_text(prompt, SUMMARY_TIMEOUT_SECONDS)
         ok, _ = verify_narration_against_snapshot(summary, evidence)
         if not summary or not ok:
             return fallback
@@ -407,9 +435,7 @@ SCHEMA:
 }}
 """
     try:
-        model = genai.GenerativeModel(GEMINI_MODEL)
-        response = model.generate_content(prompt)
-        text = (response.text or "").strip()
+        text = await generate_text(prompt, REPORT_TIMEOUT_SECONDS)
         if text.startswith("```"):
             text = text.strip("`")
             text = text.replace("json", "", 1).strip()
