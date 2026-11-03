@@ -63,4 +63,15 @@ export const getAuth = async () => {
   return authInstance;
 }
 
-export const auth = (process.env.MONGODB_URI ? await getAuth() : null) as unknown as Awaited<ReturnType<typeof getAuth>>;
+type Auth = Awaited<ReturnType<typeof getAuth>>;
+
+/** Connects on first use, so importing this during `next build` doesn't need a live database. */
+export const auth = {
+  handler: async (request: Request) => (await getAuth()).handler(request),
+  api: new Proxy({} as Auth["api"], {
+    get: (_target, method: string) => async (...args: unknown[]) => {
+      const { api } = await getAuth();
+      return (api as unknown as Record<string, (...input: unknown[]) => unknown>)[method](...args);
+    },
+  }),
+};

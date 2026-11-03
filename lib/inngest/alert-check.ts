@@ -1,4 +1,3 @@
-import { inngest } from "@/lib/inngest/client";
 import { connectToDatabase } from "@/database/mongoose";
 import { listActiveAlerts, Alert } from "@/database/models/alert.model";
 import { addAlertNotification } from "@/database/models/alertNotification.model";
@@ -187,18 +186,9 @@ const evaluateAlerts = async (alerts: Awaited<ReturnType<typeof listActiveAlerts
   return { success: true, triggered };
 };
 
+/** Runs from the price poller. A second cron here would evaluate every alert twice. */
 export const runAlertSweep = async () => {
   await connectToDatabase();
   const alerts = await listActiveAlerts();
   return evaluateAlerts(alerts);
 };
-
-export const checkPriceAlerts = inngest.createFunction(
-  { id: "check-price-alerts" },
-  { cron: "*/5 * * * *" },
-  async ({ step }) => {
-    await connectToDatabase();
-    const alerts = await step.run("load-active-alerts", listActiveAlerts);
-    return step.run("evaluate-alerts", () => evaluateAlerts(alerts as Awaited<ReturnType<typeof listActiveAlerts>>));
-  }
-);

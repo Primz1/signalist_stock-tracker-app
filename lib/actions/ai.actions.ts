@@ -4,8 +4,14 @@ import { getCachedSession } from '@/lib/auth/session';
 import { connectToDatabase } from '@/database/mongoose';
 import { createAiReport, getLatestAiReport } from '@/database/models/aiReport.model';
 import { Watchlist } from '@/database/models/watchlist.model';
+import { postToAiService } from '@/lib/ai/service';
 import { publishEvent } from '@/lib/events/publisher';
 import { EVENT_TYPES } from '@/lib/events/types';
+import { logError } from '@/lib/logger';
+
+// Longer than the default so a Render cold start can finish
+const RESEARCH_TIMEOUT_MS = 55_000;
+const AI_UNAVAILABLE_MESSAGE = 'AI research is unavailable right now. Market data and signals still work.';
 
 export type ResearchFullResult = {
   symbol: string;
@@ -75,68 +81,12 @@ export async function runAiResearch(symbol: string, query: string) {
     return { success: false as const, message: 'Not authenticated' };
   }
 
-  const fastApiUrl = process.env.FASTAPI_URL || 'http://localhost:8000';
-  const secret = process.env.INTERNAL_API_SECRET || '';
-
   try {
-    const res = await fetch(`${fastApiUrl}/agent/research/full`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Internal-Secret': secret,
-      },
-      body: JSON.stringify({
-        symbol: symbol.toUpperCase(),
-        query,
-        user_id: session.user.id,
-      }),
-      cache: 'no-store',
-    });
-
-    if (!res.ok) {
-      // Fallback to legacy endpoint if full route missing
-      const legacy = await fetch(`${fastApiUrl}/agent/research`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Internal-Secret': secret,
-        },
-        body: JSON.stringify({
-          symbol: symbol.toUpperCase(),
-          query,
-          user_id: session.user.id,
-        }),
-        cache: 'no-store',
-      });
-      if (!legacy.ok) {
-        const text = await legacy.text();
-        return {
-          success: false as const,
-          message:
-            text ||
-            `AI service error (${legacy.status}). Is it running on ${fastApiUrl}? Try: npm run ai:dev`,
-        };
-      }
-      const data = await legacy.json();
-      try {
-        await connectToDatabase();
-        const report = await createAiReport({
-          userId: session.user.id,
-          symbol: data.symbol,
-          query,
-          summary: data.summary,
-          confidence: data.confidence,
-          signals: data.signals,
-          sources: data.sources,
-        });
-        await publishReportCreated(report, session.user.id);
-      } catch {
-        /* persist is best-effort — don't fail the research response */
-      }
-      return { success: true as const, data: data as ResearchFullResult };
-    }
-
-    const data = (await res.json()) as ResearchFullResult;
+    const data = await postToAiService<ResearchFullResult>(
+      '/agent/research/full',
+      { symbol: symbol.toUpperCase(), query, user_id: session.user.id },
+      { timeoutMs: RESEARCH_TIMEOUT_MS }
+    );
 
     try {
       await connectToDatabase();
@@ -163,16 +113,8 @@ export async function runAiResearch(symbol: string, query: string) {
 
     return { success: true as const, data: { ...data, fromCache: false } };
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Failed to reach AI service';
-    const down =
-      /fetch failed|ECONNREFUSED|ENOTFOUND|network|Unable to connect/i.test(msg) ||
-      msg === 'Failed to fetch';
-    return {
-      success: false as const,
-      message: down
-        ? `AI service is not running at ${fastApiUrl}. Start it in a separate terminal: npm run ai:dev`
-        : msg,
-    };
+    logError('research failed', { symbol, error: err instanceof Error ? err.message : String(err) });
+    return { success: false as const, message: AI_UNAVAILABLE_MESSAGE };
   }
 }
 
@@ -195,32 +137,15 @@ export async function getExtraIndicators(symbol: string) {
     return { success: false as const, message: 'Not authenticated' };
   }
 
-  const fastApiUrl = process.env.FASTAPI_URL || 'http://localhost:8000';
-  const secret = process.env.INTERNAL_API_SECRET || '';
-
   try {
-    const res = await fetch(`${fastApiUrl}/quant/indicators`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Internal-Secret': secret,
-      },
-      body: JSON.stringify({ symbol: symbol.toUpperCase(), lookback_days: 370 }),
-      next: { revalidate: 120 },
-    });
-    if (!res.ok) {
-      return { success: false as const, message: await res.text() };
-    }
-    const data = await res.json();
-    return {
-      success: true as const,
-      data: { latest: (data.latest || {}) as ExtraIndicatorsLatest },
-    };
-  } catch (err) {
-    return {
-      success: false as const,
-      message: err instanceof Error ? err.message : 'Failed to reach AI service',
-    };
+    const data = await postToAiService<{ latest?: ExtraIndicatorsLatest }>(
+      '/quant/indicators',
+      { symbol: symbol.toUpperCase(), lookback_days: 370 },
+      { revalidate: 120 }
+    );
+    return { success: true as const, data: { latest: data.latest || {} } };
+  } catch {
+    return { success: false as const, message: AI_UNAVAILABLE_MESSAGE };
   }
 }
 

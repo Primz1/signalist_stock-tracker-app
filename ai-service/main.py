@@ -66,6 +66,7 @@ async def health():
     return {
         "status": "ok",
         "service": "signalist-ai",
+        "ai_provider": "gemini",
         "quant": True,
         "gemini": bool(os.getenv("GEMINI_API_KEY")),
         "finnhub": bool(os.getenv("FINNHUB_API_KEY") or os.getenv("NEXT_PUBLIC_FINNHUB_API_KEY")),

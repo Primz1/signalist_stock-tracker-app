@@ -45,7 +45,10 @@ export default async function Home() {
     : [];
 
   await connectToDatabase();
-  const reports = await AiReportModel.find()
+  // Public summaries have no userId. Other users' reports must never appear here.
+  const reports = await AiReportModel.find({
+    $or: [{ userId: session?.user?.id }, { userId: { $exists: false } }],
+  })
     .sort({ createdAt: -1 })
     .limit(3)
     .select('symbol summary confidence createdAt')

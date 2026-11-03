@@ -2,6 +2,9 @@ import Header from '@/components/layout/Header';
 import { redirect } from 'next/navigation';
 import { getCachedSession } from '@/lib/auth/session';
 
+// Every page here is per-user, and prerendering them would need a live database at build time
+export const dynamic = 'force-dynamic';
+
 const layout = async ({ children }: { children: React.ReactNode }) => {
   const session = await getCachedSession();
 

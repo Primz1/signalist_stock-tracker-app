@@ -24,6 +24,8 @@ const eslintConfig = [
       "Stock trading app prototype (1)/**",
       "Signalist 21stdev ui prompts/**",
       ".claude/**",
+      ".agents/**",
+      "QuantAgent/**",
       "e2e/**",
       "database/test-db-connection.js",
       "components/dashboard/DashboardTradingViewBackup.tsx",

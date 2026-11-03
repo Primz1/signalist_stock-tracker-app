@@ -197,7 +197,8 @@ export async function getMarketingLiveData(): Promise<MarketingLiveData> {
       const { AiReportModel } = await import('@/database/models/aiReport.model');
       const [scoreDoc, report] = await Promise.all([
         StockScoreModel.findOne({ symbol: 'NVDA' }).lean(),
-        AiReportModel.findOne().sort({ createdAt: -1 }).lean(),
+        // Public reports only: this page is visible to anyone signed out
+        AiReportModel.findOne({ userId: { $exists: false } }).sort({ createdAt: -1 }).lean(),
       ]);
       if (scoreDoc && typeof (scoreDoc as { score?: number }).score === 'number') {
         aiScore = Math.round((scoreDoc as { score: number }).score);

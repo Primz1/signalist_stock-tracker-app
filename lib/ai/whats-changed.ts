@@ -1,8 +1,10 @@
 import { connectToDatabase } from '@/database/mongoose';
 import { createAiReport } from '@/database/models/aiReport.model';
 import { EventModel } from '@/database/models/event.model';
+import { postToAiService } from '@/lib/ai/service';
 import { publishEvent } from '@/lib/events/publisher';
 import { EVENT_TYPES, type SignalDetectedEvent } from '@/lib/events/types';
+import { logError } from '@/lib/logger';
 
 export const WHATS_CHANGED_QUERY = "What changed?";
 
@@ -14,6 +16,21 @@ type WhatsChangedResponse = {
   confidence: number;
   signals: { label: string; type: 'bullish' | 'bearish' | 'neutral' | 'warning' }[];
 };
+
+/** Plain restatement of the signals, used whenever the AI service can't answer. */
+export function fallbackSummary(symbol: string, signals: SignalDetectedEvent[]) {
+  const details = signals.slice(0, 4).map((signal) => `${signal.label} (${signal.detail})`);
+  return `${symbol} recent signals: ${details.join('; ')}.`;
+}
+
+async function explainSignals(symbol: string, signals: SignalDetectedEvent[]): Promise<WhatsChangedResponse> {
+  try {
+    return await postToAiService<WhatsChangedResponse>('/agent/whats-changed', { symbol, signals });
+  } catch (err) {
+    logError('whats-changed fell back', { symbol, error: err instanceof Error ? err.message : String(err) });
+    return { symbol, summary: fallbackSummary(symbol, signals), confidence: 0.5, signals: [] };
+  }
+}
 
 /**
  * Explains a symbol's recent signals and publishes the result. Without a userId the
@@ -32,19 +49,7 @@ export async function createWhatsChangedReport(symbol: string, userId?: string) 
   if (!docs.length) return null;
 
   const signals = docs.map((doc) => doc.payload as unknown as SignalDetectedEvent);
-  const fastApiUrl = process.env.FASTAPI_URL || 'http://localhost:8000';
-  const res = await fetch(`${fastApiUrl}/agent/whats-changed`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Internal-Secret': process.env.INTERNAL_API_SECRET || '',
-    },
-    body: JSON.stringify({ symbol, signals }),
-    cache: 'no-store',
-  });
-  if (!res.ok) throw new Error(`AI service error (${res.status})`);
-
-  const data = (await res.json()) as WhatsChangedResponse;
+  const data = await explainSignals(symbol, signals);
   const report = await createAiReport({
     userId,
     symbol,
