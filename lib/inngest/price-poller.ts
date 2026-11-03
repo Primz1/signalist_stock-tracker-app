@@ -5,6 +5,8 @@ import { PortfolioModel } from '@/database/models/portfolio.model';
 import { Watchlist } from '@/database/models/watchlist.model';
 import { getLatestPrices, publishPriceChanged } from '@/lib/events/publisher';
 import { runAlertSweep } from '@/lib/inngest/alert-check';
+import { runIntelligencePipeline } from '@/lib/intelligence/pipeline';
+import { logError } from '@/lib/logger';
 import { marketData } from '@/lib/market/service';
 import { selectPollSymbols } from '@/lib/market/poll-symbols';
 
@@ -24,14 +26,13 @@ export const pollMarketPrices = inngest.createFunction(
     ]);
     const alertSymbols = alerts.map((a) => a.symbol.toUpperCase());
     const tracked = [...watchlist, ...holdings].map((s) => String(s).toUpperCase());
+    // Quotes come from Finnhub's per-minute budget. Analysis uses candles, which don't.
     const symbols = selectPollSymbols(alertSymbols, tracked, Math.floor(Date.now() / (POLL_MINUTES * 60_000)));
 
-    if (!symbols.length) return { published: 0 };
-
     const [previous, quotes] = await Promise.all([getLatestPrices(symbols), marketData.getQuotes(symbols)]);
-    const changed = [...quotes.values()].filter((quote) => quote.price !== previous.get(quote.symbol)?.price);
+    const changedQuotes = [...quotes.values()].filter((quote) => quote.price !== previous.get(quote.symbol)?.price);
     await Promise.all(
-      changed.map((quote) =>
+      changedQuotes.map((quote) =>
         publishPriceChanged({
           symbol: quote.symbol,
           price: quote.price,
@@ -42,6 +43,30 @@ export const pollMarketPrices = inngest.createFunction(
     );
 
     const { triggered } = await runAlertSweep(quotes);
-    return { published: changed.length, quoted: quotes.size, requested: symbols.length, triggered };
+
+    // A pipeline failure must not undo the quotes and alerts above
+    const intelligence = await runIntelligencePipeline([...tracked, ...alertSymbols]).catch((err) => {
+      logError('intelligence pipeline failed', { error: err instanceof Error ? err.message : String(err) });
+      return null;
+    });
+    if (intelligence?.changed.length) {
+      await inngest.send(
+        intelligence.changed.map((signal) => ({
+          name: 'app/signal.changed' as const,
+          // Same id for the same signal state, so a retried run doesn't trigger twice
+          id: `${signal.signalId}:${signal.status}:${signal.updatedAt}`,
+          data: { signalId: signal.signalId, symbol: signal.symbol, status: signal.status },
+        }))
+      );
+    }
+
+    return {
+      published: changedQuotes.length,
+      quoted: quotes.size,
+      triggered,
+      analyzed: intelligence?.analyzed.length ?? 0,
+      events: intelligence?.events ?? 0,
+      signalsChanged: intelligence?.changed.length ?? 0,
+    };
   }
 );

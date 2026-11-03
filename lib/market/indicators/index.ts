@@ -39,6 +39,56 @@ export function rsi(closes: number[], period = 14): number[] {
   return result;
 }
 
+/** Exponential moving average seeded with the SMA of the first `period` values. NaN until then. */
+export function ema(values: number[], period: number): number[] {
+  const result: number[] = new Array(values.length).fill(NaN);
+  if (values.length < period) return result;
+  const k = 2 / (period + 1);
+  let prev = values.slice(0, period).reduce((a, b) => a + b, 0) / period;
+  result[period - 1] = prev;
+  for (let i = period; i < values.length; i++) {
+    prev = values[i] * k + prev * (1 - k);
+    result[i] = prev;
+  }
+  return result;
+}
+
+/** Average true range with Wilder smoothing. NaN until `period` bars exist. */
+export function atr(candles: Candle[], period = 14): number[] {
+  const result: number[] = new Array(candles.length).fill(NaN);
+  if (candles.length <= period) return result;
+  const trueRange = candles.map((c, i) =>
+    i === 0
+      ? c.high - c.low
+      : Math.max(c.high - c.low, Math.abs(c.high - candles[i - 1].close), Math.abs(c.low - candles[i - 1].close))
+  );
+  let avg = trueRange.slice(1, period + 1).reduce((a, b) => a + b, 0) / period;
+  result[period] = avg;
+  for (let i = period + 1; i < candles.length; i++) {
+    avg = (avg * (period - 1) + trueRange[i]) / period;
+    result[i] = avg;
+  }
+  return result;
+}
+
+/** Population standard deviation of each trailing window. NaN until the window fills or if it has NaN. */
+export function rollingStd(values: number[], period: number): number[] {
+  return values.map((_, i) => {
+    if (i < period - 1) return NaN;
+    const slice = values.slice(i - period + 1, i + 1);
+    if (slice.some((v) => !Number.isFinite(v))) return NaN;
+    const mean = slice.reduce((a, b) => a + b, 0) / period;
+    return Math.sqrt(slice.reduce((sum, v) => sum + (v - mean) ** 2, 0) / period);
+  });
+}
+
+export function median(values: number[]): number {
+  const sorted = values.filter(Number.isFinite).sort((a, b) => a - b);
+  if (!sorted.length) return NaN;
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
 export function macd(closes: number[], fast = 12, slow = 26, signal = 9) {
   const ema = (data: number[], p: number) => {
     const k = 2 / (p + 1);

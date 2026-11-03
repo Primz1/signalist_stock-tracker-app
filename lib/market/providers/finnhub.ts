@@ -54,6 +54,17 @@ export class FinnhubProvider implements MarketDataProvider {
     };
   }
 
+  /** Name, exchange and Finnhub's industry label. Null for ETFs and unknown symbols, which have no profile. */
+  async getProfile(symbol: string): Promise<{ name: string; exchange?: string; industry?: string; currency?: string } | null> {
+    const data = await fetchProviderJson<{ name?: string; exchange?: string; finnhubIndustry?: string; currency?: string }>(
+      this.id,
+      this.url('/stock/profile2', { symbol: normalizeMarketSymbol(symbol) }),
+      { next: { revalidate: 86_400 } }
+    );
+    if (!data?.name) return null;
+    return { name: data.name, exchange: data.exchange, industry: data.finnhubIndustry, currency: data.currency };
+  }
+
   /** Market cap in USD millions and P/E. Stocks only, cached for an hour because it changes slowly. */
   async getFundamentals(symbol: string): Promise<{ marketCap?: number; peRatio?: number } | null> {
     const sym = normalizeMarketSymbol(symbol);

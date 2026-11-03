@@ -3,7 +3,6 @@ import { Types } from 'mongoose';
 import {
   EVENT_TYPES,
   type PriceChangedEvent,
-  type SignalKind,
   type TelemetryEvent,
   type TelemetryEventInput,
 } from './types';
@@ -88,14 +87,4 @@ export async function getLatestPrices(symbols: string[]) {
     { $group: { _id: '$symbol', payload: { $first: '$payload' } } },
   ]);
   return new Map(rows.map((row) => [row._id, row.payload]));
-}
-
-/** When each signal kind last fired for a symbol, for the cooldown. */
-export async function getLastSignalTimes(symbol: string) {
-  await connectToDatabase();
-  const rows = await EventModel.aggregate<{ _id: SignalKind; at: Date }>([
-    { $match: { type: EVENT_TYPES.SIGNAL_DETECTED, symbol } },
-    { $group: { _id: '$payload.kind', at: { $max: '$createdAt' } } },
-  ]);
-  return new Map(rows.map((row) => [row._id, new Date(row.at).getTime()]));
 }

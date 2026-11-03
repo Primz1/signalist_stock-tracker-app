@@ -35,9 +35,25 @@ export type AiReportCreatedEvent = {
   timestamp: string;
 };
 
+/** A signal was created or changed status. Strength ticks alone don't publish. */
+export type SignalUpdatedEvent = {
+  signalId: string;
+  symbol: string;
+  title: string;
+  type: string;
+  direction: string;
+  status: string;
+  strength: number;
+  confidence: number;
+  /** The latest lifecycle note, e.g. "Price moved back through 214.20". */
+  note: string;
+  timestamp: string;
+};
+
 export const EVENT_TYPES = {
   PRICE_CHANGED: 'market.price_changed',
   SIGNAL_DETECTED: 'market.signal_detected',
+  SIGNAL_UPDATED: 'market.signal_updated',
   ALERT_TRIGGERED: 'alert.triggered',
   AI_REPORT_CREATED: 'ai.report_created',
 } as const;
@@ -45,6 +61,7 @@ export const EVENT_TYPES = {
 export type TelemetryEventInput =
   | { type: typeof EVENT_TYPES.PRICE_CHANGED; payload: PriceChangedEvent; userId?: undefined }
   | { type: typeof EVENT_TYPES.SIGNAL_DETECTED; payload: SignalDetectedEvent; userId?: undefined }
+  | { type: typeof EVENT_TYPES.SIGNAL_UPDATED; payload: SignalUpdatedEvent; userId?: undefined }
   | { type: typeof EVENT_TYPES.ALERT_TRIGGERED; payload: AlertTriggeredEvent; userId: string }
   | { type: typeof EVENT_TYPES.AI_REPORT_CREATED; payload: AiReportCreatedEvent; userId?: string };
 

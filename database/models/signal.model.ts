@@ -42,6 +42,12 @@ export interface SignalDoc extends Document {
   aiGeneratedAt?: Date;
   /** False when the explanation is deterministic fallback copy. */
   aiValidated?: boolean;
+  /** Engine state, kept so the next run continues the same signal. */
+  side: 'up' | 'down' | 'neutral';
+  peakStrength: number;
+  lastSupportAt: Date;
+  supportingTypes: string[];
+  contradictingTypes: string[];
 }
 
 const SignalSchema = new Schema<SignalDoc>(
@@ -68,6 +74,11 @@ const SignalSchema = new Schema<SignalDoc>(
     aiExplanation: { type: String },
     aiGeneratedAt: { type: Date },
     aiValidated: { type: Boolean },
+    side: { type: String, required: true, enum: ['up', 'down', 'neutral'] },
+    peakStrength: { type: Number, required: true },
+    lastSupportAt: { type: Date, required: true },
+    supportingTypes: { type: [String], default: [] },
+    contradictingTypes: { type: [String], default: [] },
   },
   { timestamps: false }
 );

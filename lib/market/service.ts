@@ -131,6 +131,20 @@ export class MarketDataService {
     });
   }
 
+  async getProfile(symbol: string) {
+    const sym = normalizeMarketSymbol(symbol);
+    const finnhub = this.providers.FINNHUB;
+    if (isCryptoSymbol(sym) || !(finnhub instanceof FinnhubProvider)) return null;
+    try {
+      const result = await finnhub.getProfile(sym);
+      this.recordSuccess('FINNHUB');
+      return result;
+    } catch (err) {
+      this.recordFailure('FINNHUB', 'quote', err, sym);
+      return null;
+    }
+  }
+
   /** Slow-moving company data. Only Finnhub has it, and only for stocks. */
   async getFundamentals(symbol: string): Promise<{ marketCap?: number; peRatio?: number } | null> {
     const sym = normalizeMarketSymbol(symbol);

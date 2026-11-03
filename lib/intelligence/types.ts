@@ -3,7 +3,6 @@
  * from here so an event or signal means the same thing everywhere.
  */
 import type { ProviderId } from '@/lib/market/providers/types';
-import type { AssetType } from '@/lib/market/symbols';
 
 export type { AssetType } from '@/lib/market/symbols';
 

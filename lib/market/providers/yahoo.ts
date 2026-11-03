@@ -87,7 +87,8 @@ export class YahooProvider implements MarketDataProvider {
     });
     const data = await fetchProviderJson<YahooChart>(this.id, `${CHART}/${encodeURIComponent(ticker)}?${params}`, {
       headers: HEADERS,
-      next: { revalidate: 60 },
+      // Daily and weekly bars barely change within a session
+      next: { revalidate: timeframe === '1d' || timeframe === '1w' ? 900 : 30 },
     });
     const result = data?.chart?.result?.[0];
     const times = result?.timestamp;

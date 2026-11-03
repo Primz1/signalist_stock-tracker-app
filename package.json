@@ -11,6 +11,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
+    "replay": "vitest run --config vitest.replay.config.ts",
     "test:e2e": "playwright test"
   },
   "dependencies": {
@@ -68,6 +69,7 @@
     "@vitejs/plugin-react": "^6.0.2",
     "eslint": "^9",
     "eslint-config-next": "15.5.9",
+    "mongodb-memory-server": "^10.4.3",
     "playwright": "^1.61.0",
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",

@@ -95,9 +95,10 @@ None of this was removed. Deleting it needs the owner's sign-off.
 
 | Function | Schedule | Executions a month |
 | --- | --- | --- |
-| `poll-market-prices` | Every 2 minutes, no steps | 21,600 |
-| `capture-market-snapshots` | Every 15 minutes, one event send when signals fire | Up to 5,760 |
+| `poll-market-prices` | Every 2 minutes, no steps. Quotes, alerts and the intelligence pipeline | 21,600 |
+| `capture-market-snapshots` | Removed in Milestone 3, replaced by the pipeline inside the poller | 0 |
 | `check-price-alerts` | Removed, merged into the poller | 0 |
+| `app/signal.changed` handlers | Once per confirmed signal status change (Milestone 4) | A few hundred |
 
 ## Milestone 1: Stabilize
 
@@ -109,7 +110,7 @@ None of this was removed. Deleting it needs the owner's sign-off.
 - [x] Snapshots and scores: 9 each at 01:45 UTC, fresh again at 15:45 UTC
 - [x] AI service survives Gemini outages (issue 11)
 - [ ] Gemini summaries on Render (issue 12)
-- [ ] Signal detection seen firing
+- [ ] Signal detection seen firing in production (old detector replaced by Milestone 3)
 - [ ] Daily digest: cron at 12:00 UTC. Confirm in Inngest Runs for `daily-news-summary`
 - [ ] Welcome email after a verified signup
 - [ ] Sentry receiving errors (issue 8)
@@ -127,13 +128,32 @@ Built and tested on `signalist-v4`, not deployed.
 - Tests: 53 pass, including provider parsing, fallback, backoff, batching, de-duplication and key handling
 - Live smoke test against real vendors passed
 
+## Milestone 3: Intelligence engine
+
+Built and tested on `signalist-v4`, not deployed. Full rules in `docs/SIGNAL_ENGINE.md`.
+
+- `lib/intelligence/series.ts`: every analytic for every bar, computed once and causally: returns, EMA/SMA 20/50/200, RSI, MACD, Bollinger, ATR, session VWAP, time-of-day relative volume, volatility ratio, levels, session and previous-day highs and lows
+- `detectors.ts`: 11 edge-triggered detectors with cooldowns and idempotent keys
+- `scoring.ts`: deterministic strength and confidence, kept separate, with stored components and evidence
+- `context.ts`: market-driven, sector-driven, asset-specific or mixed against SPY and a sector ETF (BTC for altcoins). Spec Phase 7
+- `signal-engine.ts`: 30-minute correlation, anchor rule, start-strength gate, lifecycle DETECTED → ACTIVE → WEAKENING → INVALIDATED/RESOLVED, key-level invalidation, dwell time, confirmation before publishing
+- `market-hours.ts`: NYSE sessions, 2026-2027 holidays and early closes. Crypto is continuous
+- `pipeline.ts`: runs inside the poller, evaluates only new closed bars, idempotent writes, saves open signals every run, publishes confirmed status changes, sends `app/signal.changed`
+- `assets.ts`: `Asset` records from Finnhub profiles, with sector benchmark mapping
+- `replay.ts` and `npm run replay`: the same code bar by bar over history
+- Removed the old 15-minute snapshot job, `lib/market/signals.ts`, `signal-runner.ts`, `computeScore.ts`
+- Tests: 69 pass. Replay covers a quiet market (12 seeds), breakout, false breakout, market context and crypto. The integration test runs the real pipeline on in-memory MongoDB and checks idempotency and replay agreement
+- Tuned on real 1-minute data for NVDA, AAPL, TSLA, SPY, BTC and ETH. Started at 3+ signals per session with many reversing in minutes. Now about 2 confirmed per session per stock, 1 for SPY
+- New dev dependency `mongodb-memory-server` downloads a MongoDB binary from MongoDB's CDN on first test run
+- `StockScore` is no longer updated. Watchlist, research header and `/api/v1` still read it until Milestone 6 swaps in signals
+
 ## Milestones
 
 | # | Milestone | Status |
 | --- | --- | --- |
 | 1 | Stabilize | Deployed. Open: Gemini on Render, digest, welcome email, Sentry |
 | 2 | Normalize | Built and tested, not deployed |
-| 3 | Intelligence engine | Not started |
+| 3 | Intelligence engine | Built and tested, not deployed |
 | 4 | AI | Not started |
 | 5 | Signals UX | Not started |
 | 6 | Connect existing product | Not started |

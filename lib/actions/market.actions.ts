@@ -8,8 +8,6 @@ import {
   type ChartRange,
 } from '@/lib/market/ohlcv';
 import { computeIndicators, deriveSignals } from '@/lib/market/indicators';
-import { connectToDatabase } from '@/database/mongoose';
-import { upsertMarketSnapshot } from '@/database/models/marketSnapshot.model';
 import type { ProviderId, ProviderQuote } from '@/lib/market/providers/types';
 
 /** Source fields are absent only for demo data on /preview. */
@@ -72,30 +70,3 @@ async function loadChartData(symbol: string, range: ChartRange = '3M') {
 export const getChartData = cache(async (symbol: string, range: ChartRange = '3M') => {
   return loadChartData(symbol, range);
 });
-
-const SNAPSHOT_RETENTION_MS = 3 * 24 * 60 * 60 * 1000;
-
-export async function saveMarketSnapshot(symbol: string) {
-  const data = await loadChartData(symbol, '3M');
-  if (!data.candles.length || !data.quote) return null;
-
-  await connectToDatabase();
-  return upsertMarketSnapshot({
-    symbol: data.symbol,
-    price: data.quote.price,
-    volume: data.quote.volume,
-    changePercent: data.quote.changePercent,
-    ohlcv: data.candles.slice(-60),
-    indicators: data.indicators
-      ? {
-          sma20: data.indicators.sma20,
-          sma50: data.indicators.sma50,
-          rsi14: data.indicators.rsi14,
-          macd: data.indicators.macd,
-          bollinger: data.indicators.bollinger,
-        }
-      : undefined,
-    timestamp: new Date(),
-    expiresAt: new Date(Date.now() + SNAPSHOT_RETENTION_MS),
-  } as Parameters<typeof upsertMarketSnapshot>[0]);
-}
