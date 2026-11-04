@@ -14,7 +14,8 @@ import { validateExplanation } from './validate';
 
 type AiExplanation = { what_changed: string; context: string; watch_next: string; validated: boolean };
 
-const AI_TIMEOUT_MS = 25_000;
+// Room for the primary model (18s) and the fallback model on the AI service
+const AI_TIMEOUT_MS = 45_000;
 
 export async function loadEvidence(signalId: string): Promise<SignalEvidence | null> {
   const signal = await SignalModel.findOne({ signalId }).lean();

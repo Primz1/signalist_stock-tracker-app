@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import os
 import re
 from typing import Any
@@ -29,11 +30,16 @@ except ImportError:
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
 GEMINI_FALLBACK_MODEL = os.getenv("GEMINI_FALLBACK_MODEL", "gemini-3.5-flash-lite")
 
-# Per model, so both tries fit inside the web app's 20s and 55s client timeouts
+# Per model, so both tries fit inside the web app's client timeouts (20s, 45s and 55s)
 SUMMARY_TIMEOUT_SECONDS = 8
+# Signal explanations take Gemini 6-13 seconds in practice
+SIGNAL_TIMEOUT_SECONDS = 18
 REPORT_TIMEOUT_SECONDS = 24
 # Lets the SDK's own timeout fire first, so its worker thread ends too
 TIMEOUT_GRACE_SECONDS = 1
+
+# Uvicorn's root logger shows WARNING and above in Render's logs
+logger = logging.getLogger("signalist.narrator")
 
 
 async def generate_text(prompt: str, timeout: float) -> str:
@@ -56,6 +62,7 @@ async def generate_text(prompt: str, timeout: float) -> str:
             )
             return (response.text or "").strip()
         except Exception as err:  # noqa: BLE001 - any failure moves on to the next model
+            logger.warning("gemini model %s failed: %s: %s", name, type(err).__name__, str(err)[:200])
             last_error = err
     raise last_error or RuntimeError("Gemini returned nothing")
 
@@ -422,16 +429,18 @@ async def narrate_signal(evidence: dict[str, Any]) -> dict[str, Any]:
     if not (genai and os.getenv("GEMINI_API_KEY")):
         return empty
     try:
-        text = await generate_text(SIGNAL_PROMPT.format(evidence=json.dumps(evidence)), SUMMARY_TIMEOUT_SECONDS * 2)
+        text = await generate_text(SIGNAL_PROMPT.format(evidence=json.dumps(evidence)), SIGNAL_TIMEOUT_SECONDS)
         if text.startswith("```"):
             text = text.strip("`").replace("json", "", 1).strip()
         data = json.loads(text)
         sections = {k: str(data.get(k, "")).strip() for k in ("what_changed", "context", "watch_next")}
-        ok, _ = verify_against_evidence(" ".join(sections.values()), evidence)
+        ok, rejected = verify_against_evidence(" ".join(sections.values()), evidence)
         if not ok or not sections["what_changed"]:
+            logger.warning("explain-signal rejected for %s: %s", evidence.get("symbol"), rejected[:10] or "empty what_changed")
             return empty
         return {**sections, "validated": True}
-    except Exception:
+    except Exception as err:
+        logger.warning("explain-signal failed for %s: %s: %s", evidence.get("symbol"), type(err).__name__, str(err)[:200])
         return empty
 
 
