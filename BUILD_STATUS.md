@@ -4,9 +4,22 @@ Living record of the product build. Last updated 2026-11-03 on branch `signalist
 
 ## Current verdict
 
-Production's background pipeline now runs. Polling, alerts, snapshots and scores write real data,
-and the AI service stays up when Gemini misbehaves. Milestone 2 (normalized models and one market
-data service) is built and tested on `signalist-v4` but not deployed.
+Milestones 1-4 are deployed (`main` at `a81de59`, 2026-11-04 00:43 UTC). The intelligence pipeline
+runs in production every 2 minutes. Milestones 5-8 are not started.
+
+Production check, 2026-11-04 00:50 UTC (after the US close, so only crypto was analyzed):
+
+| Check | Result |
+| --- | --- |
+| Vercel deploy and Inngest sync | Ready, `Successfully registered` |
+| `/api/health` | ok, database true, Inngest configured, pipeline fresh, AI reachable |
+| Render | `/agent/explain-signal` live, `ai_provider: gemini` |
+| Pipeline writes | 1-minute snapshots every run for BTCUSDT and EURUSDT from Binance, with session and provenance. 3 `Asset` records, 1 `MarketEvent` |
+| Signals | None yet, which is expected for a quiet hour with 2 crypto pairs |
+| Vercel error logs | None in the first runs |
+
+Still to see in production: the first signal, its AI explanation, and stocks at the next US open.
+`EVXBTC` on a watchlist returns no Binance data and is skipped.
 
 Baseline audit, 2026-11-02 (read-only):
 
@@ -117,7 +130,7 @@ None of this was removed. Deleting it needs the owner's sign-off.
 
 ## Milestone 2: Normalize
 
-Built and tested on `signalist-v4`, not deployed.
+Deployed 2026-11-04.
 
 - `lib/market/symbols.ts`: one set of symbol rules, including input validation
 - `lib/market/providers/`: `FinnhubProvider`, `BinanceProvider`, `YahooProvider` behind one interface. Failures raise `ProviderError` with the HTTP status
@@ -130,7 +143,7 @@ Built and tested on `signalist-v4`, not deployed.
 
 ## Milestone 3: Intelligence engine
 
-Built and tested on `signalist-v4`, not deployed. Full rules in `docs/SIGNAL_ENGINE.md`.
+Deployed 2026-11-04. Full rules in `docs/SIGNAL_ENGINE.md`.
 
 - `lib/intelligence/series.ts`: every analytic for every bar, computed once and causally: returns, EMA/SMA 20/50/200, RSI, MACD, Bollinger, ATR, session VWAP, time-of-day relative volume, volatility ratio, levels, session and previous-day highs and lows
 - `detectors.ts`: 11 edge-triggered detectors with cooldowns and idempotent keys
@@ -149,7 +162,7 @@ Built and tested on `signalist-v4`, not deployed. Full rules in `docs/SIGNAL_ENG
 
 ## Milestone 4: AI
 
-Built and tested on `signalist-v4`, not deployed. Covers spec Phases 8 and 9 and sections 16 and 17.
+Deployed 2026-11-04. Covers spec Phases 8 and 9 and sections 16 and 17.
 
 - `NewsItem` model and `lib/intelligence/news.ts`: Finnhub company news (crypto matched by coin name), normalized, de-duplicated by URL hash, 14-day TTL, timed relative to the signal. Never described as a cause
 - `evidence.ts`: the spec's evidence package (price, volume, indicators, levels, market, events, news, provenance). Only computed numbers
@@ -166,9 +179,9 @@ Built and tested on `signalist-v4`, not deployed. Covers spec Phases 8 and 9 and
 | # | Milestone | Status |
 | --- | --- | --- |
 | 1 | Stabilize | Deployed. Open: Gemini on Render, digest, welcome email, Sentry |
-| 2 | Normalize | Built and tested, not deployed |
-| 3 | Intelligence engine | Built and tested, not deployed |
-| 4 | AI | Built and tested, not deployed |
+| 2 | Normalize | Deployed 2026-11-04 |
+| 3 | Intelligence engine | Deployed 2026-11-04, running in production |
+| 4 | AI | Deployed 2026-11-04. Gemini on Render still falls back (issue 12) |
 | 5 | Signals UX | Not started |
 | 6 | Connect existing product | Not started |
 | 7 | Developer platform | Not started |
