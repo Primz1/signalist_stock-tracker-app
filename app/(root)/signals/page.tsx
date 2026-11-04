@@ -1,18 +1,32 @@
 import { redirect } from 'next/navigation';
-import TelemetryClient from '@/components/telemetry/TelemetryClient';
+import SignalsClient from '@/components/signals/SignalsClient';
 import { getCachedUser } from '@/lib/auth/session';
-import { getLatestPrices, getRecentEvents } from '@/lib/events/publisher';
+import { getRecentEvents } from '@/lib/events/publisher';
+import { getMarketPulse, getSignalDetail, lastAnalysisAt, listSignals } from '@/lib/intelligence/queries';
 import { getTrackedSymbols } from '@/lib/market/tracked-symbols';
 
-export default async function SignalsPage() {
+export default async function SignalsPage({ searchParams }: { searchParams: Promise<{ signal?: string }> }) {
   const user = await getCachedUser();
   if (!user) redirect('/sign-in');
 
-  const symbols = await getTrackedSymbols(user.id);
-  const [events, prices] = await Promise.all([
-    getRecentEvents({ userId: user.id, symbols, limit: 100 }),
-    getLatestPrices(symbols),
+  const [{ signal: requested }, symbols] = await Promise.all([searchParams, getTrackedSymbols(user.id)]);
+  const [signals, pulse, events, lastAnalysis] = await Promise.all([
+    listSignals(),
+    getMarketPulse(symbols),
+    getRecentEvents({ userId: user.id, symbols, limit: 50 }),
+    lastAnalysisAt(),
   ]);
+  const selected = requested ?? signals[0]?.signalId;
+  const initialDetail = selected ? await getSignalDetail(selected) : null;
 
-  return <TelemetryClient symbols={symbols} initialEvents={events} initialPrices={Object.fromEntries(prices)} />;
+  return (
+    <SignalsClient
+      symbols={symbols}
+      initialSignals={signals}
+      initialDetail={initialDetail}
+      pulse={pulse}
+      initialEvents={events}
+      lastAnalysis={lastAnalysis}
+    />
+  );
 }

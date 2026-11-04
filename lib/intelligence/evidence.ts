@@ -127,7 +127,7 @@ export function buildEvidence(input: EvidenceInput): SignalEvidence {
 }
 
 const pct = (n: number) => `${n > 0 ? '+' : ''}${n.toFixed(2)}%`;
-const money = (n: number) => `$${n.toFixed(2)}`;
+const money = (n: number) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: n < 1 ? 6 : 2 })}`;
 
 const CONTEXT_SENTENCES: Record<MarketContextClass, string> = {
   'market-driven': 'The move is in line with the broader market.',

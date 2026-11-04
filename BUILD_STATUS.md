@@ -5,7 +5,7 @@ Living record of the product build. Last updated 2026-11-03 on branch `signalist
 ## Current verdict
 
 Milestones 1-4 are deployed (`main` at `a81de59`, 2026-11-04 00:43 UTC). The intelligence pipeline
-runs in production every 2 minutes. Milestones 5-8 are not started.
+runs in production every 2 minutes. Milestone 5 is built on `signalist-v4`; Milestones 6-8 are not started.
 
 Production check, 2026-11-04 00:50 UTC (after the US close, so only crypto was analyzed):
 
@@ -69,6 +69,7 @@ Baseline audit, 2026-11-02 (read-only):
 | 14 | Landing page shows hard-coded prices (`FALLBACK`) when providers fail, without saying so | Open, Milestone 8 |
 | 15 | Watchlist refresh called Finnhub from the browser with `NEXT_PUBLIC_FINNHUB_API_KEY` | Fixed in Milestone 2: `/api/quotes` server route. The public key can now be removed from Vercel |
 | 16 | Binance candles returned the oldest 1,000 bars for long ranges | Fixed in Milestone 2, found by the live smoke test |
+| 17 | Landing page logs a React hydration mismatch: `AlertLevelChart` IDs differ between server and client | Open, pre-existing, Milestone 8 |
 
 ## Duplicated systems
 
@@ -174,6 +175,21 @@ Deployed 2026-11-04. Covers spec Phases 8 and 9 and sections 16 and 17.
 - Removed the old `summarize-signals` function and `lib/ai/whats-changed.ts`. "Ask AI" explains the latest open signal and keeps the 10-a-day limit
 - Tests: 85 TypeScript (validator, evidence, news, and evidence → AI → validation on in-memory MongoDB) and 17 Python
 
+## Milestone 5: Signals UX
+
+Built and tested on `signalist-v4`, not deployed. Spec Phase 10, plus the trust layer (section 40) and data freshness (Phase 21) for this page.
+
+- `/signals`: live market strip (price, day change, open-signal dot, freshness), a filterable feed (all, stocks, crypto, watchlist, bullish, bearish, high confidence), and a detail panel beside it on wide screens
+- `/signals/[signalId]`: the same detail as a page, used on phones and for deep links
+- Signal detail: strength, confidence, status, context, key level, signal map (SVG on desktop, list on phones), "Why Signalist says this" with supporting, contradicting and context marks, score components, the explanation with its source and an "explain again" action under the 10-a-day limit, a timeline merging events with lifecycle changes, and provenance
+- `/signals/how-it-works`: plain-language scoring rules, with numbers read from the engine's settings so they can't drift
+- Freshness: Live, Updated, Delayed, Stale or Unavailable, and "Market closed" for stocks out of session instead of calling them stale
+- Live updates: the existing SSE stream refreshes the feed and open panel on signal changes, with a 60-second refresh as a backstop. Triggered alerts show as toasts
+- `GET /api/signals` and `GET /api/signals/[signalId]`: authenticated, id-validated, confirmed signals only
+- Removed the old `TelemetryClient` timeline and heatmap
+- Checked in the browser at 1024px and 375px on a local in-memory database seeded from a replay of real recent data: no horizontal overflow, no console errors from these pages
+- Tests: 88 pass
+
 ## Milestones
 
 | # | Milestone | Status |
@@ -182,7 +198,7 @@ Deployed 2026-11-04. Covers spec Phases 8 and 9 and sections 16 and 17.
 | 2 | Normalize | Deployed 2026-11-04 |
 | 3 | Intelligence engine | Deployed 2026-11-04, running in production |
 | 4 | AI | Deployed 2026-11-04. Gemini on Render still falls back (issue 12) |
-| 5 | Signals UX | Not started |
+| 5 | Signals UX | Built and tested, not deployed |
 | 6 | Connect existing product | Not started |
 | 7 | Developer platform | Not started |
 | 8 | Hardening | Not started |

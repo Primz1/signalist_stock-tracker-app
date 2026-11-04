@@ -10,6 +10,48 @@ import { getTrackedSymbols } from '@/lib/market/tracked-symbols';
 const DAILY_ASK_LIMIT = 10;
 const WHATS_CHANGED_QUERY = 'What changed?';
 
+/** Counts against the same daily limit as askSignal. */
+async function underDailyLimit(userId: string) {
+  const startOfDay = new Date();
+  startOfDay.setUTCHours(0, 0, 0, 0);
+  const used = await AiReportModel.countDocuments({ userId, query: WHATS_CHANGED_QUERY, createdAt: { $gte: startOfDay } });
+  return used < DAILY_ASK_LIMIT;
+}
+
+/** Re-explains one signal on request. Any signal shown in the feed can be refreshed. */
+export async function refreshSignalExplanation(signalId: string) {
+  const session = await getCachedSession();
+  if (!session?.user?.id) return { success: false as const, message: 'Not authenticated' };
+  if (typeof signalId !== 'string' || !/^[A-Z0-9.:-]{1,24}-(?:up|down|neutral)-\d{9,11}$/.test(signalId)) {
+    return { success: false as const, message: 'Invalid signal' };
+  }
+
+  try {
+    await connectToDatabase();
+    if (!(await underDailyLimit(session.user.id))) {
+      return { success: false as const, message: `You've used all ${DAILY_ASK_LIMIT} explanations for today` };
+    }
+    const signal = await SignalModel.findOne({ signalId }).select('symbol confidence').lean();
+    if (!signal) return { success: false as const, message: 'Signal not found' };
+
+    const explanation = await explainSignal(signalId);
+    if (!explanation) return { success: false as const, message: 'Could not explain this signal' };
+    await createAiReport({
+      userId: session.user.id,
+      symbol: signal.symbol,
+      query: WHATS_CHANGED_QUERY,
+      summary: explanation.whatChanged,
+      confidence: signal.confidence / 100,
+      signals: [],
+      sources: [{ title: `Signal ${signalId}`, type: 'indicator' }],
+    });
+    return { success: true as const, explanation: { ...explanation, generatedAt: new Date().toISOString() } };
+  } catch (err) {
+    console.error('refreshSignalExplanation error:', err);
+    return { success: false as const, message: 'The AI service is unavailable right now' };
+  }
+}
+
 /** Explains the latest signal on a symbol the user follows. Limited per day to control cost. */
 export async function askSignal(symbol: string) {
   const session = await getCachedSession();
