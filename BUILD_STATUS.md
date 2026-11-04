@@ -4,8 +4,8 @@ Living record of the product build. Last updated 2026-11-03 on branch `signalist
 
 ## Current verdict
 
-Milestones 1-4 are deployed (`main` at `a81de59`, 2026-11-04 00:43 UTC). The intelligence pipeline
-runs in production every 2 minutes. Milestone 5 is built on `signalist-v4`; Milestones 6-8 are not started.
+Milestones 1-4 were deployed at 00:43 UTC and Milestone 5 at 02:20 UTC on 2026-11-04. The intelligence pipeline
+runs in production every 2 minutes. Milestones 1-5 are deployed; Milestones 6-8 are not started.
 
 Production check, 2026-11-04 00:50 UTC (after the US close, so only crypto was analyzed):
 
@@ -18,7 +18,10 @@ Production check, 2026-11-04 00:50 UTC (after the US close, so only crypto was a
 | Signals | None yet, which is expected for a quiet hour with 2 crypto pairs |
 | Vercel error logs | None in the first runs |
 
-Still to see in production: the first signal, its AI explanation, and stocks at the next US open.
+First production signals, 2026-11-04 around 01:30 UTC: `BTCUSDT` bearish unusual volume
+(DETECTED → ACTIVE → WEAKENING → ACTIVE) and `EURUSDT` bullish unusual volume (DETECTED → ACTIVE →
+WEAKENING), 19 market events, 6 live-feed updates. Both explanations are the deterministic fallback
+because of issue 12. Still to see: an AI-written explanation and stocks at the next US open.
 `EVXBTC` on a watchlist returns no Binance data and is skipped.
 
 Baseline audit, 2026-11-02 (read-only):
@@ -177,7 +180,7 @@ Deployed 2026-11-04. Covers spec Phases 8 and 9 and sections 16 and 17.
 
 ## Milestone 5: Signals UX
 
-Built and tested on `signalist-v4`, not deployed. Spec Phase 10, plus the trust layer (section 40) and data freshness (Phase 21) for this page.
+Deployed 2026-11-04 (`00c949f`). Signed-out requests to `/signals`, `/signals/[id]` and `/signals/how-it-works` redirect to sign-in, and `/api/signals` returns 401. The signed-in page was checked locally, not on production, because there is no production test account. Spec Phase 10, plus the trust layer (section 40) and data freshness (Phase 21) for this page.
 
 - `/signals`: live market strip (price, day change, open-signal dot, freshness), a filterable feed (all, stocks, crypto, watchlist, bullish, bearish, high confidence), and a detail panel beside it on wide screens
 - `/signals/[signalId]`: the same detail as a page, used on phones and for deep links
@@ -198,7 +201,7 @@ Built and tested on `signalist-v4`, not deployed. Spec Phase 10, plus the trust 
 | 2 | Normalize | Deployed 2026-11-04 |
 | 3 | Intelligence engine | Deployed 2026-11-04, running in production |
 | 4 | AI | Deployed 2026-11-04. Gemini on Render still falls back (issue 12) |
-| 5 | Signals UX | Built and tested, not deployed |
+| 5 | Signals UX | Deployed 2026-11-04 |
 | 6 | Connect existing product | Not started |
 | 7 | Developer platform | Not started |
 | 8 | Hardening | Not started |
